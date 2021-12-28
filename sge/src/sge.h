@@ -21,9 +21,9 @@
 #include "sgepch.h"
 
 // core
-#include "src/core/application.h"
+#include "sge/core/application.h"
 
 // main
 #ifdef SGE_INCLUDE_MAIN
-#include "src/core/main.h"
+#include "sge/core/main.h"
 #endif
