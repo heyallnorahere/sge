@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.10)
+project(sge)
+add_subdirectory("vendor")
+add_subdirectory("sge")
+add_subdirectory("sandbox")
