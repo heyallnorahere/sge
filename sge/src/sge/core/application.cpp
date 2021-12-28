@@ -15,7 +15,7 @@
 */
 
 #include "sgepch.h"
-#include "application.h"
+#include "sge/core/application.h"
 namespace sge {
     static ref<application> app_instance;
     void application::set(ref<application> app) {

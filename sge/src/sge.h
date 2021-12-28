@@ -23,6 +23,9 @@
 // core
 #include "sge/core/application.h"
 
+// events
+#include "sge/events/event.h"
+
 // main
 #ifdef SGE_INCLUDE_MAIN
 #include "sge/core/main.h"

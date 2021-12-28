@@ -30,7 +30,6 @@ namespace sge {
         virtual void load_content() = 0;
         virtual void unload_content() = 0;
 
-    private:
         std::string m_title;
     };
 }
