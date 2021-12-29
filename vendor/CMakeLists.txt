@@ -1,2 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 add_subdirectory("spdlog")
+if(SGE_DESKTOP)
+    add_subdirectory("glfw")
+endif()

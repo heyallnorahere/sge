@@ -14,16 +14,18 @@
    limitations under the License.
 */
 
-#define SGE_INCLUDE_MAIN
-#include <sge.h>
-namespace sandbox {
-    class sandbox_app : public sge::application {
-    public:
-        sandbox_app() : application("Sandbox") { }
+#include "sgepch.h"
+#include "sge/core/window.h"
+#ifdef SGE_DESKTOP
+#include "sge/platform/desktop/desktop_window.h"
+#endif
+namespace sge {
+    ref<window> window::create(const std::string& title, uint32_t width, uint32_t height) {
+#ifdef SGE_DESKTOP
+        return ref<desktop_window>::create(title, width, height);
+#endif
 
-    };
-}
-
-sge::ref<sge::application> create_app_instance() {
-    return sge::ref<sandbox::sandbox_app>::create();
+        throw std::runtime_error("no implemented platform was selected!");
+        return nullptr;
+    }
 };

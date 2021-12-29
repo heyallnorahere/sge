@@ -22,6 +22,7 @@
 
 // core
 #include "sge/core/application.h"
+#include "sge/core/window.h"
 
 // events
 #include "sge/events/event.h"

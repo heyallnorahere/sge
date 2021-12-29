@@ -26,15 +26,11 @@ namespace sge {
         key_pressed,
         key_released,
         key_typed,
-        mouse_button_pressed,
-        mouse_button_released,
-        mouse_moved,
-        mouse_scrolled,
     };
 
 #define EVENT_ID_DECL(id) static event_id get_static_id() { return event_id::id; } \
                             virtual event_id get_id() override { return get_static_id(); } \
-                            virtual std::string get_name() override { #id; }
+                            virtual std::string get_name() override { return #id; }
 
     class event {
     public:
@@ -50,9 +46,9 @@ namespace sge {
     public:
         event_dispatcher(event& e) : m_event(e) { }
 
-        template<typename T, typename Func> bool operator()(const Func& func) {
+        template<typename T, typename Func> bool dispatch(const Func& func) {
             if (this->m_event.get_id() == T::get_static_id()) {
-                this->m_event |= func((T&)this->m_event);
+                this->m_event.handled |= func((T&)this->m_event);
                 return true;
             }
             return false;
@@ -60,4 +56,7 @@ namespace sge {
     private:
         event& m_event;
     };
+
+#define SGE_BIND_EVENT_FUNC(func) [this](auto&&... args) -> decltype(auto) \
+                                { return this->func(std::forward<decltype(args)>(args)...); }
 }

@@ -15,33 +15,27 @@
 */
 
 #pragma once
-#include "sge/core/window.h"
 #include "sge/events/event.h"
-#include "sge/events/window_events.h"
 namespace sge {
-    class application : public ref_counted {
+    class window_close_event : public event {
     public:
-        static void set(ref<application> app);
-        static ref<application> get();
+        window_close_event() = default;
 
-        application(const std::string& title);
+        EVENT_ID_DECL(window_close)
+    };
+    class window_resize_event : public event {
+    public:
+        window_resize_event(uint32_t width, uint32_t height) {
+            this->m_width = width;
+            this->m_height = height;
+        }
 
-        void init();
-        void shutdown();
+        uint32_t get_width() { return this->m_width; }
+        uint32_t get_height() { return this->m_height; }
 
-        void on_event(event& e);
-
-        ref<window> get_window() { return this->m_window; }
+        EVENT_ID_DECL(window_resize)
 
     private:
-        bool on_window_resize(window_resize_event& e);
-        bool on_window_close(window_close_event& e);
-
-    protected:
-        virtual void init_app() { }
-        virtual void shutdown_app() { }
-
-        std::string m_title;
-        ref<window> m_window;
+        uint32_t m_width, m_height;
     };
 }
