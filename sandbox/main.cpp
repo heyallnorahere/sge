@@ -17,10 +17,40 @@
 #define SGE_INCLUDE_MAIN
 #include <sge.h>
 namespace sandbox {
+    class sandbox_layer : public sge::layer {
+    public:
+        sandbox_layer() : layer("Sandbox Layer") { }
+
+        virtual void on_event(sge::event& event) override {
+            sge::event_dispatcher dispatcher(event);
+
+            dispatcher.dispatch<sge::window_resize_event>(
+                SGE_BIND_EVENT_FUNC(sandbox_layer::on_resize));
+        }
+
+    private:
+        bool on_resize(sge::window_resize_event& event) {
+            uint32_t width = event.get_width();
+            uint32_t height = event.get_height();
+
+            if (width == 0 || height == 0) {
+                spdlog::info("window was minimized");
+            } else {
+                spdlog::info("window was resized to: ({0}, {1})", width, height);
+            }
+
+            return false;
+        }
+    };
+
     class sandbox_app : public sge::application {
     public:
         sandbox_app() : application("Sandbox") { }
-
+    
+    protected:
+        virtual void init_app() override {
+            this->push_layer(new sandbox_layer);
+        }
     };
 }
 

@@ -37,7 +37,12 @@ namespace sge {
         dispatcher.dispatch<window_close_event>(SGE_BIND_EVENT_FUNC(application::on_window_close));
         dispatcher.dispatch<window_resize_event>(SGE_BIND_EVENT_FUNC(application::on_window_resize));
 
-        // todo: layers
+        for (auto& _layer : this->m_layer_stack) {
+            if (e.handled) {
+                break;
+            }
+            _layer->on_event(e);
+        }
     }
 
     void application::init() {
@@ -45,8 +50,6 @@ namespace sge {
 
         this->m_window = window::create(this->m_title, 1600, 900);
         this->m_window->set_event_callback(SGE_BIND_EVENT_FUNC(application::on_event));
-
-        // todo: layers
 
         this->init_app();
     }
@@ -63,7 +66,9 @@ namespace sge {
             // todo: timestep
 
             if (!this->m_minimized) {
-                // todo: update layers
+                for (auto& _layer : this->m_layer_stack) {
+                    _layer->on_update();
+                }
             }
 
             this->m_window->on_update();

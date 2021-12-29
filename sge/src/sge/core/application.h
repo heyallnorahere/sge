@@ -16,6 +16,7 @@
 
 #pragma once
 #include "sge/core/window.h"
+#include "sge/core/layer_stack.h"
 #include "sge/events/event.h"
 #include "sge/events/window_events.h"
 int32_t main(int32_t argc, const char** argv);
@@ -27,11 +28,18 @@ namespace sge {
 
         application(const std::string& title);
 
+        void push_layer(layer* _layer) { this->m_layer_stack.push_layer(_layer); }
+        void push_overlay(layer* overlay) { this->m_layer_stack.push_overlay(overlay); }
+
         void quit() { this->m_running = false; }
 
         void on_event(event& e);
 
         ref<window> get_window() { return this->m_window; }
+
+    protected:
+        virtual void init_app() { }
+        virtual void shutdown_app() { }
 
     private:
         void init();
@@ -41,10 +49,7 @@ namespace sge {
         bool on_window_resize(window_resize_event& e);
         bool on_window_close(window_close_event& e);
 
-    protected:
-        virtual void init_app() { }
-        virtual void shutdown_app() { }
-
+        layer_stack m_layer_stack;
         std::string m_title;
         ref<window> m_window;
         bool m_running, m_minimized;

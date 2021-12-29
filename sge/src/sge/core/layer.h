@@ -15,27 +15,21 @@
 */
 
 #pragma once
-#include <string>
-#if __has_include(<filesystem>)
-#include <filesystem>
-namespace fs = std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#endif
-#include <sstream>
-#include <vector>
-#include <cstdint>
-#include <stddef.h>
-#include <fstream>
-#include <set>
-#include <unordered_set>
-#include <map>
-#include <unordered_map>
-#include <utility>
-#include <functional>
-#include <memory>
-#include <spdlog/spdlog.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "ref.h"
+#include "sge/events/event.h"
+namespace sge {
+    class layer {
+    public:
+        layer(const std::string& name = "Layer") { this->m_name = name; }
+        virtual ~layer() = default;
+
+        virtual void on_attach() { }
+        virtual void on_detach() { }
+        virtual void on_update() { }
+        virtual void on_event(event& e) { }
+
+        const std::string& get_name() const { return this->m_name; }
+
+    protected:
+        std::string m_name;
+    };
+};
