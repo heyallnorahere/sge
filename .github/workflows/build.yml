@@ -1,0 +1,29 @@
+name: build
+on: [ push ]
+jobs:
+  build:
+    runs-on: ${{ matrix.os-name }}-latest
+    strategy:
+      matrix:
+        os-name: [ ubuntu, windows, macos ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: install dependencies (ubuntu)
+        if: ${{ matrix.os-name == 'ubuntu' }}
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mesa-common-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev cmake
+      - name: install dependencies (macos)
+        if: ${{ matrix.os-name == 'macos' }}
+        shell: bash
+        run: |
+          brew install cmake
+      - name: build
+        shell: bash
+        run: |
+          cmake --preset default -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j 8
