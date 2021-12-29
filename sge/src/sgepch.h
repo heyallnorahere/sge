@@ -16,7 +16,7 @@
 
 #pragma once
 #include <string>
-#ifdef __cpp_lib_filesystem
+#ifdef __has_include(<filesystem>)
 #include <filesystem>
 namespace fs = std::filesystem;
 #else
