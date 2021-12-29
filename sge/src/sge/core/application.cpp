@@ -27,6 +27,17 @@ namespace sge {
 
     application::application(const std::string& title) {
         this->m_title = title;
+        this->m_running = false;
+        this->m_minimized = false;
+    }
+
+    void application::on_event(event& e) {
+        event_dispatcher dispatcher(e);
+
+        dispatcher.dispatch<window_close_event>(SGE_BIND_EVENT_FUNC(application::on_window_close));
+        dispatcher.dispatch<window_resize_event>(SGE_BIND_EVENT_FUNC(application::on_window_resize));
+
+        // todo: layers
     }
 
     void application::init() {
@@ -46,22 +57,31 @@ namespace sge {
         this->shutdown_app();
     }
 
-    void application::on_event(event& e) {
-        event_dispatcher dispatcher(e);
+    void application::run() {
+        this->m_running = true;
+        while (this->m_running) {
+            // todo: timestep
 
-        dispatcher.dispatch<window_close_event>(SGE_BIND_EVENT_FUNC(application::on_window_close));
-        dispatcher.dispatch<window_resize_event>(SGE_BIND_EVENT_FUNC(application::on_window_resize));
+            if (!this->m_minimized) {
+                // todo: update layers
+            }
 
-        // todo: layers
+            this->m_window->on_update();
+            // todo: swapchain buffers?
+        }
     }
 
     bool application::on_window_close(window_close_event& e) {
-        spdlog::info("window closed");
+        this->m_running = false;
         return true;
     }
 
     bool application::on_window_resize(window_resize_event& e) {
-        spdlog::info("window resized to size: ({0}, {1})", e.get_width(), e.get_height());
-        return true;
+        this->m_minimized = (e.get_width() == 0 || e.get_height() == 0);
+        if (!this->m_minimized) {
+            // todo: resize swapchain
+        }
+
+        return false;
     }
 }

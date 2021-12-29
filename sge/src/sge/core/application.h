@@ -18,6 +18,7 @@
 #include "sge/core/window.h"
 #include "sge/events/event.h"
 #include "sge/events/window_events.h"
+int32_t main(int32_t argc, const char** argv);
 namespace sge {
     class application : public ref_counted {
     public:
@@ -26,14 +27,17 @@ namespace sge {
 
         application(const std::string& title);
 
-        void init();
-        void shutdown();
+        void quit() { this->m_running = false; }
 
         void on_event(event& e);
 
         ref<window> get_window() { return this->m_window; }
 
     private:
+        void init();
+        void shutdown();
+        void run();
+
         bool on_window_resize(window_resize_event& e);
         bool on_window_close(window_close_event& e);
 
@@ -43,5 +47,8 @@ namespace sge {
 
         std::string m_title;
         ref<window> m_window;
+        bool m_running, m_minimized;
+
+        friend int32_t ::main(int32_t argc, const char** argv);
     };
 }
