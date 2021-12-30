@@ -17,9 +17,9 @@
 #pragma once
 #include "sge/events/event.h"
 namespace sge {
-    class window : public ref_counted {
+    class window {
     public:
-        static ref<window> create(const std::string& title, uint32_t width, uint32_t height);
+        static std::unique_ptr<window> create(const std::string& title, uint32_t width, uint32_t height);
 
         using event_callback_t = std::function<void(event&)>;
 

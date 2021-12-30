@@ -35,7 +35,10 @@ namespace fs = std::experimental::filesystem;
 #include <utility>
 #include <functional>
 #include <memory>
+#include <queue>
+#include <limits>
+#include <optional>
 #include <spdlog/spdlog.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "ref.h"
+#include "sge/ref.h"

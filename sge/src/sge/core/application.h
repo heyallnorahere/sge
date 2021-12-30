@@ -35,7 +35,7 @@ namespace sge {
 
         void on_event(event& e);
 
-        ref<window> get_window() { return this->m_window; }
+        window& get_window() { return *this->m_window; }
 
     protected:
         virtual void init_app() { }
@@ -51,7 +51,7 @@ namespace sge {
 
         layer_stack m_layer_stack;
         std::string m_title;
-        ref<window> m_window;
+        std::unique_ptr<window> m_window;
         bool m_running, m_minimized;
 
         friend int32_t ::main(int32_t argc, const char** argv);

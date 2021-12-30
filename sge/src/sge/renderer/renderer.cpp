@@ -15,21 +15,13 @@
 */
 
 #include "sgepch.h"
-#include "sge/core/window.h"
-#ifdef SGE_DESKTOP
-#include "sge/platform/desktop/desktop_window.h"
-#endif
+#include "sge/renderer/renderer.h"
 namespace sge {
-    std::unique_ptr<window> window::create(const std::string& title, uint32_t width, uint32_t height) {
-        window* instance = nullptr;
-
-#ifdef SGE_DESKTOP
-        instance = new desktop_window(title, width, height);
-#endif
-
-        if (instance == nullptr) {
-            throw std::runtime_error("no implemented platform was selected!");
-        }
-        return std::unique_ptr<window>(instance);
+    static std::unique_ptr<renderer_api> renderer_api_;
+    void renderer::init() {
+        // todo: vulkan renderer api
     }
-};
+    void renderer::shutdown() {
+        renderer_api_.reset();
+    }
+}

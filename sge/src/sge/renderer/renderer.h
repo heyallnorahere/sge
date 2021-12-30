@@ -14,22 +14,22 @@
    limitations under the License.
 */
 
-#include "sgepch.h"
-#include "sge/core/window.h"
-#ifdef SGE_DESKTOP
-#include "sge/platform/desktop/desktop_window.h"
-#endif
+#pragma once
 namespace sge {
-    std::unique_ptr<window> window::create(const std::string& title, uint32_t width, uint32_t height) {
-        window* instance = nullptr;
+    class renderer_api {
+    public:
+        virtual ~renderer_api() = default;
 
-#ifdef SGE_DESKTOP
-        instance = new desktop_window(title, width, height);
-#endif
+        virtual void init() = 0;
+        virtual void shutdown() = 0;
+    };
+    class renderer {
+    public:
+        renderer() = delete;
 
-        if (instance == nullptr) {
-            throw std::runtime_error("no implemented platform was selected!");
-        }
-        return std::unique_ptr<window>(instance);
-    }
-};
+        static void init();
+        static void shutdown();
+
+
+    };
+}

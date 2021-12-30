@@ -29,8 +29,10 @@ namespace sge {
 
         void push_layer(layer* _layer);
         void push_overlay(layer* overlay);
-        layer* pop_layer();
-        layer* pop_overlay();
+        layer* pop_layer(size_t index = std::numeric_limits<size_t>::max());
+        bool pop_layer(layer* _layer);
+        layer* pop_overlay(size_t index = std::numeric_limits<size_t>::max());
+        bool pop_overlay(layer* overlay);
         void clear();
 
         size_t size() const { return this->m_layers.size(); }

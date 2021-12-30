@@ -16,6 +16,7 @@
 
 #include "sgepch.h"
 #include "sge/core/application.h"
+#include "sge/renderer/renderer.h"
 namespace sge {
     static ref<application> app_instance;
     void application::set(ref<application> app) {
@@ -51,6 +52,8 @@ namespace sge {
         this->m_window = window::create(this->m_title, 1600, 900);
         this->m_window->set_event_callback(SGE_BIND_EVENT_FUNC(application::on_event));
 
+        renderer::init();
+
         this->init_app();
     }
 
@@ -58,6 +61,8 @@ namespace sge {
         spdlog::info("shutting down application: {0}...", this->m_title);
 
         this->shutdown_app();
+
+        renderer::shutdown();
     }
 
     void application::run() {
