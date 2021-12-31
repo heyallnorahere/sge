@@ -17,13 +17,9 @@
 #pragma once
 #include "sge/renderer/renderer.h"
 namespace sge {
-    struct vk_renderer_data;
     class vulkan_renderer : public renderer_api {
     public:
         virtual void init() override;
         virtual void shutdown() override;
-
-    private:
-        vk_renderer_data* m_data;
     };
 }
