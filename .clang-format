@@ -1,0 +1,14 @@
+BasedOnStyle: Microsoft
+NamespaceIndentation: All
+ColumnLimit: 100
+AccessModifierOffset: -4
+SortIncludes: false
+PointerAlignment: Left
+AllowShortFunctionsOnASingleLine: All
+Cpp11BracedListStyle: false
+AllowShortEnumsOnASingleLine: true
+BreakBeforeBraces: Attach
+BraceWrapping:
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false

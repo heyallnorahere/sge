@@ -35,7 +35,7 @@ namespace sge {
         virtual size_t get_image_count() override { return this->m_swapchain_images.size(); }
         virtual uint32_t get_width() override { return this->m_width; }
         virtual uint32_t get_height() override { return this->m_height; }
-    
+
         virtual size_t get_current_image_index() override { return this->m_current_image_index; }
         virtual command_list& get_command_list(size_t index) override {
             return *this->m_command_buffers[index];
@@ -89,4 +89,4 @@ namespace sge {
 
         std::optional<glm::uvec2> m_new_size;
     };
-}
+} // namespace sge

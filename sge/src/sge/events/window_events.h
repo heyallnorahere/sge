@@ -38,4 +38,4 @@ namespace sge {
     private:
         uint32_t m_width, m_height;
     };
-}
+} // namespace sge

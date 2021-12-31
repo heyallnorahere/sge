@@ -22,4 +22,4 @@ namespace sge {
         virtual void init() override;
         virtual void shutdown() override;
     };
-}
+} // namespace sge

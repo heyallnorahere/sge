@@ -74,8 +74,8 @@ namespace sge {
             uint32_t minor = VK_VERSION_MINOR(data->vulkan_version);
             uint32_t patch = VK_VERSION_PATCH(data->vulkan_version);
 
-            spdlog::info("creating vulkan instance with api version: {0}.{1}.{2}",
-                major, minor, patch);
+            spdlog::info("creating vulkan instance with api version: {0}.{1}.{2}", major, minor,
+                         patch);
         }
 
         auto app_info = vk_init<VkApplicationInfo>(VK_STRUCTURE_TYPE_APPLICATION_INFO);
@@ -156,8 +156,7 @@ namespace sge {
     static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_validation_callback(
         VkDebugUtilsMessageSeverityFlagBitsEXT severity,
         VkDebugUtilsMessageTypeFlagsEXT message_type,
-        const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
-        void* user_data) {
+        const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data) {
         std::string message = "validation layer: " + std::string(callback_data->pMessage);
 
         switch (severity) {
@@ -176,8 +175,9 @@ namespace sge {
     }
 
     static void create_debug_messenger(vk_data* data) {
-        auto fpCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)
-            vkGetInstanceProcAddr(data->instance, "vkCreateDebugUtilsMessengerEXT");
+        auto fpCreateDebugUtilsMessengerEXT =
+            (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+                data->instance, "vkCreateDebugUtilsMessengerEXT");
         if (fpCreateDebugUtilsMessengerEXT == nullptr) {
             return;
         }
@@ -186,18 +186,18 @@ namespace sge {
             VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
 
         create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+                                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 
         create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+                                  VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                  VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
         create_info.pfnUserCallback = vulkan_validation_callback;
         create_info.pUserData = nullptr;
 
-        VkResult result = fpCreateDebugUtilsMessengerEXT(data->instance, &create_info,
-            nullptr, &data->debug_messenger);
+        VkResult result = fpCreateDebugUtilsMessengerEXT(data->instance, &create_info, nullptr,
+                                                         &data->debug_messenger);
         check_vk_result(result);
     }
 
@@ -237,15 +237,15 @@ namespace sge {
 
             VkPhysicalDeviceProperties properties;
             physical_device.get_properties(properties);
-            
+
             uint32_t major = VK_VERSION_MAJOR(properties.apiVersion);
             uint32_t minor = VK_VERSION_MINOR(properties.apiVersion);
             uint32_t patch = VK_VERSION_PATCH(properties.apiVersion);
 
             spdlog::info("selected physical device:\n\tname: {0}"
-                "\n\tlatest available vulkan version: {1}.{2}.{3}",
-                properties.deviceName, major, minor, patch);
-            
+                         "\n\tlatest available vulkan version: {1}.{2}.{3}",
+                         properties.deviceName, major, minor, patch);
+
             this->m_data->device = std::make_unique<vulkan_device>(physical_device);
         }
 
@@ -258,17 +258,17 @@ namespace sge {
         this->m_data->device.reset();
 
         if (this->m_data->debug_messenger != nullptr) {
-            auto fpDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)
-                vkGetInstanceProcAddr(this->m_data->instance,
-                "vkDestroyDebugUtilsMessengerEXT");
-            
+            auto fpDestroyDebugUtilsMessengerEXT =
+                (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+                    this->m_data->instance, "vkDestroyDebugUtilsMessengerEXT");
+
             if (fpDestroyDebugUtilsMessengerEXT != nullptr) {
                 fpDestroyDebugUtilsMessengerEXT(this->m_data->instance,
-                    this->m_data->debug_messenger, nullptr);
+                                                this->m_data->debug_messenger, nullptr);
                 this->m_data->debug_messenger = nullptr;
             } else {
                 spdlog::warn("created debug messenger but could not destroy it - "
-                    "will result in memory leak");
+                             "will result in memory leak");
             }
         }
 
@@ -288,7 +288,5 @@ namespace sge {
     const std::set<std::string>& vulkan_context::get_device_extensions() {
         return this->m_data->device_extensions;
     }
-    const std::set<std::string>& vulkan_context::get_layers() {
-        return this->m_data->layer_names;
-    }
-}
+    const std::set<std::string>& vulkan_context::get_layers() { return this->m_data->layer_names; }
+} // namespace sge

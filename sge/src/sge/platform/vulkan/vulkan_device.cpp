@@ -38,12 +38,13 @@ namespace sge {
         return devices;
     }
 
-    void vulkan_physical_device::query_queue_families(VkQueueFlags query, queue_family_indices& indices) const {
+    void vulkan_physical_device::query_queue_families(VkQueueFlags query,
+                                                      queue_family_indices& indices) const {
         uint32_t family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(this->m_device, &family_count, nullptr);
         std::vector<VkQueueFamilyProperties> queue_families(family_count);
-        vkGetPhysicalDeviceQueueFamilyProperties(this->m_device,
-            &family_count, queue_families.data());
+        vkGetPhysicalDeviceQueueFamilyProperties(this->m_device, &family_count,
+                                                 queue_families.data());
 
         for (uint32_t i = 0; i < family_count; i++) {
             VkQueueFlags found = 0;
@@ -51,8 +52,8 @@ namespace sge {
 
             auto query_family = [&](std::optional<uint32_t>& index, VkQueueFlagBits queue) {
                 if (query & queue) {
-                    if ((!index || (queue_families[*index].queueFlags & queue) == 0)
-                        && (queue_family.queueFlags & queue)) {
+                    if ((!index || (queue_families[*index].queueFlags & queue) == 0) &&
+                        (queue_family.queueFlags & queue)) {
                         index = i;
                     }
 
@@ -104,11 +105,11 @@ namespace sge {
         std::vector<const char*> device_extensions;
         {
             uint32_t extension_count = 0;
-            vkEnumerateDeviceExtensionProperties(physical_device, nullptr,
-                &extension_count, nullptr);
+            vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count,
+                                                 nullptr);
             std::vector<VkExtensionProperties> extensions(extension_count);
-            vkEnumerateDeviceExtensionProperties(physical_device, nullptr,
-                &extension_count, extensions.data());
+            vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count,
+                                                 extensions.data());
 
             // verify extension availability
             for (const auto& selected_extension : selected_extensions) {
@@ -130,9 +131,9 @@ namespace sge {
             // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_KHR_portability_subset.html
             static const char* const portability_subset = "VK_KHR_portability_subset";
             for (const auto& extension : extensions) {
-                bool requested = selected_extensions.find(extension.extensionName)
-                    == selected_extensions.end();
-                
+                bool requested =
+                    selected_extensions.find(extension.extensionName) == selected_extensions.end();
+
                 if (!requested && (strcmp(portability_subset, extension.extensionName) == 0)) {
                     device_extensions.push_back(portability_subset);
                     break;
@@ -171,9 +172,9 @@ namespace sge {
         uint32_t queue_family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
         for (uint32_t i = 0; i < queue_family_count; i++) {
-            auto create_info = vk_init<VkDeviceQueueCreateInfo>(
-                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
-            
+            auto create_info =
+                vk_init<VkDeviceQueueCreateInfo>(VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
+
             create_info.queueFamilyIndex = i;
             create_info.queueCount = 1;
             create_info.pQueuePriorities = &queue_priority;
@@ -188,7 +189,7 @@ namespace sge {
         VkPhysicalDeviceFeatures features;
         this->m_physical_device.get_features(features);
         create_info.pEnabledFeatures = &features;
-        
+
         if (!device_extensions.empty()) {
             create_info.ppEnabledExtensionNames = device_extensions.data();
             create_info.enabledExtensionCount = device_extensions.size();
@@ -202,4 +203,4 @@ namespace sge {
         VkResult result = vkCreateDevice(physical_device, &create_info, nullptr, &this->m_device);
         check_vk_result(result);
     }
-}
+} // namespace sge

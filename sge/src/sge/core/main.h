@@ -20,13 +20,13 @@ int32_t main(int32_t argc, const char** argv) {
 #ifndef SGE_DEBUG
     try {
 #endif
-    auto app = create_app_instance();
-    sge::application::set(app);
-    app->init();
-    app->run();
-    app->shutdown();
-    sge::application::set(nullptr);
-    return 0;
+        auto app = create_app_instance();
+        sge::application::set(app);
+        app->init();
+        app->run();
+        app->shutdown();
+        sge::application::set(nullptr);
+        return 0;
 #ifndef SGE_DEBUG
     } catch (const std::runtime_error& exc) {
         spdlog::error(exc.what());

@@ -49,12 +49,12 @@ namespace sge {
         this->m_queue = device.get_queue(queue_family);
 
         {
-            auto create_info = vk_init<VkCommandPoolCreateInfo>(
-                VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
+            auto create_info =
+                vk_init<VkCommandPoolCreateInfo>(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
             create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-            VkResult result = vkCreateCommandPool(device.get(), &create_info, nullptr,
-                &this->m_command_pool);
+            VkResult result =
+                vkCreateCommandPool(device.get(), &create_info, nullptr, &this->m_command_pool);
             check_vk_result(result);
         }
     }
@@ -106,7 +106,7 @@ namespace sge {
         auto submit_info = vk_init<VkSubmitInfo>(VK_STRUCTURE_TYPE_SUBMIT_INFO);
         submit_info.commandBufferCount = 1;
         submit_info.pCommandBuffers = &cmdbuffer;
-        
+
         auto fence_info = vk_init<VkFenceCreateInfo>(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
         VkFence fence;
         VkResult result = vkCreateFence(device, &fence_info, nullptr, &fence);
@@ -122,4 +122,4 @@ namespace sge {
         auto unique_ptr = std::unique_ptr<command_list>(&cmdlist);
         this->m_command_lists.push({ std::move(unique_ptr), fence });
     }
-}
+} // namespace sge

@@ -22,14 +22,14 @@ namespace sge {
         layer(const std::string& name = "Layer") { this->m_name = name; }
         virtual ~layer() = default;
 
-        virtual void on_attach() { }
-        virtual void on_detach() { }
-        virtual void on_update() { }
-        virtual void on_event(event& e) { }
+        virtual void on_attach() {}
+        virtual void on_detach() {}
+        virtual void on_update() {}
+        virtual void on_event(event& e) {}
 
         const std::string& get_name() const { return this->m_name; }
 
     protected:
         std::string m_name;
     };
-};
+}; // namespace sge

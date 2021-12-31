@@ -18,8 +18,7 @@
 namespace sge {
     class vertex_buffer : public ref_counted {
     public:
-        template<typename T>
-        static ref<vertex_buffer> create(const std::vector<T>& data) {
+        template <typename T> static ref<vertex_buffer> create(const std::vector<T>& data) {
             return create(data.data(), sizeof(T), data.size());
         }
         static ref<vertex_buffer> create(const void* data, size_t stride, size_t count);
@@ -30,4 +29,4 @@ namespace sge {
         virtual size_t get_vertex_count() = 0;
         size_t get_total_size() { return this->get_vertex_count() * this->get_vertex_stride(); }
     };
-}
+} // namespace sge

@@ -28,9 +28,10 @@ namespace sge {
         key_typed,
     };
 
-#define EVENT_ID_DECL(id) static event_id get_static_id() { return event_id::id; } \
-                            virtual event_id get_id() override { return get_static_id(); } \
-                            virtual std::string get_name() override { return #id; }
+#define EVENT_ID_DECL(id)                                                                          \
+    static event_id get_static_id() { return event_id::id; }                                       \
+    virtual event_id get_id() override { return get_static_id(); }                                 \
+    virtual std::string get_name() override { return #id; }
 
     class event {
     public:
@@ -44,19 +45,22 @@ namespace sge {
 
     class event_dispatcher {
     public:
-        event_dispatcher(event& e) : m_event(e) { }
+        event_dispatcher(event& e) : m_event(e) {}
 
-        template<typename T, typename Func> bool dispatch(const Func& func) {
+        template <typename T, typename Func> bool dispatch(const Func& func) {
             if (this->m_event.get_id() == T::get_static_id()) {
                 this->m_event.handled |= func((T&)this->m_event);
                 return true;
             }
             return false;
         }
+
     private:
         event& m_event;
     };
 
-#define SGE_BIND_EVENT_FUNC(func) [this](auto&&... args) -> decltype(auto) \
-                                { return this->func(std::forward<decltype(args)>(args)...); }
-}
+#define SGE_BIND_EVENT_FUNC(func)                                                                  \
+    [this](auto&&... args) -> decltype(auto) {                                                     \
+        return this->func(std::forward<decltype(args)>(args)...);                                  \
+    }
+} // namespace sge

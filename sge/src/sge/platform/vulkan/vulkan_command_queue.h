@@ -38,4 +38,4 @@ namespace sge {
         VkCommandPool m_command_pool;
         std::queue<stored_command_list> m_command_lists;
     };
-}
+} // namespace sge

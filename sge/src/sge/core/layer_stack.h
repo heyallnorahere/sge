@@ -54,4 +54,4 @@ namespace sge {
         container_t m_layers;
         size_t m_layer_insert_index = 0;
     };
-}
+} // namespace sge

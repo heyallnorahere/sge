@@ -23,7 +23,7 @@ namespace sge {
         size_t size = this->m_count * sizeof(uint32_t);
 
         auto staging_buffer = ref<vulkan_buffer>::create(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU);
+                                                         VMA_MEMORY_USAGE_CPU_TO_GPU);
         staging_buffer->map();
         memcpy(staging_buffer->mapped, data, size);
         staging_buffer->unmap();
@@ -32,8 +32,9 @@ namespace sge {
         region.size = size;
         region.srcOffset = region.dstOffset = 0;
 
-        this->m_buffer = ref<vulkan_buffer>::create(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+        this->m_buffer = ref<vulkan_buffer>::create(
+            size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VMA_MEMORY_USAGE_GPU_ONLY);
         staging_buffer->copy_to(this->m_buffer, region);
     }
-}
+} // namespace sge

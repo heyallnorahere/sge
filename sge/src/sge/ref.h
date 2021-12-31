@@ -113,7 +113,8 @@ namespace sge {
         mutable T* m_instance;
         template <typename U> friend class ref;
     };
-} // namespace vkrollercoaster
+} // namespace sge
+
 namespace std {
     template <typename T> struct hash<::sge::ref<T>> {
         size_t operator()(const ::sge::ref<T>& ref) const {

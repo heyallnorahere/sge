@@ -34,4 +34,4 @@ namespace sge {
 
         static ref<command_queue> get_queue(command_list_type type);
     };
-}
+} // namespace sge

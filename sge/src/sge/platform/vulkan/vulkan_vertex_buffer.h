@@ -32,4 +32,4 @@ namespace sge {
         size_t m_stride, m_count;
         ref<vulkan_buffer> m_buffer;
     };
-}
+} // namespace sge

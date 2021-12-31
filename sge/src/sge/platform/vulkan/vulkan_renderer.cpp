@@ -19,11 +19,7 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_context.h"
 namespace sge {
-    void vulkan_renderer::init() {
-        vulkan_context::create(VK_API_VERSION_1_1);
-    }
+    void vulkan_renderer::init() { vulkan_context::create(VK_API_VERSION_1_1); }
 
-    void vulkan_renderer::shutdown() {
-        vulkan_context::destroy();
-    }
-}
+    void vulkan_renderer::shutdown() { vulkan_context::destroy(); }
+} // namespace sge

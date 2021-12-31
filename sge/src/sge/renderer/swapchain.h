@@ -39,4 +39,4 @@ namespace sge {
         virtual size_t get_current_image_index() = 0;
         virtual command_list& get_command_list(size_t index) = 0;
     };
-}
+} // namespace sge

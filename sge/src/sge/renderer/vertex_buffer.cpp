@@ -28,4 +28,4 @@ namespace sge {
 
         return nullptr;
     }
-}
+} // namespace sge

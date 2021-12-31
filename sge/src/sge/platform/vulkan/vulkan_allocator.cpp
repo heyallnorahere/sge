@@ -56,9 +56,10 @@ namespace sge {
     }
 
     void vulkan_allocator::alloc(const VkBufferCreateInfo& create_info,
-        const VmaAllocationCreateInfo& alloc_info, VkBuffer& buffer, VmaAllocation& allocation) {
-        VkResult result = vmaCreateBuffer(vk_allocator, &create_info, &alloc_info, &buffer,
-            &allocation, nullptr);
+                                 const VmaAllocationCreateInfo& alloc_info, VkBuffer& buffer,
+                                 VmaAllocation& allocation) {
+        VkResult result =
+            vmaCreateBuffer(vk_allocator, &create_info, &alloc_info, &buffer, &allocation, nullptr);
         check_vk_result(result);
     }
 
@@ -76,4 +77,4 @@ namespace sge {
     void vulkan_allocator::unmap(VmaAllocation allocation) {
         vmaUnmapMemory(vk_allocator, allocation);
     }
-}
+} // namespace sge

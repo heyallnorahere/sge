@@ -39,7 +39,6 @@ namespace sge {
         } else if (pop_index >= this->m_layer_insert_index) {
             return nullptr;
         }
-        
 
         auto it = this->m_layers.begin() + pop_index;
         layer* _layer = it->get();
@@ -118,4 +117,4 @@ namespace sge {
         }
         this->m_layers.clear();
     }
-}
+} // namespace sge

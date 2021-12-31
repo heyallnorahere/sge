@@ -45,4 +45,4 @@ namespace sge {
         VkBufferUsageFlags m_buffer_usage;
         VmaMemoryUsage m_memory_usage;
     };
-}
+} // namespace sge

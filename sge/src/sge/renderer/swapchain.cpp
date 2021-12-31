@@ -32,4 +32,4 @@ namespace sge {
 
         return std::unique_ptr<swapchain>(instance);
     }
-}
+} // namespace sge

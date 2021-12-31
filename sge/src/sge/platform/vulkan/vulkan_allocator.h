@@ -25,12 +25,12 @@ namespace sge {
 
         // buffers
         static void alloc(const VkBufferCreateInfo& create_info,
-            const VmaAllocationCreateInfo& alloc_info, VkBuffer& buffer,
-            VmaAllocation& allocation);
+                          const VmaAllocationCreateInfo& alloc_info, VkBuffer& buffer,
+                          VmaAllocation& allocation);
         static void free(VkBuffer buffer, VmaAllocation allocation);
 
         // mapping memory
         static void* map(VmaAllocation allocation);
         static void unmap(VmaAllocation allocation);
     };
-}
+} // namespace sge

@@ -36,4 +36,4 @@ namespace sge {
         virtual void* create_render_surface(void* params) = 0;
         virtual void get_vulkan_extensions(std::set<std::string>& extensions) = 0;
     };
-};
+}; // namespace sge

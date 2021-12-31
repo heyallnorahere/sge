@@ -56,9 +56,7 @@ namespace sge {
         bool operator==(const vulkan_physical_device& other) const {
             return this->m_device == other.m_device;
         }
-        bool operator!=(const vulkan_physical_device& other) const {
-            return !(*this == other);
-        }
+        bool operator!=(const vulkan_physical_device& other) const { return !(*this == other); }
 
     private:
         vulkan_physical_device(VkPhysicalDevice device) { this->m_device = device; }
@@ -84,4 +82,4 @@ namespace sge {
         VkDevice m_device;
         vulkan_physical_device m_physical_device;
     };
-}
+} // namespace sge

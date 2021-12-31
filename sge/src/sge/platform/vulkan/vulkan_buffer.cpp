@@ -23,7 +23,7 @@
 #include "sge/renderer/renderer.h"
 namespace sge {
     vulkan_buffer::vulkan_buffer(size_t size, VkBufferUsageFlags buffer_usage,
-        VmaMemoryUsage memory_usage) {
+                                 VmaMemoryUsage memory_usage) {
         this->m_size = size;
         this->m_buffer_usage = buffer_usage;
         this->m_memory_usage = memory_usage;
@@ -31,9 +31,7 @@ namespace sge {
         this->create();
     }
 
-    vulkan_buffer::~vulkan_buffer() {
-        vulkan_allocator::free(this->m_buffer, this->m_allocation);
-    }
+    vulkan_buffer::~vulkan_buffer() { vulkan_allocator::free(this->m_buffer, this->m_allocation); }
 
     void vulkan_buffer::map() {
         if (this->mapped != nullptr) {
@@ -68,17 +66,14 @@ namespace sge {
         auto create_info = vk_init<VkBufferCreateInfo>(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
         create_info.size = this->m_size;
         create_info.usage = this->m_buffer_usage;
-        
+
         auto physical_device = vulkan_context::get().get_device().get_physical_device();
         vulkan_physical_device::queue_family_indices indices;
         VkQueueFlags query = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
         physical_device.query_queue_families(query, indices);
 
-        std::set<uint32_t> index_set = {
-            indices.graphics.value(),
-            indices.compute.value(),
-            indices.transfer.value()
-        };
+        std::set<uint32_t> index_set = { indices.graphics.value(), indices.compute.value(),
+                                         indices.transfer.value() };
         std::vector<uint32_t> queue_families(index_set.begin(), index_set.end());
 
         if (queue_families.size() > 1) {
@@ -94,4 +89,4 @@ namespace sge {
 
         vulkan_allocator::alloc(create_info, alloc_info, this->m_buffer, this->m_allocation);
     }
-}
+} // namespace sge

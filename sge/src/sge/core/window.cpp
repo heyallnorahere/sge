@@ -29,4 +29,4 @@ namespace sge {
         throw std::runtime_error("no implemented platform was selected!");
         return nullptr;
     }
-};
+}; // namespace sge

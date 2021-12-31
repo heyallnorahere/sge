@@ -22,8 +22,8 @@ namespace sge {
     vulkan_command_list::vulkan_command_list(VkCommandPool command_pool) {
         this->m_command_pool = command_pool;
 
-        auto alloc_info = vk_init<VkCommandBufferAllocateInfo>(
-            VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+        auto alloc_info =
+            vk_init<VkCommandBufferAllocateInfo>(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
         alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         alloc_info.commandPool = this->m_command_pool;
         alloc_info.commandBufferCount = 1;
@@ -38,13 +38,11 @@ namespace sge {
         vkFreeCommandBuffers(device, this->m_command_pool, 1, &this->m_command_buffer);
     }
 
-    void vulkan_command_list::reset() {
-        vkResetCommandBuffer(this->m_command_buffer, 0);
-    }
+    void vulkan_command_list::reset() { vkResetCommandBuffer(this->m_command_buffer, 0); }
 
     void vulkan_command_list::begin() {
-        auto begin_info = vk_init<VkCommandBufferBeginInfo>(
-            VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+        auto begin_info =
+            vk_init<VkCommandBufferBeginInfo>(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
         VkResult result = vkBeginCommandBuffer(this->m_command_buffer, &begin_info);
         check_vk_result(result);
     }
@@ -53,4 +51,4 @@ namespace sge {
         VkResult result = vkEndCommandBuffer(this->m_command_buffer);
         check_vk_result(result);
     }
-}
+} // namespace sge

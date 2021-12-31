@@ -44,17 +44,17 @@ namespace sge {
         swapchain& get_swapchain() { return *this->m_swapchain; }
 
     protected:
-        virtual void init_app() { }
-        virtual void shutdown_app() { }
+        virtual void init_app() {}
+        virtual void shutdown_app() {}
 
         layer_stack m_layer_stack;
         std::string m_title;
         ref<window> m_window;
         std::unique_ptr<swapchain> m_swapchain;
         bool m_running, m_minimized;
-        
+
     private:
         bool on_window_resize(window_resize_event& e);
         bool on_window_close(window_close_event& e);
     };
-}
+} // namespace sge

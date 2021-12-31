@@ -60,4 +60,4 @@ namespace sge {
 
         return queue;
     }
-}
+} // namespace sge

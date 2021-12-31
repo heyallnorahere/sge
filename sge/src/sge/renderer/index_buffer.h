@@ -27,4 +27,4 @@ namespace sge {
 
         virtual size_t get_index_count() = 0;
     };
-}
+} // namespace sge

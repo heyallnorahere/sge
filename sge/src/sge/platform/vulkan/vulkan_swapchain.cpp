@@ -68,12 +68,14 @@ namespace sge {
         VkFence fence = this->m_sync_objects[this->m_current_frame].fence;
         static constexpr size_t uint64_max = std::numeric_limits<uint64_t>::max();
         vkWaitForFences(device, 1, &fence, true, uint64_max);
-        
-        while (this->acquire_next_image()) { this->resize(); }
+
+        while (this->acquire_next_image()) {
+            this->resize();
+        }
 
         if (this->m_image_fences[this->m_current_image_index] != nullptr) {
-            vkWaitForFences(device, 1, &this->m_image_fences[this->m_current_image_index],
-                true, uint64_max);
+            vkWaitForFences(device, 1, &this->m_image_fences[this->m_current_image_index], true,
+                            uint64_max);
         }
         this->m_image_fences[this->m_current_image_index] = fence;
 
@@ -86,7 +88,7 @@ namespace sge {
     void vulkan_swapchain::present() {
         vulkan_device& device = vulkan_context::get().get_device();
         auto physical_device = device.get_physical_device();
-        
+
         vulkan_physical_device::queue_family_indices families;
         physical_device.query_queue_families(VK_QUEUE_GRAPHICS_BIT, families);
 
@@ -109,7 +111,7 @@ namespace sge {
             submit_info.pWaitDstStageMask = &wait_stage;
 
             submit_info.signalSemaphoreCount = 1;
-            submit_info.pSignalSemaphores = &sync_objects_.render_finished;            
+            submit_info.pSignalSemaphores = &sync_objects_.render_finished;
 
             VkResult result = vkQueueSubmit(graphics_queue, 1, &submit_info, sync_objects_.fence);
             check_vk_result(result);
@@ -118,7 +120,7 @@ namespace sge {
         auto present_info = vk_init<VkPresentInfoKHR>(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
         present_info.waitSemaphoreCount = 1;
         present_info.pWaitSemaphores = &sync_objects_.render_finished;
-        
+
         present_info.swapchainCount = 1;
         present_info.pSwapchains = &this->m_swapchain;
         present_info.pImageIndices = &this->m_current_image_index;
@@ -166,9 +168,9 @@ namespace sge {
     bool vulkan_swapchain::acquire_next_image() {
         VkDevice device = vulkan_context::get().get_device().get();
         VkSemaphore semaphore = this->m_sync_objects[this->m_current_frame].image_available;
-        VkResult result = vkAcquireNextImageKHR(device, this->m_swapchain,
-            std::numeric_limits<uint64_t>::max(), semaphore, nullptr,
-            &this->m_current_image_index);
+        VkResult result =
+            vkAcquireNextImageKHR(device, this->m_swapchain, std::numeric_limits<uint64_t>::max(),
+                                  semaphore, nullptr, &this->m_current_image_index);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             return true;
@@ -210,8 +212,8 @@ namespace sge {
         dependency.srcAccessMask = 0;
         dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-        auto create_info = vk_init<VkRenderPassCreateInfo>(
-            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
+        auto create_info =
+            vk_init<VkRenderPassCreateInfo>(VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
 
         create_info.attachmentCount = 1;
         create_info.pAttachments = &color_attachment;
@@ -228,13 +230,12 @@ namespace sge {
     }
 
     void vulkan_swapchain::allocate_command_buffers() {
-        auto create_info = vk_init<VkCommandPoolCreateInfo>(
-            VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
+        auto create_info =
+            vk_init<VkCommandPoolCreateInfo>(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
         create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        
+
         VkDevice device = vulkan_context::get().get_device().get();
-        VkResult result = vkCreateCommandPool(device, &create_info,
-            nullptr, &this->m_command_pool);
+        VkResult result = vkCreateCommandPool(device, &create_info, nullptr, &this->m_command_pool);
         check_vk_result(result);
 
         for (size_t i = 0; i < this->m_swapchain_images.size(); i++) {
@@ -246,21 +247,20 @@ namespace sge {
     void vulkan_swapchain::create_sync_objects() {
         VkDevice device = vulkan_context::get().get_device().get();
 
-        auto semaphore_info = vk_init<VkSemaphoreCreateInfo>(
-            VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-        
+        auto semaphore_info =
+            vk_init<VkSemaphoreCreateInfo>(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+
         auto fence_info = vk_init<VkFenceCreateInfo>(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (size_t i = 0; i < max_frames_in_flight; i++) {
             auto& data = this->m_sync_objects[i];
 
-            VkResult result = vkCreateSemaphore(device, &semaphore_info,
-                nullptr, &data.image_available);
+            VkResult result =
+                vkCreateSemaphore(device, &semaphore_info, nullptr, &data.image_available);
             check_vk_result(result);
 
-            result = vkCreateSemaphore(device, &semaphore_info,
-                nullptr, &data.render_finished);
+            result = vkCreateSemaphore(device, &semaphore_info, nullptr, &data.render_finished);
             check_vk_result(result);
 
             result = vkCreateFence(device, &fence_info, nullptr, &data.fence);
@@ -307,7 +307,7 @@ namespace sge {
     }
 
     static VkExtent2D choose_extent(uint32_t width, uint32_t height,
-        const VkSurfaceCapabilitiesKHR& capabilities) {
+                                    const VkSurfaceCapabilitiesKHR& capabilities) {
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
             return capabilities.currentExtent;
         } else {
@@ -322,12 +322,10 @@ namespace sge {
     }
 
     static VkSurfaceFormatKHR choose_format(const std::vector<VkSurfaceFormatKHR>& formats) {
-        static const std::vector<VkFormat> preferred_formats = {
-            VK_FORMAT_B8G8R8A8_UNORM,
-            VK_FORMAT_R8G8B8A8_UNORM,
-            VK_FORMAT_B8G8R8_UNORM,
-            VK_FORMAT_R8G8B8_UNORM
-        };
+        static const std::vector<VkFormat> preferred_formats = { VK_FORMAT_B8G8R8A8_UNORM,
+                                                                 VK_FORMAT_R8G8B8A8_UNORM,
+                                                                 VK_FORMAT_B8G8R8_UNORM,
+                                                                 VK_FORMAT_R8G8B8_UNORM };
         static constexpr VkColorSpaceKHR preferred_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
         if (formats.size() == 1) {
@@ -353,12 +351,9 @@ namespace sge {
         return formats[0];
     }
 
-    static VkPresentModeKHR choose_present_mode(
-        const std::vector<VkPresentModeKHR> present_modes) {
-        static const std::vector<VkPresentModeKHR> preferred_present_modes {
-            VK_PRESENT_MODE_MAILBOX_KHR,
-            VK_PRESENT_MODE_IMMEDIATE_KHR,
-            VK_PRESENT_MODE_FIFO_KHR
+    static VkPresentModeKHR choose_present_mode(const std::vector<VkPresentModeKHR> present_modes) {
+        static const std::vector<VkPresentModeKHR> preferred_present_modes{
+            VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR
         };
 
         for (VkPresentModeKHR preferred_present_mode : preferred_present_modes) {
@@ -384,22 +379,21 @@ namespace sge {
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_device, this->m_surface, &capabilities);
 
         uint32_t image_count = capabilities.minImageCount;
-        if (capabilities.maxImageCount > 0 &&
-            image_count > capabilities.maxImageCount) {
+        if (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) {
             image_count = capabilities.maxImageCount;
         }
 
         VkSurfaceFormatKHR format;
         {
             uint32_t surface_format_count = 0;
-            vkGetPhysicalDeviceSurfaceFormatsKHR(vk_device, this->m_surface,
-                &surface_format_count, nullptr);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(vk_device, this->m_surface, &surface_format_count,
+                                                 nullptr);
 
             std::vector<VkSurfaceFormatKHR> surface_formats;
             if (surface_format_count > 0) {
                 surface_formats.resize(surface_format_count);
                 vkGetPhysicalDeviceSurfaceFormatsKHR(vk_device, this->m_surface,
-                    &surface_format_count, surface_formats.data());
+                                                     &surface_format_count, surface_formats.data());
             }
 
             format = choose_format(surface_formats);
@@ -409,13 +403,13 @@ namespace sge {
         {
             uint32_t present_mode_count = 0;
             vkGetPhysicalDeviceSurfacePresentModesKHR(vk_device, this->m_surface,
-                &present_mode_count, nullptr);
-            
+                                                      &present_mode_count, nullptr);
+
             std::vector<VkPresentModeKHR> present_modes;
             if (present_mode_count > 0) {
                 present_modes.resize(present_mode_count);
-                vkGetPhysicalDeviceSurfacePresentModesKHR(vk_device, this->m_surface,
-                    &present_mode_count, present_modes.data());
+                vkGetPhysicalDeviceSurfacePresentModesKHR(
+                    vk_device, this->m_surface, &present_mode_count, present_modes.data());
             }
 
             present_mode = choose_present_mode(present_modes);
@@ -423,15 +417,15 @@ namespace sge {
 
         {
             std::optional<uint32_t> present_queue;
-            
+
             uint32_t family_count = 0;
             vkGetPhysicalDeviceQueueFamilyProperties(vk_device, &family_count, nullptr);
 
             for (uint32_t i = 0; i < family_count; i++) {
                 VkBool32 presentation_supported = false;
                 vkGetPhysicalDeviceSurfaceSupportKHR(vk_device, i, this->m_surface,
-                    &presentation_supported);
-                
+                                                     &presentation_supported);
+
                 if (presentation_supported) {
                     present_queue = i;
                     break;
@@ -455,9 +449,9 @@ namespace sge {
             height = this->m_window->get_height();
         }
 
-        auto create_info = vk_init<VkSwapchainCreateInfoKHR>(
-            VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
-        
+        auto create_info =
+            vk_init<VkSwapchainCreateInfoKHR>(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
+
         create_info.surface = this->m_surface;
         create_info.minImageCount = image_count;
         create_info.presentMode = present_mode;
@@ -476,11 +470,9 @@ namespace sge {
         create_info.preTransform = capabilities.currentTransform;
         create_info.clipped = true;
         create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        
-        std::vector<uint32_t> queue_family_indices = {
-            indices.graphics.value(),
-            this->m_present_queue
-        };
+
+        std::vector<uint32_t> queue_family_indices = { indices.graphics.value(),
+                                                       this->m_present_queue };
 
         if (indices.graphics != this->m_present_queue) {
             create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -490,8 +482,8 @@ namespace sge {
             create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         }
 
-        VkResult result = vkCreateSwapchainKHR(device.get(), &create_info,
-            nullptr, &this->m_swapchain);
+        VkResult result =
+            vkCreateSwapchainKHR(device.get(), &create_info, nullptr, &this->m_swapchain);
         check_vk_result(result);
     }
 
@@ -510,9 +502,9 @@ namespace sge {
             data.image = images[i];
 
             {
-                auto create_info = vk_init<VkImageViewCreateInfo>(
-                    VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-                
+                auto create_info =
+                    vk_init<VkImageViewCreateInfo>(VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+
                 create_info.image = data.image;
                 create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
                 create_info.format = this->m_image_format;
@@ -533,9 +525,9 @@ namespace sge {
             }
 
             {
-                auto create_info = vk_init<VkFramebufferCreateInfo>(
-                    VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-                
+                auto create_info =
+                    vk_init<VkFramebufferCreateInfo>(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
+
                 create_info.attachmentCount = 1;
                 create_info.pAttachments = &data.view;
                 create_info.renderPass = this->m_render_pass;
@@ -543,10 +535,10 @@ namespace sge {
                 create_info.height = this->m_height;
                 create_info.layers = 1;
 
-                VkResult result = vkCreateFramebuffer(device, &create_info, nullptr,
-                    &data.framebuffer);
+                VkResult result =
+                    vkCreateFramebuffer(device, &create_info, nullptr, &data.framebuffer);
                 check_vk_result(result);
             }
         }
     }
-}
+} // namespace sge

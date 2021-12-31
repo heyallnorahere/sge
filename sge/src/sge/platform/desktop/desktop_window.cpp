@@ -43,7 +43,7 @@ namespace sge {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
         this->m_window = glfwCreateWindow(this->m_data.width, this->m_data.height,
-            this->m_data.title.c_str(), nullptr, nullptr);
+                                          this->m_data.title.c_str(), nullptr, nullptr);
         if (this->m_window == nullptr) {
             throw std::runtime_error("could not create glfw window!");
         }
@@ -60,9 +60,7 @@ namespace sge {
         }
     }
 
-    void desktop_window::on_update() {
-        glfwPollEvents();
-    }
+    void desktop_window::on_update() { glfwPollEvents(); }
 
     void desktop_window::set_event_callback(event_callback_t callback) {
         this->m_data.event_callback = callback;
@@ -74,8 +72,7 @@ namespace sge {
             auto instance = (VkInstance)params;
 
             VkSurfaceKHR surface;
-            VkResult result = glfwCreateWindowSurface(
-                instance, this->m_window, nullptr, &surface);
+            VkResult result = glfwCreateWindowSurface(instance, this->m_window, nullptr, &surface);
             check_vk_result(result);
 
             return surface;
@@ -99,16 +96,17 @@ namespace sge {
     void desktop_window::setup_event_callbacks() {
         glfwSetWindowUserPointer(this->m_window, &this->m_data);
 
-        glfwSetWindowSizeCallback(this->m_window, [](GLFWwindow* window, int32_t width, int32_t height) {
-            window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
-            wd->width = (uint32_t)width;
-            wd->height = (uint32_t)height;
+        glfwSetWindowSizeCallback(
+            this->m_window, [](GLFWwindow* window, int32_t width, int32_t height) {
+                window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
+                wd->width = (uint32_t)width;
+                wd->height = (uint32_t)height;
 
-            if (wd->event_callback != nullptr) {
-                window_resize_event resize_event(wd->width, wd->height);
-                wd->event_callback(resize_event);
-            }
-        });
+                if (wd->event_callback != nullptr) {
+                    window_resize_event resize_event(wd->width, wd->height);
+                    wd->event_callback(resize_event);
+                }
+            });
 
         glfwSetWindowCloseCallback(this->m_window, [](GLFWwindow* window) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
@@ -119,8 +117,8 @@ namespace sge {
             }
         });
 
-        glfwSetKeyCallback(this->m_window,
-            [](GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods) {
+        glfwSetKeyCallback(this->m_window, [](GLFWwindow* window, int32_t key, int32_t scancode,
+                                              int32_t action, int32_t mods) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
 
             if (wd->event_callback != nullptr) {
@@ -146,4 +144,4 @@ namespace sge {
             }
         });
     }
-}
+} // namespace sge

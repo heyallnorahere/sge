@@ -30,7 +30,7 @@ namespace sge {
         uint32_t get_vulkan_version();
         VkInstance get_instance();
         vulkan_device& get_device();
-        
+
         const std::set<std::string>& get_instance_extensions();
         const std::set<std::string>& get_device_extensions();
         const std::set<std::string>& get_layers();
@@ -43,4 +43,4 @@ namespace sge {
 
         vk_data* m_data;
     };
-}
+} // namespace sge

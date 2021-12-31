@@ -32,4 +32,4 @@ namespace sge {
         VkCommandPool m_command_pool;
         VkCommandBuffer m_command_buffer;
     };
-}
+} // namespace sge

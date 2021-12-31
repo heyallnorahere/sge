@@ -17,11 +17,7 @@
 #pragma once
 #include "sge/renderer/command_list.h"
 namespace sge {
-    enum class command_list_type {
-        graphics,
-        compute,
-        transfer
-    };
+    enum class command_list_type { graphics, compute, transfer };
     class command_queue : public ref_counted {
     public:
         static ref<command_queue> create(command_list_type type);
@@ -33,4 +29,4 @@ namespace sge {
 
         virtual command_list_type get_type() = 0;
     };
-}
+} // namespace sge
