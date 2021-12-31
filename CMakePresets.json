@@ -20,5 +20,12 @@
                 "dev": false
             }
         }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "jobs": 8
+        }
     ]
 }

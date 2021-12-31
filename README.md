@@ -7,5 +7,5 @@ Simple game engine in C++17.
 cmake --preset default
 
 # build
-cmake --build build -j 8
+cmake --build --preset default
 ```
