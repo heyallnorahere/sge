@@ -15,6 +15,7 @@
 */
 
 #pragma once
+#include "sge/platform/vulkan/vulkan_device.h"
 namespace sge {
     struct vk_data;
     class vulkan_context {

@@ -193,6 +193,29 @@ namespace sge {
         check_vk_result(result);
     }
 
+    static vulkan_physical_device choose_physical_device() {
+        auto candidates = vulkan_physical_device::enumerate();
+        if (candidates.empty()) {
+            throw std::runtime_error("no vulkan-supporting device was found!");
+        }
+        vulkan_physical_device selected;
+
+        for (const auto& candidate : candidates) {
+            VkPhysicalDeviceProperties properties;
+            candidate.get_properties(properties);
+            // good enough
+            if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+                selected = candidate;
+                break;
+            }
+        }
+
+        if (!selected) {
+            selected = candidates[0];
+        }
+        return selected;
+    }
+
     void vulkan_context::init(uint32_t version) {
         this->m_data = new vk_data;
         this->m_data->vulkan_version = version;
@@ -200,6 +223,23 @@ namespace sge {
         choose_extensions(this->m_data);
         create_instance(this->m_data);
         create_debug_messenger(this->m_data);
+
+        {
+            auto physical_device = choose_physical_device();
+
+            VkPhysicalDeviceProperties properties;
+            physical_device.get_properties(properties);
+            
+            uint32_t major = VK_VERSION_MAJOR(properties.apiVersion);
+            uint32_t minor = VK_VERSION_MINOR(properties.apiVersion);
+            uint32_t patch = VK_VERSION_PATCH(properties.apiVersion);
+
+            spdlog::info("selected physical device:\n\tname: {0}"
+                "\n\tlatest available vulkan version: {1}.{2}.{3}",
+                properties.deviceName, major, minor, patch);
+            
+            // todo: create logical device
+        }
     }
 
     void vulkan_context::shutdown() {

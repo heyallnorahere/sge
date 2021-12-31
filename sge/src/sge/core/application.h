@@ -45,13 +45,13 @@ namespace sge {
         virtual void init_app() { }
         virtual void shutdown_app() { }
 
-    private:
-        bool on_window_resize(window_resize_event& e);
-        bool on_window_close(window_close_event& e);
-
         layer_stack m_layer_stack;
         std::string m_title;
         std::unique_ptr<window> m_window;
         bool m_running, m_minimized;
+        
+    private:
+        bool on_window_resize(window_resize_event& e);
+        bool on_window_close(window_close_event& e);
     };
 }
