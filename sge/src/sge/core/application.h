@@ -31,6 +31,9 @@ namespace sge {
         void push_layer(layer* _layer) { this->m_layer_stack.push_layer(_layer); }
         void push_overlay(layer* overlay) { this->m_layer_stack.push_overlay(overlay); }
 
+        void init();
+        void shutdown();
+        void run();
         void quit() { this->m_running = false; }
 
         void on_event(event& e);
@@ -43,10 +46,6 @@ namespace sge {
         virtual void shutdown_app() { }
 
     private:
-        void init();
-        void shutdown();
-        void run();
-
         bool on_window_resize(window_resize_event& e);
         bool on_window_close(window_close_event& e);
 
@@ -54,7 +53,5 @@ namespace sge {
         std::string m_title;
         std::unique_ptr<window> m_window;
         bool m_running, m_minimized;
-
-        friend int32_t ::main(int32_t argc, const char** argv);
     };
 }

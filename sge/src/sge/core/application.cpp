@@ -66,7 +66,11 @@ namespace sge {
     }
 
     void application::run() {
+        if (this->m_running) {
+            throw std::runtime_error("cannot recursively call run()");
+        }
         this->m_running = true;
+        
         while (this->m_running) {
             // todo: timestep
 
