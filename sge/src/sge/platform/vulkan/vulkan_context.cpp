@@ -18,6 +18,7 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_context.h"
 #include "sge/core/application.h"
+#include "sge/platform/vulkan/vulkan_allocator.h"
 namespace sge {
     static std::unique_ptr<vulkan_context> vk_context_instance;
 
@@ -247,9 +248,13 @@ namespace sge {
             
             this->m_data->device = std::make_unique<vulkan_device>(physical_device);
         }
+
+        vulkan_allocator::init();
     }
 
     void vulkan_context::shutdown() {
+        vulkan_allocator::shutdown();
+
         this->m_data->device.reset();
 
         if (this->m_data->debug_messenger != nullptr) {

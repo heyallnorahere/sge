@@ -20,7 +20,10 @@
 #include "sge/platform/vulkan/vulkan_renderer.h"
 #endif
 namespace sge {
-    static std::unique_ptr<renderer_api> renderer_api_;
+    static struct {
+        std::unique_ptr<renderer_api> api;
+        std::map<command_list_type, ref<command_queue>> queues;
+    } renderer_data;
 
     void renderer::init() {
         {
@@ -32,14 +35,29 @@ namespace sge {
             }
 #endif
 
-            renderer_api_ = std::unique_ptr<renderer_api>(api_instance);
+            renderer_data.api = std::unique_ptr<renderer_api>(api_instance);
         }
 
-        renderer_api_->init();
+        renderer_data.api->init();
     }
 
     void renderer::shutdown() {
-        renderer_api_->shutdown();
-        renderer_api_.reset();
+        renderer_data.queues.clear();
+
+        renderer_data.api->shutdown();
+        renderer_data.api.reset();
+    }
+
+    ref<command_queue> renderer::get_queue(command_list_type type) {
+        ref<command_queue> queue;
+
+        if (renderer_data.queues.find(type) == renderer_data.queues.end()) {
+            queue = command_queue::create(type);
+            renderer_data.queues.insert(std::make_pair(type, queue));
+        } else {
+            queue = renderer_data.queues[type];
+        }
+
+        return queue;
     }
 }

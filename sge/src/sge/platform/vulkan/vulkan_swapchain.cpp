@@ -78,6 +78,9 @@ namespace sge {
         this->m_image_fences[this->m_current_image_index] = fence;
 
         vkResetFences(device, 1, &fence);
+
+        auto& cmdlist = *this->m_command_buffers[this->m_current_image_index];
+        cmdlist.reset();
     }
 
     void vulkan_swapchain::present() {
@@ -92,8 +95,8 @@ namespace sge {
         const auto& sync_objects_ = this->m_sync_objects[this->m_current_frame];
 
         {
-            auto cmdlist = this->m_command_buffers[this->m_current_image_index];
-            VkCommandBuffer cmdbuffer = cmdlist->get();
+            auto& cmdlist = *this->m_command_buffers[this->m_current_image_index];
+            VkCommandBuffer cmdbuffer = cmdlist.get();
 
             static VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             auto submit_info = vk_init<VkSubmitInfo>(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -132,9 +135,9 @@ namespace sge {
         this->m_current_frame %= max_frames_in_flight;
     }
 
-    void vulkan_swapchain::begin(ref<command_list> cmdlist, const glm::vec4& clear_color) {
-        auto vk_cmdlist = cmdlist.as<vulkan_command_list>();
-        VkCommandBuffer cmdbuffer = vk_cmdlist->get();
+    void vulkan_swapchain::begin(command_list& cmdlist, const glm::vec4& clear_color) {
+        auto& vk_cmdlist = (vulkan_command_list&)cmdlist;
+        VkCommandBuffer cmdbuffer = vk_cmdlist.get();
 
         auto begin_info = vk_init<VkRenderPassBeginInfo>(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
 
@@ -154,9 +157,9 @@ namespace sge {
         vkCmdBeginRenderPass(cmdbuffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
     }
 
-    void vulkan_swapchain::end(ref<command_list> cmdlist) {
-        auto vk_cmdlist = cmdlist.as<vulkan_command_list>();
-        VkCommandBuffer cmdbuffer = vk_cmdlist->get();
+    void vulkan_swapchain::end(command_list& cmdlist) {
+        auto& vk_cmdlist = (vulkan_command_list&)cmdlist;
+        VkCommandBuffer cmdbuffer = vk_cmdlist.get();
         vkCmdEndRenderPass(cmdbuffer);
     }
 
@@ -235,8 +238,8 @@ namespace sge {
         check_vk_result(result);
 
         for (size_t i = 0; i < this->m_swapchain_images.size(); i++) {
-            auto cmdlist = ref<vulkan_command_list>::create(this->m_command_pool);
-            this->m_command_buffers.push_back(cmdlist);
+            auto cmdlist = std::make_unique<vulkan_command_list>(this->m_command_pool);
+            this->m_command_buffers.push_back(std::move(cmdlist));
         }
     }
 
@@ -274,7 +277,7 @@ namespace sge {
         VkQueue queue = device.get_queue(indices.graphics.value());
         vkQueueWaitIdle(queue);
 
-        for (auto cmdlist : this->m_command_buffers) {
+        for (const auto& cmdlist : this->m_command_buffers) {
             cmdlist->reset();
         }
 

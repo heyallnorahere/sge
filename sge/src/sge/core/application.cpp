@@ -90,13 +90,13 @@ namespace sge {
 
             {
                 size_t current_image = this->m_swapchain->get_current_image_index();
-                auto cmdlist = this->m_swapchain->get_command_list(current_image);
+                auto& cmdlist = this->m_swapchain->get_command_list(current_image);
                 
-                cmdlist->begin();
+                cmdlist.begin();
                 this->m_swapchain->begin(cmdlist, glm::vec4(1.f, 0.f, 1.f, 1.f));
 
                 this->m_swapchain->end(cmdlist);
-                cmdlist->end();
+                cmdlist.end();
             }
 
             this->m_swapchain->present();

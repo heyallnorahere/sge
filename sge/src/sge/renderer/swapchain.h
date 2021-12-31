@@ -29,14 +29,14 @@ namespace sge {
         virtual void new_frame() = 0;
         virtual void present() = 0;
 
-        virtual void begin(ref<command_list> cmdlist, const glm::vec4& clear_color) = 0;
-        virtual void end(ref<command_list> cmdlist) = 0;
+        virtual void begin(command_list& cmdlist, const glm::vec4& clear_color) = 0;
+        virtual void end(command_list& cmdlist) = 0;
 
         virtual size_t get_image_count() = 0;
         virtual uint32_t get_width() = 0;
         virtual uint32_t get_height() = 0;
 
         virtual size_t get_current_image_index() = 0;
-        virtual ref<command_list> get_command_list(size_t index) = 0;
+        virtual command_list& get_command_list(size_t index) = 0;
     };
 }

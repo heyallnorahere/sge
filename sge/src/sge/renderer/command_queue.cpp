@@ -14,24 +14,18 @@
    limitations under the License.
 */
 
-#pragma once
+#include "sgepch.h"
 #include "sge/renderer/command_queue.h"
-#include "sge/core/window.h"
+#ifdef SGE_USE_VULKAN
+#include "sge/platform/vulkan/vulkan_base.h"
+#include "sge/platform/vulkan/vulkan_command_queue.h"
+#endif
 namespace sge {
-    class renderer_api {
-    public:
-        virtual ~renderer_api() = default;
+    ref<command_queue> command_queue::create(command_list_type type) {
+#ifdef SGE_USE_VULKAN
+        return ref<vulkan_command_queue>::create(type);
+#endif
 
-        virtual void init() = 0;
-        virtual void shutdown() = 0;
-    };
-    class renderer {
-    public:
-        renderer() = delete;
-
-        static void init();
-        static void shutdown();
-
-        static ref<command_queue> get_queue(command_list_type type);
-    };
+        return nullptr;
+    }
 }

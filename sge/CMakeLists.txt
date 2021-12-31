@@ -33,10 +33,9 @@ elseif(UNIX)
 endif()
 
 # renderer api
-find_package(Vulkan)
 if(Vulkan_FOUND)
     list(APPEND SGE_INCLUDES ${Vulkan_INCLUDE_DIR})
-    list(APPEND SGE_LIBS ${Vulkan_LIBRARY})
+    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator)
     list(APPEND SGE_DEFINES SGE_USE_VULKAN)
     list(APPEND ENABLED_PLATFORMS vulkan)
 endif()

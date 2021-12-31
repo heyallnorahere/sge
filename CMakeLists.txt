@@ -8,6 +8,7 @@ project(sge)
 set(SGE_DESKTOP $<PLATFORM_ID:Windows,Linux,Darwin>)
 
 # dependencies
+find_package(Vulkan)
 add_subdirectory("vendor")
 
 # my code

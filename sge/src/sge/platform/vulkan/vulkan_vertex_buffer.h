@@ -15,23 +15,21 @@
 */
 
 #pragma once
-#include "sge/renderer/command_queue.h"
-#include "sge/core/window.h"
+#include "sge/platform/vulkan/vulkan_buffer.h"
+#include "sge/renderer/vertex_buffer.h"
 namespace sge {
-    class renderer_api {
+    class vulkan_vertex_buffer : public vertex_buffer {
     public:
-        virtual ~renderer_api() = default;
+        vulkan_vertex_buffer(const void* data, size_t stride, size_t count);
+        virtual ~vulkan_vertex_buffer() override = default;
 
-        virtual void init() = 0;
-        virtual void shutdown() = 0;
-    };
-    class renderer {
-    public:
-        renderer() = delete;
+        virtual size_t get_vertex_stride() override { return this->m_stride; }
+        virtual size_t get_vertex_count() override { return this->m_count; }
 
-        static void init();
-        static void shutdown();
+        ref<vulkan_buffer> get() { return this->m_buffer; }
 
-        static ref<command_queue> get_queue(command_list_type type);
+    private:
+        size_t m_stride, m_count;
+        ref<vulkan_buffer> m_buffer;
     };
 }

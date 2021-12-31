@@ -14,24 +14,18 @@
    limitations under the License.
 */
 
-#pragma once
-#include "sge/renderer/command_queue.h"
-#include "sge/core/window.h"
+#include "sgepch.h"
+#include "sge/renderer/vertex_buffer.h"
+#ifdef SGE_USE_VULKAN
+#include "sge/platform/vulkan/vulkan_base.h"
+#include "sge/platform/vulkan/vulkan_vertex_buffer.h"
+#endif
 namespace sge {
-    class renderer_api {
-    public:
-        virtual ~renderer_api() = default;
+    ref<vertex_buffer> vertex_buffer::create(const void* data, size_t stride, size_t count) {
+#ifdef SGE_USE_VULKAN
+        return ref<vulkan_vertex_buffer>::create(data, stride, count);
+#endif
 
-        virtual void init() = 0;
-        virtual void shutdown() = 0;
-    };
-    class renderer {
-    public:
-        renderer() = delete;
-
-        static void init();
-        static void shutdown();
-
-        static ref<command_queue> get_queue(command_list_type type);
-    };
+        return nullptr;
+    }
 }

@@ -15,23 +15,22 @@
 */
 
 #pragma once
-#include "sge/renderer/command_queue.h"
-#include "sge/core/window.h"
+#include "sge/renderer/command_list.h"
 namespace sge {
-    class renderer_api {
-    public:
-        virtual ~renderer_api() = default;
-
-        virtual void init() = 0;
-        virtual void shutdown() = 0;
+    enum class command_list_type {
+        graphics,
+        compute,
+        transfer
     };
-    class renderer {
+    class command_queue : public ref_counted {
     public:
-        renderer() = delete;
+        static ref<command_queue> create(command_list_type type);
 
-        static void init();
-        static void shutdown();
+        virtual ~command_queue() = default;
 
-        static ref<command_queue> get_queue(command_list_type type);
+        virtual command_list& get() = 0;
+        virtual void submit(command_list& cmdlist, bool wait = false) = 0;
+
+        virtual command_list_type get_type() = 0;
     };
 }

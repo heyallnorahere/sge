@@ -15,23 +15,19 @@
 */
 
 #pragma once
-#include "sge/renderer/command_queue.h"
-#include "sge/core/window.h"
 namespace sge {
-    class renderer_api {
+    class vertex_buffer : public ref_counted {
     public:
-        virtual ~renderer_api() = default;
+        template<typename T>
+        static ref<vertex_buffer> create(const std::vector<T>& data) {
+            return create(data.data(), sizeof(T), data.size());
+        }
+        static ref<vertex_buffer> create(const void* data, size_t stride, size_t count);
 
-        virtual void init() = 0;
-        virtual void shutdown() = 0;
-    };
-    class renderer {
-    public:
-        renderer() = delete;
+        virtual ~vertex_buffer() = default;
 
-        static void init();
-        static void shutdown();
-
-        static ref<command_queue> get_queue(command_list_type type);
+        virtual size_t get_vertex_stride() = 0;
+        virtual size_t get_vertex_count() = 0;
+        size_t get_total_size() { return this->get_vertex_count() * this->get_vertex_stride(); }
     };
 }

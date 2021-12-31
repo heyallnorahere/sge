@@ -16,7 +16,7 @@
 
 #pragma once
 namespace sge {
-    class command_list : public ref_counted {
+    class command_list {
     public:
         virtual ~command_list() = default;
 

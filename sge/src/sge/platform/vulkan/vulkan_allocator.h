@@ -15,23 +15,22 @@
 */
 
 #pragma once
-#include "sge/renderer/command_queue.h"
-#include "sge/core/window.h"
 namespace sge {
-    class renderer_api {
+    class vulkan_allocator {
     public:
-        virtual ~renderer_api() = default;
-
-        virtual void init() = 0;
-        virtual void shutdown() = 0;
-    };
-    class renderer {
-    public:
-        renderer() = delete;
-
         static void init();
         static void shutdown();
 
-        static ref<command_queue> get_queue(command_list_type type);
+        vulkan_allocator() = delete;
+
+        // buffers
+        static void alloc(const VkBufferCreateInfo& create_info,
+            const VmaAllocationCreateInfo& alloc_info, VkBuffer& buffer,
+            VmaAllocation& allocation);
+        static void free(VkBuffer buffer, VmaAllocation allocation);
+
+        // mapping memory
+        static void* map(VmaAllocation allocation);
+        static void unmap(VmaAllocation allocation);
     };
 }

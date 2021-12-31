@@ -29,16 +29,16 @@ namespace sge {
         virtual void new_frame() override;
         virtual void present() override;
 
-        virtual void begin(ref<command_list> cmdlist, const glm::vec4& clear_color) override;
-        virtual void end(ref<command_list> cmdlist) override;
+        virtual void begin(command_list& cmdlist, const glm::vec4& clear_color) override;
+        virtual void end(command_list& cmdlist) override;
 
         virtual size_t get_image_count() override { return this->m_swapchain_images.size(); }
         virtual uint32_t get_width() override { return this->m_width; }
         virtual uint32_t get_height() override { return this->m_height; }
     
         virtual size_t get_current_image_index() override { return this->m_current_image_index; }
-        virtual ref<command_list> get_command_list(size_t index) override {
-            return this->m_command_buffers[index];
+        virtual command_list& get_command_list(size_t index) override {
+            return *this->m_command_buffers[index];
         }
 
     private:
@@ -85,7 +85,7 @@ namespace sge {
         std::vector<VkFence> m_image_fences;
 
         VkCommandPool m_command_pool;
-        std::vector<ref<vulkan_command_list>> m_command_buffers;
+        std::vector<std::unique_ptr<vulkan_command_list>> m_command_buffers;
 
         std::optional<glm::uvec2> m_new_size;
     };

@@ -20,6 +20,22 @@ namespace sge {
     public:
         struct queue_family_indices {
             std::optional<uint32_t> graphics, compute, transfer;
+
+            std::map<VkQueueFlagBits, uint32_t> map() {
+                std::map<VkQueueFlagBits, uint32_t> result;
+
+                if (this->graphics.has_value()) {
+                    result.insert(std::make_pair(VK_QUEUE_GRAPHICS_BIT, this->graphics.value()));
+                }
+                if (this->compute.has_value()) {
+                    result.insert(std::make_pair(VK_QUEUE_COMPUTE_BIT, this->compute.value()));
+                }
+                if (this->transfer.has_value()) {
+                    result.insert(std::make_pair(VK_QUEUE_TRANSFER_BIT, this->transfer.value()));
+                }
+
+                return result;
+            }
         };
 
         static std::vector<vulkan_physical_device> enumerate();

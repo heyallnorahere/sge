@@ -16,22 +16,26 @@
 
 #pragma once
 #include "sge/renderer/command_queue.h"
-#include "sge/core/window.h"
 namespace sge {
-    class renderer_api {
+    class vulkan_command_queue : public command_queue {
     public:
-        virtual ~renderer_api() = default;
+        vulkan_command_queue(command_list_type type);
+        virtual ~vulkan_command_queue() override;
 
-        virtual void init() = 0;
-        virtual void shutdown() = 0;
-    };
-    class renderer {
-    public:
-        renderer() = delete;
+        virtual command_list& get() override;
+        virtual void submit(command_list& cmdlist, bool wait) override;
 
-        static void init();
-        static void shutdown();
+        virtual command_list_type get_type() override { return this->m_type; }
 
-        static ref<command_queue> get_queue(command_list_type type);
+    private:
+        struct stored_command_list {
+            std::unique_ptr<command_list> cmdlist;
+            VkFence fence;
+        };
+
+        command_list_type m_type;
+        VkQueue m_queue;
+        VkCommandPool m_command_pool;
+        std::queue<stored_command_list> m_command_lists;
     };
 }

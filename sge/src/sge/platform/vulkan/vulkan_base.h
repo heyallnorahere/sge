@@ -16,6 +16,7 @@
 
 #pragma once
 #include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 namespace sge {
     inline std::string vk_result_name(VkResult result) {
         switch (result) {
