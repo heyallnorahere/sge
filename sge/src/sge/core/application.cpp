@@ -55,7 +55,7 @@ namespace sge {
         this->m_window->set_event_callback(SGE_BIND_EVENT_FUNC(application::on_event));
 
         renderer::init();
-        this->m_window->create_swapchain();
+        this->m_swapchain = swapchain::create(this->m_window);
 
         this->init_app();
     }
@@ -65,8 +65,10 @@ namespace sge {
 
         this->shutdown_app();
 
-        this->m_window.reset();
+        this->m_swapchain.reset();
         renderer::shutdown();
+
+        this->m_window.reset();
     }
 
     void application::run() {
@@ -76,8 +78,7 @@ namespace sge {
         this->m_running = true;
         
         while (this->m_running) {
-            swapchain& swap_chain = this->m_window->get_swapchain();
-            swap_chain.new_frame();
+            this->m_swapchain->new_frame();
 
             // todo: timestep
 
@@ -87,7 +88,18 @@ namespace sge {
                 }
             }
 
-            swap_chain.present();
+            {
+                size_t current_image = this->m_swapchain->get_current_image_index();
+                auto cmdlist = this->m_swapchain->get_command_list(current_image);
+                
+                cmdlist->begin();
+                this->m_swapchain->begin(cmdlist, glm::vec4(1.f, 0.f, 1.f, 1.f));
+
+                this->m_swapchain->end(cmdlist);
+                cmdlist->end();
+            }
+
+            this->m_swapchain->present();
             this->m_window->on_update();
         }
     }
@@ -98,9 +110,12 @@ namespace sge {
     }
 
     bool application::on_window_resize(window_resize_event& e) {
-        this->m_minimized = (e.get_width() == 0 || e.get_height() == 0);
+        uint32_t width = e.get_width();
+        uint32_t height = e.get_height();
+
+        this->m_minimized = (width == 0 || height == 0);
         if (!this->m_minimized) {
-            // todo: resize swapchain
+            this->m_swapchain->on_resize(width, height);
         }
 
         return false;

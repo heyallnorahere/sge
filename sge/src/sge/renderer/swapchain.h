@@ -16,9 +16,12 @@
 
 #pragma once
 #include "sge/renderer/command_list.h"
+#include "sge/core/window.h"
 namespace sge {
     class swapchain {
     public:
+        static std::unique_ptr<swapchain> create(ref<window> _window);
+
         virtual ~swapchain() = default;
 
         virtual void on_resize(uint32_t new_width, uint32_t new_height) = 0;

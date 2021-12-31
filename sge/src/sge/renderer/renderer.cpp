@@ -32,9 +32,6 @@ namespace sge {
             }
 #endif
 
-            if (api_instance == nullptr) {
-                throw std::runtime_error("no renderer api has been implemented!");
-            }
             renderer_api_ = std::unique_ptr<renderer_api>(api_instance);
         }
 
@@ -44,9 +41,5 @@ namespace sge {
     void renderer::shutdown() {
         renderer_api_->shutdown();
         renderer_api_.reset();
-    }
-
-    swapchain* renderer::create_swapchain(window& _window) {
-        return renderer_api_->create_swapchain(_window);
     }
 }

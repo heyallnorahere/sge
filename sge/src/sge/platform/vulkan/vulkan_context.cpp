@@ -52,7 +52,7 @@ namespace sge {
 
     static void choose_extensions(vk_data* data) {
         ref<application> app = application::get();
-        app->get_window().get_vulkan_extensions(data->instance_extensions);
+        app->get_window()->get_vulkan_extensions(data->instance_extensions);
 
         data->instance_extensions.insert("VK_KHR_get_physical_device_properties2");
         data->device_extensions.insert("VK_KHR_swapchain");

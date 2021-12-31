@@ -19,6 +19,7 @@
 #include "sge/core/layer_stack.h"
 #include "sge/events/event.h"
 #include "sge/events/window_events.h"
+#include "sge/renderer/swapchain.h"
 int32_t main(int32_t argc, const char** argv);
 namespace sge {
     class application : public ref_counted {
@@ -39,7 +40,8 @@ namespace sge {
         void on_event(event& e);
 
         const std::string& get_title() { return this->m_title; }
-        window& get_window() { return *this->m_window; }
+        ref<window> get_window() { return this->m_window; }
+        swapchain& get_swapchain() { return *this->m_swapchain; }
 
     protected:
         virtual void init_app() { }
@@ -47,7 +49,8 @@ namespace sge {
 
         layer_stack m_layer_stack;
         std::string m_title;
-        std::unique_ptr<window> m_window;
+        ref<window> m_window;
+        std::unique_ptr<swapchain> m_swapchain;
         bool m_running, m_minimized;
         
     private:

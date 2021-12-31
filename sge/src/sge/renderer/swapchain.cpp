@@ -15,18 +15,21 @@
 */
 
 #include "sgepch.h"
-#include "sge/core/window.h"
-#include "sge/renderer/renderer.h"
-#ifdef SGE_PLATFORM_DESKTOP
-#include "sge/platform/desktop/desktop_window.h"
+#include "sge/renderer/swapchain.h"
+#ifdef SGE_USE_VULKAN
+#include "sge/platform/vulkan/vulkan_base.h"
+#include "sge/platform/vulkan/vulkan_swapchain.h"
 #endif
 namespace sge {
-    ref<window> window::create(const std::string& title, uint32_t width, uint32_t height) {
-#ifdef SGE_PLATFORM_DESKTOP
-        return ref<desktop_window>::create(title, width, height);
+    std::unique_ptr<swapchain> swapchain::create(ref<window> _window) {
+        swapchain* instance = nullptr;
+
+#ifdef SGE_USE_VULKAN
+        if (instance == nullptr) {
+            instance = new vulkan_swapchain(_window);
+        }
 #endif
 
-        throw std::runtime_error("no implemented platform was selected!");
-        return nullptr;
+        return std::unique_ptr<swapchain>(instance);
     }
-};
+}

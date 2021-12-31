@@ -20,10 +20,12 @@ namespace sge {
     inline std::string vk_result_name(VkResult result) {
         switch (result) {
             // todo: vulkan error codes
+        case VK_ERROR_DEVICE_LOST:
+            return "VK_ERROR_DEVICE_LOST";
         case VK_SUCCESS:
             return "VK_SUCCESS";
         default:
-            return "unknown";
+            return "unknown/unimplemented";
         }
     }
     inline void check_vk_result(VkResult result) {

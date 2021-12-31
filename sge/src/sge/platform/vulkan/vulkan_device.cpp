@@ -86,6 +86,7 @@ namespace sge {
     }
 
     vulkan_device::~vulkan_device() {
+        vkDeviceWaitIdle(this->m_device);
         vkDestroyDevice(this->m_device, nullptr);
     }
 
@@ -183,6 +184,10 @@ namespace sge {
         auto create_info = vk_init<VkDeviceCreateInfo>(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
         create_info.pQueueCreateInfos = queue_create_info.data();
         create_info.queueCreateInfoCount = queue_create_info.size();
+
+        VkPhysicalDeviceFeatures features;
+        this->m_physical_device.get_features(features);
+        create_info.pEnabledFeatures = &features;
         
         if (!device_extensions.empty()) {
             create_info.ppEnabledExtensionNames = device_extensions.data();

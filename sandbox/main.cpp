@@ -49,8 +49,15 @@ namespace sandbox {
     
     protected:
         virtual void init_app() override {
-            this->push_layer(new sandbox_layer);
+            this->m_layer = new sandbox_layer;
+            this->push_layer(this->m_layer);
         }
+        
+        virtual void shutdown_app() override {
+            this->m_layer_stack.pop_layer(this->m_layer);
+        }
+
+        sandbox_layer* m_layer;
     };
 }
 

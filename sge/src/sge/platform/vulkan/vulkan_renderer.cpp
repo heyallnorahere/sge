@@ -18,7 +18,6 @@
 #include "sge/platform/vulkan/vulkan_renderer.h"
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_context.h"
-#include "sge/platform/vulkan/vulkan_swapchain.h"
 namespace sge {
     void vulkan_renderer::init() {
         vulkan_context::create(VK_API_VERSION_1_1);
@@ -26,9 +25,5 @@ namespace sge {
 
     void vulkan_renderer::shutdown() {
         vulkan_context::destroy();
-    }
-
-    swapchain* vulkan_renderer::create_swapchain(window& _window) {
-        return new vulkan_swapchain(_window);
     }
 }

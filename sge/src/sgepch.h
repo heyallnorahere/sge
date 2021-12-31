@@ -25,6 +25,7 @@ namespace fs = std::experimental::filesystem;
 #endif
 #include <sstream>
 #include <vector>
+#include <array>
 #include <cstdint>
 #include <stddef.h>
 #include <fstream>

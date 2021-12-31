@@ -21,7 +21,7 @@
 namespace sge {
     class vulkan_swapchain : public swapchain {
     public:
-        vulkan_swapchain(window& _window);
+        vulkan_swapchain(ref<window> _window);
         virtual ~vulkan_swapchain() override;
 
         virtual void on_resize(uint32_t new_width, uint32_t new_height) override;
@@ -43,24 +43,27 @@ namespace sge {
 
     private:
         bool acquire_next_image();
-        bool present_queue(VkQueue queue, const VkPresentInfoKHR& present_info);
 
         void create_render_pass();
         void allocate_command_buffers();
         void create_sync_objects();
 
         void resize();
-        void create();
+        void create(bool render_pass);
         void destroy();
 
         void create_swapchain();
         void acquire_images();
+
+        static constexpr size_t max_frames_in_flight = 2;
 
         struct swapchain_image {
             VkImage image;
             VkImageView view;
             VkFramebuffer framebuffer;
         };
+
+        ref<window> m_window;
 
         uint32_t m_width, m_height;
         VkSurfaceKHR m_surface;
@@ -72,12 +75,14 @@ namespace sge {
         std::vector<swapchain_image> m_swapchain_images;
         uint32_t m_current_image_index;
 
-        struct {
+        struct sync_objects {
             VkSemaphore image_available;
             VkSemaphore render_finished;
-        } m_semphores;
-        std::vector<VkFence> m_fences;
-        VkSubmitInfo m_submit_info;
+            VkFence fence;
+        };
+        std::array<sync_objects, max_frames_in_flight> m_sync_objects;
+        size_t m_current_frame;
+        std::vector<VkFence> m_image_fences;
 
         VkCommandPool m_command_pool;
         std::vector<ref<vulkan_command_list>> m_command_buffers;
