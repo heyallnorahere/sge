@@ -35,8 +35,10 @@ namespace sge {
     void application::on_event(event& e) {
         event_dispatcher dispatcher(e);
 
-        dispatcher.dispatch<window_close_event>(SGE_BIND_EVENT_FUNC(application::on_window_close));
-        dispatcher.dispatch<window_resize_event>(SGE_BIND_EVENT_FUNC(application::on_window_resize));
+        dispatcher.dispatch<window_close_event>(
+            SGE_BIND_EVENT_FUNC(application::on_window_close));
+        dispatcher.dispatch<window_resize_event>(
+            SGE_BIND_EVENT_FUNC(application::on_window_resize));
 
         for (auto& _layer : this->m_layer_stack) {
             if (e.handled) {
