@@ -32,6 +32,8 @@ namespace sge {
         virtual void set_event_callback(event_callback_t callback) override;
 
         virtual void* get_native_window() override { return this->m_window; }
+        virtual void* create_render_surface(void* params) override;
+        virtual void get_vulkan_extensions(std::set<std::string>& extensions) override;
     
     private:
         void setup_event_callbacks();

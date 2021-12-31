@@ -33,5 +33,7 @@ namespace sge {
         virtual void set_event_callback(event_callback_t callback) = 0;
 
         virtual void* get_native_window() = 0;
+        virtual void* create_render_surface(void* params) = 0;
+        virtual void get_vulkan_extensions(std::set<std::string>& extensions) = 0;
     };
 };

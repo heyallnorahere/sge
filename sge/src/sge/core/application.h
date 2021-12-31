@@ -35,6 +35,7 @@ namespace sge {
 
         void on_event(event& e);
 
+        const std::string& get_title() { return this->m_title; }
         window& get_window() { return *this->m_window; }
 
     protected:

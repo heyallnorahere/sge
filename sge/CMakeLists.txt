@@ -1,35 +1,44 @@
 cmake_minimum_required(VERSION 3.10)
 
 # set up base variables
-set(VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../vendor")
+set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor")
 set(SGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/glm")
 set(SGE_LIBS spdlog)
 
 # platform detection
 if(SGE_DESKTOP)
-    list(APPEND SGE_DEFINES SGE_DESKTOP)
+    list(APPEND SGE_DEFINES SGE_PLATFORM_DESKTOP)
     list(APPEND SGE_LIBS glfw)
     list(APPEND ENABLED_PLATFORMS desktop)
 endif()
 
 if(WIN32)
-    list(APPEND SGE_DEFINES SGE_WINDOWS)
+    list(APPEND SGE_DEFINES SGE_PLATFORM_WINDOWS)
     list(APPEND ENABLED_PLATFORMS windows)
 elseif(UNIX)
     if(APPLE)
         if(SGE_DESKTOP)
-            list(APPEND SGE_DEFINES SGE_MACOSX)
+            list(APPEND SGE_DEFINES SGE_PLATFORM_MACOSX)
             list(APPEND ENABLED_PLATFORMS macosx)
         else()
             message(FATAL_ERROR "IOS is not supported yet - sorry!")
         endif()
     else()
         # we can assume its linux
-        list(APPEND SGE_DEFINES SGE_LINUX)
+        list(APPEND SGE_DEFINES SGE_PLATFORM_LINUX)
         list(APPEND SGE_LIBS pthread stdc++fs)
         list(APPEND ENABLED_PLATFORMS linux)
     endif()
+endif()
+
+# renderer api
+find_package(Vulkan)
+if(Vulkan_FOUND)
+    list(APPEND SGE_INCLUDES ${Vulkan_INCLUDE_DIR})
+    list(APPEND SGE_LIBS ${Vulkan_LIBRARY})
+    list(APPEND SGE_DEFINES SGE_USE_VULKAN)
+    list(APPEND ENABLED_PLATFORMS vulkan)
 endif()
 
 # glob sources

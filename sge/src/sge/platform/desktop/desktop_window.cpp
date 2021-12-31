@@ -15,7 +15,9 @@
 */
 
 #include "sgepch.h"
-// todo: include vulkan
+#ifdef SGE_USE_VULKAN
+#include "sge/platform/vulkan/vulkan_base.h"
+#endif
 #include "sge/platform/desktop/desktop_window.h"
 #include "sge/events/window_events.h"
 namespace sge {
@@ -63,6 +65,34 @@ namespace sge {
 
     void desktop_window::set_event_callback(event_callback_t callback) {
         this->m_data.event_callback = callback;
+    }
+
+    void* desktop_window::create_render_surface(void* params) {
+#ifdef SGE_USE_VULKAN
+        {
+            auto instance = (VkInstance)params;
+
+            VkSurfaceKHR surface;
+            VkResult result = glfwCreateWindowSurface(
+                instance, this->m_window, nullptr, &surface);
+            check_vk_result(result);
+
+            return surface;
+        }
+#endif
+
+        return nullptr;
+    }
+
+    void desktop_window::get_vulkan_extensions(std::set<std::string>& extensions) {
+#ifdef SGE_USE_VULKAN
+        uint32_t glfw_extension_count = 0;
+        const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+
+        for (uint32_t i = 0; i < glfw_extension_count; i++) {
+            extensions.insert(glfw_extensions[i]);
+        }
+#endif
     }
 
     void desktop_window::setup_event_callbacks() {

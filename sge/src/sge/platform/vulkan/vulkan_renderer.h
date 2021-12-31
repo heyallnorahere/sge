@@ -14,22 +14,16 @@
    limitations under the License.
 */
 
-#include "sgepch.h"
-#include "sge/core/window.h"
-#ifdef SGE_PLATFORM_DESKTOP
-#include "sge/platform/desktop/desktop_window.h"
-#endif
+#pragma once
+#include "sge/renderer/renderer.h"
 namespace sge {
-    std::unique_ptr<window> window::create(const std::string& title, uint32_t width, uint32_t height) {
-        window* instance = nullptr;
+    struct vk_renderer_data;
+    class vulkan_renderer : public renderer_api {
+    public:
+        virtual void init() override;
+        virtual void shutdown() override;
 
-#ifdef SGE_PLATFORM_DESKTOP
-        instance = new desktop_window(title, width, height);
-#endif
-
-        if (instance == nullptr) {
-            throw std::runtime_error("no implemented platform was selected!");
-        }
-        return std::unique_ptr<window>(instance);
-    }
-};
+    private:
+        vk_renderer_data* m_data;
+    };
+}

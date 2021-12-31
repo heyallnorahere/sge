@@ -16,12 +16,31 @@
 
 #include "sgepch.h"
 #include "sge/renderer/renderer.h"
+#ifdef SGE_USE_VULKAN
+#include "sge/platform/vulkan/vulkan_renderer.h"
+#endif
 namespace sge {
     static std::unique_ptr<renderer_api> renderer_api_;
     void renderer::init() {
-        // todo: vulkan renderer api
+        {
+            renderer_api* api_instance = nullptr;
+
+#ifdef SGE_USE_VULKAN
+            if (api_instance == nullptr) {
+                api_instance = new vulkan_renderer;
+            }
+#endif
+
+            if (api_instance == nullptr) {
+                throw std::runtime_error("no renderer api has been implemented!");
+            }
+            renderer_api_ = std::unique_ptr<renderer_api>(api_instance);
+        }
+
+        renderer_api_->init();
     }
     void renderer::shutdown() {
+        renderer_api_->shutdown();
         renderer_api_.reset();
     }
 }
