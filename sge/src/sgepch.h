@@ -38,6 +38,9 @@ namespace fs = std::experimental::filesystem;
 #include <queue>
 #include <limits>
 #include <optional>
+#include <thread>
+#include <chrono>
+#include <mutex>
 #include <spdlog/spdlog.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

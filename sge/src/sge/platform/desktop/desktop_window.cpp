@@ -42,7 +42,8 @@ namespace sge {
         // we are not going to support OpenGL
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        this->m_window = glfwCreateWindow(this->m_data.width, this->m_data.height, this->m_data.title.c_str(), nullptr, nullptr);
+        this->m_window = glfwCreateWindow(this->m_data.width, this->m_data.height,
+            this->m_data.title.c_str(), nullptr, nullptr);
         if (this->m_window == nullptr) {
             throw std::runtime_error("could not create glfw window!");
         }

@@ -15,6 +15,8 @@
 */
 
 #pragma once
+#include "sge/renderer/swapchain.h"
+#include "sge/core/window.h"
 namespace sge {
     class renderer_api {
     public:
@@ -22,6 +24,8 @@ namespace sge {
 
         virtual void init() = 0;
         virtual void shutdown() = 0;
+
+        virtual swapchain* create_swapchain(window& _window) = 0;
     };
     class renderer {
     public:
@@ -30,6 +34,6 @@ namespace sge {
         static void init();
         static void shutdown();
 
-
+        static swapchain* create_swapchain(window& _window);
     };
 }

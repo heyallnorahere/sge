@@ -16,6 +16,7 @@
 
 #include "sgepch.h"
 #include "sge/core/window.h"
+#include "sge/renderer/renderer.h"
 #ifdef SGE_PLATFORM_DESKTOP
 #include "sge/platform/desktop/desktop_window.h"
 #endif
@@ -31,5 +32,9 @@ namespace sge {
             throw std::runtime_error("no implemented platform was selected!");
         }
         return std::unique_ptr<window>(instance);
+    }
+
+    void window::create_swapchain() {
+        this->m_swapchain = std::unique_ptr<swapchain>(renderer::create_swapchain(*this));
     }
 };

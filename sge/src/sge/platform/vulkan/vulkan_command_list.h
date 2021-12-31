@@ -14,21 +14,22 @@
    limitations under the License.
 */
 
-#include "sgepch.h"
-#include "sge/platform/vulkan/vulkan_renderer.h"
-#include "sge/platform/vulkan/vulkan_base.h"
-#include "sge/platform/vulkan/vulkan_context.h"
-#include "sge/platform/vulkan/vulkan_swapchain.h"
+#pragma once
+#include "sge/renderer/command_list.h"
 namespace sge {
-    void vulkan_renderer::init() {
-        vulkan_context::create(VK_API_VERSION_1_1);
-    }
+    class vulkan_command_list : public command_list {
+    public:
+        vulkan_command_list(VkCommandPool command_pool);
+        virtual ~vulkan_command_list() override;
 
-    void vulkan_renderer::shutdown() {
-        vulkan_context::destroy();
-    }
+        virtual void reset() override;
+        virtual void begin() override;
+        virtual void end() override;
 
-    swapchain* vulkan_renderer::create_swapchain(window& _window) {
-        return new vulkan_swapchain(_window);
-    }
+        VkCommandBuffer get() { return this->m_command_buffer; }
+
+    private:
+        VkCommandPool m_command_pool;
+        VkCommandBuffer m_command_buffer;
+    };
 }

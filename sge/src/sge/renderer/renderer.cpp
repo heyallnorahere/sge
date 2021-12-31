@@ -21,6 +21,7 @@
 #endif
 namespace sge {
     static std::unique_ptr<renderer_api> renderer_api_;
+
     void renderer::init() {
         {
             renderer_api* api_instance = nullptr;
@@ -39,8 +40,13 @@ namespace sge {
 
         renderer_api_->init();
     }
+
     void renderer::shutdown() {
         renderer_api_->shutdown();
         renderer_api_.reset();
+    }
+
+    swapchain* renderer::create_swapchain(window& _window) {
+        return renderer_api_->create_swapchain(_window);
     }
 }

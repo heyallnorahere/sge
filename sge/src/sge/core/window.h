@@ -16,6 +16,7 @@
 
 #pragma once
 #include "sge/events/event.h"
+#include "sge/renderer/swapchain.h"
 namespace sge {
     class window {
     public:
@@ -27,6 +28,9 @@ namespace sge {
 
         virtual void on_update() = 0;
 
+        void create_swapchain();
+        swapchain& get_swapchain() { return *this->m_swapchain; }
+
         virtual uint32_t get_width() = 0;
         virtual uint32_t get_height() = 0;
 
@@ -35,5 +39,8 @@ namespace sge {
         virtual void* get_native_window() = 0;
         virtual void* create_render_surface(void* params) = 0;
         virtual void get_vulkan_extensions(std::set<std::string>& extensions) = 0;
+
+    private:
+        std::unique_ptr<swapchain> m_swapchain;
     };
 };

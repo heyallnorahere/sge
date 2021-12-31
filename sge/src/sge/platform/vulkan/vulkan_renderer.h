@@ -21,5 +21,7 @@ namespace sge {
     public:
         virtual void init() override;
         virtual void shutdown() override;
+
+        virtual swapchain* create_swapchain(window& _window) override;
     };
 }

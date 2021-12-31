@@ -55,6 +55,7 @@ namespace sge {
         this->m_window->set_event_callback(SGE_BIND_EVENT_FUNC(application::on_event));
 
         renderer::init();
+        this->m_window->create_swapchain();
 
         this->init_app();
     }
@@ -64,6 +65,7 @@ namespace sge {
 
         this->shutdown_app();
 
+        this->m_window.reset();
         renderer::shutdown();
     }
 
@@ -74,6 +76,9 @@ namespace sge {
         this->m_running = true;
         
         while (this->m_running) {
+            swapchain& swap_chain = this->m_window->get_swapchain();
+            swap_chain.new_frame();
+
             // todo: timestep
 
             if (!this->m_minimized) {
@@ -82,8 +87,8 @@ namespace sge {
                 }
             }
 
+            swap_chain.present();
             this->m_window->on_update();
-            // todo: swapchain buffers?
         }
     }
 
