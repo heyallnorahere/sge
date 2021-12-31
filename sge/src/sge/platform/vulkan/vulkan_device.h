@@ -36,7 +36,6 @@ namespace sge {
         VkPhysicalDevice get() const { return this->m_device; }
 
         operator bool() const { return this->m_device != nullptr; }
-        operator VkPhysicalDevice() const { return this->m_device; }
 
         bool operator==(const vulkan_physical_device& other) const {
             return this->m_device == other.m_device;
@@ -49,5 +48,24 @@ namespace sge {
         vulkan_physical_device(VkPhysicalDevice device) { this->m_device = device; }
 
         VkPhysicalDevice m_device;
+    };
+
+    class vulkan_device {
+    public:
+        vulkan_device(const vulkan_physical_device& physical_device);
+        ~vulkan_device();
+
+        vulkan_device(const vulkan_device&) = delete;
+        vulkan_device& operator=(const vulkan_device&) = delete;
+
+        VkDevice get() { return this->m_device; };
+        vulkan_physical_device get_physical_device() { return this->m_physical_device; }
+        VkQueue get_queue(uint32_t family);
+
+    private:
+        void create();
+
+        VkDevice m_device;
+        vulkan_physical_device m_physical_device;
     };
 }

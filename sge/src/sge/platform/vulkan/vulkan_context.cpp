@@ -32,6 +32,11 @@ namespace sge {
     }
 
     void vulkan_context::destroy() {
+        if (!vk_context_instance) {
+            return;
+        }
+
+        vk_context_instance->shutdown();
         vk_context_instance.reset();
     }
 
@@ -42,6 +47,7 @@ namespace sge {
         std::set<std::string> instance_extensions, device_extensions, layer_names;
         VkInstance instance = nullptr;
         VkDebugUtilsMessengerEXT debug_messenger = nullptr;
+        std::unique_ptr<vulkan_device> device;
     };
 
     static void choose_extensions(vk_data* data) {
@@ -58,49 +64,6 @@ namespace sge {
 
         if (data->vulkan_version < VK_API_VERSION_1_1) {
             data->device_extensions.insert("VK_KHR_maintenance1");
-        }
-
-        // verify instance extensions
-        {
-            uint32_t extension_count = 0;
-            vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
-            std::vector<VkExtensionProperties> extensions(extension_count);
-            vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, extensions.data());
-
-            for (const auto& selected_extension : data->instance_extensions) {
-                bool found = false;
-                for (const auto& available_extension : extensions) {
-                    if (selected_extension == available_extension.extensionName) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    throw std::runtime_error("instance extension " + selected_extension +
-                        " is not present!");
-                }
-            }
-        }
-
-        // verify layers
-        {
-            uint32_t layer_count = 0;
-            vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-            std::vector<VkLayerProperties> layers(layer_count);
-            vkEnumerateInstanceLayerProperties(&layer_count, layers.data());
-
-            for (const auto& selected_layer : data->layer_names) {
-                bool found = false;
-                for (const auto& available_layer : layers) {
-                    if (selected_layer == available_layer.layerName) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    throw std::runtime_error("layer " + selected_layer + " is not present!");
-                }
-            }
         }
     }
 
@@ -127,19 +90,63 @@ namespace sge {
         auto create_info = vk_init<VkInstanceCreateInfo>(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
         create_info.pApplicationInfo = &app_info;
 
-        std::vector<const char*> extensions;
-        for (const auto& extension_name : data->instance_extensions) {
-            extensions.push_back(extension_name.c_str());
-        }
-        create_info.ppEnabledExtensionNames = extensions.data();
-        create_info.enabledExtensionCount = extensions.size();
+        std::vector<const char*> instance_extensions;
+        {
+            uint32_t extension_count = 0;
+            vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
+            std::vector<VkExtensionProperties> extensions(extension_count);
+            vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, extensions.data());
 
-        std::vector<const char*> layers;
-        for (const auto& layer_name : data->layer_names) {
-            layers.push_back(layer_name.c_str());
+            // verify extension availability
+            for (const auto& selected_extension : data->instance_extensions) {
+                bool found = false;
+                for (const auto& available_extension : extensions) {
+                    if (selected_extension == available_extension.extensionName) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    instance_extensions.push_back(selected_extension.c_str());
+                } else {
+                    spdlog::warn("instance extension " + selected_extension + " is not present");
+                }
+            }
         }
-        create_info.ppEnabledLayerNames = layers.data();
-        create_info.enabledLayerCount = layers.size();
+
+        std::vector<const char*> instance_layers;
+        {
+            uint32_t layer_count = 0;
+            vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+            std::vector<VkLayerProperties> layers(layer_count);
+            vkEnumerateInstanceLayerProperties(&layer_count, layers.data());
+
+            // verify layer availability
+            for (const auto& selected_layer : data->layer_names) {
+                bool found = false;
+                for (const auto& available_layer : layers) {
+                    if (selected_layer == available_layer.layerName) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    instance_layers.push_back(selected_layer.c_str());
+                } else {
+                    spdlog::warn("instance layer " + selected_layer + " is not present");
+                }
+            }
+        }
+
+        if (!instance_extensions.empty()) {
+            create_info.ppEnabledExtensionNames = instance_extensions.data();
+            create_info.enabledExtensionCount = instance_extensions.size();
+        }
+
+        if (!instance_layers.empty()) {
+            create_info.ppEnabledLayerNames = instance_layers.data();
+            create_info.enabledLayerCount = instance_layers.size();
+        }
 
         VkResult result = vkCreateInstance(&create_info, nullptr, &data->instance);
         check_vk_result(result);
@@ -238,11 +245,13 @@ namespace sge {
                 "\n\tlatest available vulkan version: {1}.{2}.{3}",
                 properties.deviceName, major, minor, patch);
             
-            // todo: create logical device
+            this->m_data->device = std::make_unique<vulkan_device>(physical_device);
         }
     }
 
     void vulkan_context::shutdown() {
+        this->m_data->device.reset();
+
         if (this->m_data->debug_messenger != nullptr) {
             auto fpDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)
                 vkGetInstanceProcAddr(this->m_data->instance,
@@ -266,6 +275,7 @@ namespace sge {
 
     uint32_t vulkan_context::get_vulkan_version() { return this->m_data->vulkan_version; }
     VkInstance vulkan_context::get_instance() { return this->m_data->instance; }
+    vulkan_device& vulkan_context::get_device() { return *this->m_data->device; }
 
     const std::set<std::string>& vulkan_context::get_instance_extensions() {
         return this->m_data->instance_extensions;
