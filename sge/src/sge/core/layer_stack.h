@@ -44,6 +44,12 @@ namespace sge {
         container_t::iterator end() { return this->m_layers.end(); }
         container_t::const_iterator end() const { return this->m_layers.end(); }
 
+        container_t::reverse_iterator rbegin() { return this->m_layers.rbegin(); }
+        container_t::const_reverse_iterator rbegin() const { return this->m_layers.rbegin(); }
+
+        container_t::reverse_iterator rend() { return this->m_layers.rend(); }
+        container_t::const_reverse_iterator rend() const { return this->m_layers.rend(); }
+
     private:
         container_t m_layers;
         size_t m_layer_insert_index = 0;

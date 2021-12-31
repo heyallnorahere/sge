@@ -83,8 +83,9 @@ namespace sge {
             // todo: timestep
 
             if (!this->m_minimized) {
-                for (auto& _layer : this->m_layer_stack) {
-                    _layer->on_update();
+                for (auto it = this->m_layer_stack.rbegin();
+                    it != this->m_layer_stack.rend(); it++) {
+                    (*it)->on_update();
                 }
             }
 
