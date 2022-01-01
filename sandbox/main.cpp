@@ -19,7 +19,7 @@
 namespace sandbox {
     class sandbox_layer : public sge::layer {
     public:
-        sandbox_layer() : layer("Sandbox Layer") { }
+        sandbox_layer() : layer("Sandbox Layer") {}
 
         virtual void on_event(sge::event& event) override {
             sge::event_dispatcher dispatcher(event);
@@ -45,21 +45,19 @@ namespace sandbox {
 
     class sandbox_app : public sge::application {
     public:
-        sandbox_app() : application("Sandbox") { }
-    
+        sandbox_app() : application("Sandbox") {}
+
     protected:
         virtual void init_app() override {
             this->m_layer = new sandbox_layer;
             this->push_layer(this->m_layer);
         }
-        
-        virtual void shutdown_app() override {
-            this->m_layer_stack.pop_layer(this->m_layer);
-        }
+
+        virtual void shutdown_app() override { this->m_layer_stack.pop_layer(this->m_layer); }
 
         sandbox_layer* m_layer;
     };
-}
+} // namespace sandbox
 
 sge::ref<sge::application> create_app_instance() {
     return sge::ref<sandbox::sandbox_app>::create();
