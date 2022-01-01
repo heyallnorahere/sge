@@ -32,12 +32,12 @@ namespace sge {
             size_t size, descriptor_count;
         };
         struct push_constant_range {
-            size_t offset, size;
-            VkShaderStageFlags stage;
+            size_t size = 0;
+            VkShaderStageFlags stage = 0;
         };
         struct reflection_data {
             std::map<std::string, resource> resources;
-            std::vector<push_constant_range> push_constant_ranges;
+            push_constant_range push_constant_buffer;
         };
 
         static VkShaderStageFlagBits get_shader_stage_flags(shader_stage stage);

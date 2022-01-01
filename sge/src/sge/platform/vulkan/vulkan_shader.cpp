@@ -238,5 +238,14 @@ namespace sge {
                       resource_type::image, compiler);
         map_resources(resources.separate_samplers, this->m_reflection_data, stage,
                       resource_type::sampler, compiler);
+
+        for (const auto& spirv_resource : resources.push_constant_buffers) {
+            const auto& spirv_type = compiler.get_type(spirv_resource.type_id);
+            size_t size = compiler.get_declared_struct_size(spirv_type);
+            this->m_reflection_data.push_constant_buffer.size += size;
+
+            VkShaderStageFlagBits stage_flags = get_shader_stage_flags(stage);
+            this->m_reflection_data.push_constant_buffer.stage |= stage_flags;
+        }
     }
 } // namespace sge
