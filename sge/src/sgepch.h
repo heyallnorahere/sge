@@ -16,13 +16,6 @@
 
 #pragma once
 #include <string>
-#if __has_include(<filesystem>)
-#include <filesystem>
-namespace fs = std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#endif
 #include <sstream>
 #include <vector>
 #include <array>
@@ -42,6 +35,13 @@ namespace fs = std::experimental::filesystem;
 #include <thread>
 #include <chrono>
 #include <mutex>
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#endif
 #include <spdlog/spdlog.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

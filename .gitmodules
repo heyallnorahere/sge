@@ -10,3 +10,9 @@
 [submodule "vendor/VulkanMemoryAllocator"]
 	path = vendor/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "vendor/shaderc"]
+	path = vendor/shaderc
+	url = https://github.com/google/shaderc.git
+[submodule "vendor/SPIRV-Cross"]
+	path = vendor/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git

@@ -14,7 +14,15 @@
                 "GLFW_BUILD_EXAMPLES": "OFF",
                 "GLFW_BUILD_TESTS": "OFF",
                 "GLFW_BUILD_DOCS": "OFF",
-                "GLFW_INSTALL": "OFF"
+                "GLFW_INSTALL": "OFF",
+                "SHADERC_SKIP_TESTS": "ON",
+                "SHADERC_SKIP_INSTALL": "ON",
+                "SHADERC_SKIP_EXAMPLES": "ON",
+                "SHADERC_SKIP_COPYRIGHT_CHECK": "ON",
+                "SHADERC_ENABLE_SHARED_CRT": "ON",
+                "SKIP_SPIRV_TOOLS_INSTALL": "ON",
+                "SPIRV_SKIP_EXECUTABLES": "ON",
+                "SPIRV_SKIP_TESTS": "ON"
             },
             "warnings": {
                 "dev": false
@@ -25,7 +33,11 @@
         {
             "name": "default",
             "configurePreset": "default",
-            "jobs": 8
+            "jobs": 8,
+            "targets": [
+                "sge",
+                "sandbox"
+            ]
         }
     ]
 }

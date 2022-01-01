@@ -1,8 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 add_subdirectory("spdlog")
+
 if(SGE_DESKTOP)
     add_subdirectory("glfw")
 endif()
+
 if(Vulkan_FOUND)
     add_subdirectory("VulkanMemoryAllocator")
+    add_subdirectory("SPIRV-Cross")
+
+    if(NOT SHADERC_DEPENDENCIES_SYNCED)
+        find_package(Python3 REQUIRED)
+        message(STATUS "Syncing shaderc dependencies...")
+        execute_process(COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/shaderc/utils/git-sync-deps")
+        message(STATUS "Synced shaderc dependencies!")
+        set(SHADERC_DEPENDENCIES_SYNCED ON CACHE BOOL "Have the shaderc dependencies been synced?" FORCE)
+    endif()
+    add_subdirectory("shaderc")
 endif()

@@ -38,4 +38,4 @@ jobs:
         shell: bash
         run: |
           cmake --preset default -DCMAKE_BUILD_TYPE=Release
-          cmake --build build -j 8
+          cmake --build --preset default

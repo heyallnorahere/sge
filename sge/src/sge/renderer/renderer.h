@@ -17,6 +17,7 @@
 #pragma once
 #include "sge/renderer/command_queue.h"
 #include "sge/core/window.h"
+#include "sge/renderer/shader.h"
 namespace sge {
     class renderer_api {
     public:
@@ -33,5 +34,6 @@ namespace sge {
         static void shutdown();
 
         static ref<command_queue> get_queue(command_list_type type);
+        static shader_library& get_shader_library();
     };
 } // namespace sge

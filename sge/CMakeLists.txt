@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 # set up base variables
 set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor")
+set(ASSET_DIR "${CMAKE_SOURCE_DIR}/assets")
 set(SGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/glm")
 set(SGE_LIBS spdlog)
@@ -35,7 +36,7 @@ endif()
 # renderer api
 if(Vulkan_FOUND)
     list(APPEND SGE_INCLUDES ${Vulkan_INCLUDE_DIR})
-    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator)
+    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator shaderc spirv-cross-glsl)
     list(APPEND SGE_DEFINES SGE_USE_VULKAN)
     list(APPEND ENABLED_PLATFORMS vulkan)
 endif()
@@ -49,8 +50,15 @@ foreach(PLATFORM_NAME ${ENABLED_PLATFORMS})
     list(APPEND SGE_MANIFEST ${GLOBBED_PLATFORM_CODE})
 endforeach()
 
+# glob shaders
+file(GLOB_RECURSE SGE_SHADERS CONFIGURE_DEPENDS "${ASSET_DIR}/shaders/*")
+if(MSVC)
+    source_group("Shaders" FILES ${SGE_SHADERS})
+    set_source_files_properties(${SGE_SHADERS} PROPERTIES VS_TOOL_OVERRIDE "None")
+endif()
+
 # add target
-add_library(sge STATIC ${SGE_MANIFEST})
+add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS})
 target_link_libraries(sge PUBLIC ${SGE_LIBS})
 target_include_directories(sge PUBLIC ${SGE_INCLUDES})
 target_compile_definitions(sge PUBLIC ${SGE_DEFINES} $<$<CONFIG:Debug>:SGE_DEBUG>)

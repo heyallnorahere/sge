@@ -16,14 +16,22 @@
 
 #include "sgepch.h"
 #include "sge/renderer/renderer.h"
+#include "sge/renderer/shader.h"
 #ifdef SGE_USE_VULKAN
 #include "sge/platform/vulkan/vulkan_renderer.h"
 #endif
 namespace sge {
     static struct {
+        std::unique_ptr<shader_library> _shader_library;
         std::unique_ptr<renderer_api> api;
         std::map<command_list_type, ref<command_queue>> queues;
     } renderer_data;
+
+    static void load_shaders() {
+        shader_library& library = *renderer_data._shader_library;
+
+        library.add("default", "assets/shaders/default.hlsl");
+    }
 
     void renderer::init() {
         {
@@ -39,14 +47,20 @@ namespace sge {
         }
 
         renderer_data.api->init();
+
+        renderer_data._shader_library = std::make_unique<shader_library>();
+        load_shaders();
     }
 
     void renderer::shutdown() {
+        renderer_data._shader_library.reset();
         renderer_data.queues.clear();
 
         renderer_data.api->shutdown();
         renderer_data.api.reset();
     }
+
+    shader_library& renderer::get_shader_library() { return *renderer_data._shader_library; }
 
     ref<command_queue> renderer::get_queue(command_list_type type) {
         ref<command_queue> queue;
