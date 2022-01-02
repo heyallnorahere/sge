@@ -69,15 +69,6 @@ namespace sge {
     }
 
     static void create_instance(vk_data* data) {
-        {
-            uint32_t major = VK_VERSION_MAJOR(data->vulkan_version);
-            uint32_t minor = VK_VERSION_MINOR(data->vulkan_version);
-            uint32_t patch = VK_VERSION_PATCH(data->vulkan_version);
-
-            spdlog::info("creating vulkan instance with api version: {0}.{1}.{2}", major, minor,
-                         patch);
-        }
-
         auto app_info = vk_init<VkApplicationInfo>(VK_STRUCTURE_TYPE_APPLICATION_INFO);
         app_info.apiVersion = data->vulkan_version;
 
@@ -92,8 +83,8 @@ namespace sge {
         create_info.pApplicationInfo = &app_info;
 
         std::vector<const char*> instance_extensions;
+        uint32_t extension_count = 0;
         {
-            uint32_t extension_count = 0;
             vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
             std::vector<VkExtensionProperties> extensions(extension_count);
             vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, extensions.data());
@@ -116,8 +107,8 @@ namespace sge {
         }
 
         std::vector<const char*> instance_layers;
+        uint32_t layer_count = 0;
         {
-            uint32_t layer_count = 0;
             vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
             std::vector<VkLayerProperties> layers(layer_count);
             vkEnumerateInstanceLayerProperties(&layer_count, layers.data());
@@ -149,6 +140,16 @@ namespace sge {
             create_info.enabledLayerCount = instance_layers.size();
         }
 
+        {
+            uint32_t major = VK_VERSION_MAJOR(data->vulkan_version);
+            uint32_t minor = VK_VERSION_MINOR(data->vulkan_version);
+            uint32_t patch = VK_VERSION_PATCH(data->vulkan_version);
+
+            spdlog::info("creating vulkan instance:\n\tusing api version: {0}.{1}.{2}\n\tavailable "
+                         "instance extensions: {3}\n\tavailable instance layers: {4}",
+                         major, minor, patch, extension_count, layer_count);
+        }
+
         VkResult result = vkCreateInstance(&create_info, nullptr, &data->instance);
         check_vk_result(result);
     }
@@ -167,7 +168,7 @@ namespace sge {
             spdlog::error(message);
             break;
         default:
-            spdlog::info(message);
+            // not important enough to show
             break;
         }
 
@@ -242,9 +243,19 @@ namespace sge {
             uint32_t minor = VK_VERSION_MINOR(properties.apiVersion);
             uint32_t patch = VK_VERSION_PATCH(properties.apiVersion);
 
+            uint32_t extension_count = 0;
+            uint32_t layer_count = 0;
+            {
+                VkPhysicalDevice vk_device = physical_device.get();
+
+                vkEnumerateDeviceExtensionProperties(vk_device, nullptr, &extension_count, nullptr);
+                vkEnumerateDeviceLayerProperties(vk_device, &layer_count, nullptr);
+            }
+
             spdlog::info("selected physical device:\n\tname: {0}"
-                         "\n\tlatest available vulkan version: {1}.{2}.{3}",
-                         properties.deviceName, major, minor, patch);
+                         "\n\tlatest available vulkan version: {1}.{2}.{3}\n\tavailable device "
+                         "extensions: {4}\n\tavailable device layers: {5}",
+                         properties.deviceName, major, minor, patch, extension_count, layer_count);
 
             this->m_data->device = std::make_unique<vulkan_device>(physical_device);
         }
