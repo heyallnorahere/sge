@@ -15,12 +15,13 @@
 */
 
 #pragma once
+#include <cstdint>
+#include <stddef.h>
+
 #include <string>
 #include <sstream>
 #include <vector>
 #include <array>
-#include <cstdint>
-#include <stddef.h>
 #include <fstream>
 #include <set>
 #include <unordered_set>
@@ -35,6 +36,7 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
+
 #if __has_include(<filesystem>)
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -43,9 +45,15 @@ namespace fs = std::filesystem;
 namespace fs = std::experimental::filesystem;
 #endif
 #include <spdlog/spdlog.h>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
 #include "sge/ref.h"
+
+namespace sge {
+    using timestep = std::chrono::duration<double>;
+}

@@ -92,12 +92,22 @@ namespace sge {
             this->m_swapchain->begin(cmdlist, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
             renderer::set_command_list(cmdlist);
 
-            // todo: timestep
+            timestep ts;
+            {
+                using namespace std::chrono;
+
+                static high_resolution_clock clock;
+                static high_resolution_clock::time_point t0 = clock.now();
+                high_resolution_clock::time_point t1 = clock.now();
+
+                ts = duration_cast<timestep>(t1 - t0);
+                t0 = t1;
+            }
 
             if (!this->m_minimized) {
                 for (auto it = this->m_layer_stack.rbegin(); it != this->m_layer_stack.rend();
                      it++) {
-                    (*it)->on_update();
+                    (*it)->on_update(ts);
                 }
             }
 

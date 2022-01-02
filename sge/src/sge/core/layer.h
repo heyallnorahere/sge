@@ -24,7 +24,7 @@ namespace sge {
 
         virtual void on_attach() {}
         virtual void on_detach() {}
-        virtual void on_update() {}
+        virtual void on_update(timestep ts) {}
         virtual void on_event(event& e) {}
 
         const std::string& get_name() const { return this->m_name; }

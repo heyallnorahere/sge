@@ -29,7 +29,7 @@ namespace sandbox {
                 SGE_BIND_EVENT_FUNC(sandbox_layer::on_resize));
         }
 
-        virtual void on_update() override {
+        virtual void on_update(sge::timestep ts) override {
             auto window = sge::application::get().get_window();
             float aspect_ratio = (float)window->get_width() / (float)window->get_height();
             
@@ -59,6 +59,12 @@ namespace sandbox {
             sge::renderer::draw_quad(glm::vec2(0.f, 0.f), glm::vec2(1.f), glm::vec4(1.f, 0.f, 0.f, 1.f));
 
             sge::renderer::end_scene();
+            
+            this->m_time_record += std::chrono::duration_cast<seconds_t>(ts);
+            if (this->m_time_record.count() > 1) {
+                this->m_time_record -= seconds_t(1);
+                spdlog::info("FPS: {0}", 1 / ts.count());
+            }
         }
 
     private:
@@ -74,6 +80,9 @@ namespace sandbox {
 
             return false;
         }
+
+        using seconds_t = std::chrono::duration<double>;
+        seconds_t m_time_record = seconds_t(0);
     };
 
     class sandbox_app : public sge::application {
