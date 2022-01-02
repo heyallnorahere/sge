@@ -21,6 +21,7 @@
 #include "sge/platform/vulkan/vulkan_shader.h"
 #include "sge/platform/vulkan/vulkan_render_pass.h"
 #include "sge/core/application.h"
+#include "sge/renderer/renderer.h"
 namespace sge {
     vulkan_pipeline::vulkan_pipeline(const pipeline_spec& spec) {
         this->m_spec = spec;
@@ -47,10 +48,16 @@ namespace sge {
             check_vk_result(result);
         }
 
+        if (!this->m_spec._shader) {
+            throw std::runtime_error("no shader was provided!");
+        }
+        renderer::add_shader_dependency(this->m_spec._shader, this);
+
         this->create();
     }
 
     vulkan_pipeline::~vulkan_pipeline() {
+        renderer::remove_shader_dependency(this->m_spec._shader, this);
         this->destroy();
 
         VkDevice device = vulkan_context::get().get_device().get();
@@ -206,10 +213,6 @@ namespace sge {
 
     void vulkan_pipeline::create_pipeline() {
         VkDevice device = vulkan_context::get().get_device().get();
-
-        if (!this->m_spec._shader) {
-            throw std::runtime_error("no shader was provided!");
-        }
         auto vk_shader = this->m_spec._shader.as<vulkan_shader>();
 
         if (!this->m_spec.renderpass) {

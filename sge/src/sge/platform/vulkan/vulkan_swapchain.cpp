@@ -156,6 +156,22 @@ namespace sge {
         begin_info.renderPass = this->m_render_pass->get();
 
         vkCmdBeginRenderPass(cmdbuffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+        VkViewport viewport;
+        viewport.minDepth = 0.f;
+        viewport.maxDepth = 1.f;
+
+        viewport.x = 0;
+        viewport.width = (float)this->m_width;
+
+        viewport.y = (float)this->m_height;
+        viewport.height = -viewport.y;
+        vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
+
+        VkRect2D scissor;
+        scissor.offset = { 0, 0 };
+        scissor.extent = { this->m_width, this->m_height };
+        vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
     }
 
     void vulkan_swapchain::end(command_list& cmdlist) {

@@ -18,6 +18,7 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_shader.h"
 #include "sge/platform/vulkan/vulkan_context.h"
+#include "sge/renderer/renderer.h"
 #include <shaderc/shaderc.hpp>
 #include <spirv_glsl.hpp>
 namespace sge {
@@ -100,6 +101,7 @@ namespace sge {
     void vulkan_shader::reload() {
         this->destroy();
         this->create();
+        renderer::on_shader_reloaded(this);
     }
 
     void vulkan_shader::create() {

@@ -20,6 +20,6 @@ namespace sge {
     public:
         virtual ~render_pass() = default;
 
-        // todo: begin() and end()?
+        // todo(nora): begin() and end()?
     };
 } // namespace sge

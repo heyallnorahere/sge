@@ -19,7 +19,7 @@
 namespace sge {
     class vulkan_render_pass : public render_pass {
     public:
-        vulkan_render_pass(VkRenderPass vk_render_pass); // todo: NOT THIS
+        vulkan_render_pass(VkRenderPass vk_render_pass); // todo(nora): NOT THIS
         virtual ~vulkan_render_pass() override;
 
         VkRenderPass get() { return this->m_render_pass; }

@@ -30,15 +30,18 @@ struct vs_output {
     [[vk::location(2)]] int texture_index : TEXTUREINDEX0; 
 };
 
+/* commented out until uniform buffers
 struct camera_data_t {
     float4x4 view_projection;
 };
-[[vk::binding(0, 0)]] ConstantBuffer<camera_data_t> camera_data : register(b0); 
+ConstantBuffer<camera_data_t> camera_data : register(b0);
+*/
 
 vs_output main(vs_input input) {
     vs_output output;
 
-    output.position = mul(camera_data.view_projection, float4(input.position, 0.f, 1.f));
+    //output.position = mul(camera_data.view_projection, float4(input.position, 0.f, 1.f));
+    output.position = float4(input.position, 0.f, 1.f);
     output.color = input.color;
     output.uv = input.uv;
     output.texture_index = input.texture_index;
@@ -53,11 +56,13 @@ struct ps_input {
     [[vk::location(2)]] int texture_index : TEXTUREINDEX0; 
 };
 
-[[vk::binding(1, 0)]] Texture2D textures[30] : register(t1);
-[[vk::binding(1, 0)]] SamplerState samplers[30] : register(s1);
+/* commented out until textures
+Texture2D textures[30] : register(t1);
+SamplerState samplers[30] : register(s1);
+*/
 
 float4 main(ps_input input) : SV_TARGET {
-    float4 tex_color = textures[input.texture_index].Sample(samplers[input.texture_index],
-        input.uv);
-    return tex_color * input.color;
+    //float4 tex_color = textures[input.texture_index].Sample(samplers[input.texture_index],
+    //    input.uv);
+    return /*tex_color * */input.color;
 }
