@@ -35,7 +35,7 @@ namespace sge {
     };
 
     struct batch_t {
-        std::string shader_name;
+        ref<shader> _shader;
         std::vector<quad_t> quads;
     };
 
@@ -67,7 +67,7 @@ namespace sge {
         std::unordered_map<ref<shader>, shader_dependency_t> shader_dependencies;
 
         std::unique_ptr<rendering_scene_t> current_scene;
-        std::unordered_map<std::string, ref<pipeline>> pipelines;
+        std::unordered_map<ref<shader>, ref<pipeline>> pipelines;
         std::vector<std::vector<vertex_data_t>> frame_vertex_data;
         command_list* cmdlist = nullptr;
 
@@ -210,15 +210,24 @@ namespace sge {
 
     void renderer::set_command_list(command_list& cmdlist) { renderer_data.cmdlist = &cmdlist; }
 
-    void renderer::begin_batch(const std::string& shader_name) {
+    void renderer::set_shader(ref<shader> _shader) {
         auto& scene = *renderer_data.current_scene;
-        scene.current_batch = std::make_unique<batch_t>();
-        scene.current_batch->shader_name = shader_name;
+        if (scene.current_batch->_shader != _shader) {
+            next_batch();
+
+            scene.current_batch->_shader = _shader;
+        }
     }
 
-    void renderer::next_batch(const std::string& shader_name) {
+    void renderer::begin_batch() {
+        auto& scene = *renderer_data.current_scene;
+        scene.current_batch = std::make_unique<batch_t>();
+        scene.current_batch->_shader = renderer_data._shader_library->get("default");
+    }
+
+    void renderer::next_batch() {
         flush_batch();
-        begin_batch(shader_name);
+        begin_batch();
     }
 
     void renderer::flush_batch() {
@@ -282,16 +291,11 @@ namespace sge {
             auto renderpass = swap_chain.get_render_pass();
 
             ref<pipeline> _pipeline;
-            if (renderer_data.pipelines.find(batch->shader_name) != renderer_data.pipelines.end()) {
-                _pipeline = renderer_data.pipelines[batch->shader_name];
+            if (renderer_data.pipelines.find(batch->_shader) != renderer_data.pipelines.end()) {
+                _pipeline = renderer_data.pipelines[batch->_shader];
             } else {
-                ref<shader> _shader = renderer_data._shader_library->get(batch->shader_name);
-                if (!_shader) {
-                    throw std::runtime_error("shader " + batch->shader_name + " does not exist!");
-                }
-
                 pipeline_spec spec;
-                spec._shader = _shader;
+                spec._shader = batch->_shader;
                 spec.renderpass = renderpass;
                 spec.input_layout.stride = sizeof(vertex);
                 spec.input_layout.attributes = {
@@ -303,7 +307,7 @@ namespace sge {
 
                 _pipeline = pipeline::create(spec);
                 _pipeline->set_uniform_buffer(renderer_data.camera_buffer, 0);
-                renderer_data.pipelines.insert(std::make_pair(batch->shader_name, _pipeline));
+                renderer_data.pipelines.insert(std::make_pair(batch->_shader, _pipeline));
             }
 
             draw_data data;
