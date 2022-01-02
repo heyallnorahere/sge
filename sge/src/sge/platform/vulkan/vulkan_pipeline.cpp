@@ -225,7 +225,7 @@ namespace sge {
         }
 
         VkDevice device = vulkan_context::get().get_device().get();
-        swapchain& swap_chain = application::get()->get_swapchain();
+        swapchain& swap_chain = application::get().get_swapchain();
         size_t image_count = swap_chain.get_image_count();
         for (const auto& [set, set_bindings] : bindings) {
             descriptor_set_t set_data;

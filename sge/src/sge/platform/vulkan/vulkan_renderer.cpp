@@ -44,7 +44,7 @@ namespace sge {
         auto vk_pipeline = data._pipeline.as<vulkan_pipeline>();
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline->get_pipeline());
 
-        swapchain& swap_chain = application::get()->get_swapchain();
+        swapchain& swap_chain = application::get().get_swapchain();
         size_t current_image = swap_chain.get_current_image_index();
 
         VkPipelineLayout pipeline_layout = vk_pipeline->get_pipeline_layout();

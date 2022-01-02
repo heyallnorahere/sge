@@ -17,10 +17,20 @@
 #include "sgepch.h"
 #include "sge/core/application.h"
 #include "sge/renderer/renderer.h"
+
+extern sge::application* create_app_instance();
 namespace sge {
-    static ref<application> app_instance;
-    void application::set(ref<application> app) { app_instance = app; }
-    ref<application> application::get() { return app_instance; }
+    static std::unique_ptr<application> app_instance;
+
+    void application::create() {
+        app_instance = std::unique_ptr<application>(::create_app_instance());
+    }
+
+    void application::destroy() {
+        app_instance.reset();
+    }
+
+    application& application::get() { return *app_instance; }
 
     application::application(const std::string& title) {
         this->m_title = title;
@@ -90,7 +100,7 @@ namespace sge {
                     (*it)->on_update();
                 }
             }
-            
+
             this->m_swapchain->end(cmdlist);
             cmdlist.end();
 

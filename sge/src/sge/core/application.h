@@ -22,15 +22,19 @@
 #include "sge/renderer/swapchain.h"
 int32_t main(int32_t argc, const char** argv);
 namespace sge {
-    class application : public ref_counted {
+    class application {
     public:
-        static void set(ref<application> app);
-        static ref<application> get();
+        static void create();
+        static void destroy();
+        static application& get();
 
         application(const std::string& title);
 
         void push_layer(layer* _layer) { this->m_layer_stack.push_layer(_layer); }
+        bool pop_layer(layer* _layer) { return this->m_layer_stack.pop_layer(_layer); }
+
         void push_overlay(layer* overlay) { this->m_layer_stack.push_overlay(overlay); }
+        bool pop_overlay(layer* overlay) { return this->m_layer_stack.pop_overlay(overlay); }
 
         void init();
         void shutdown();

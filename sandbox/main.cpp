@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 Nora Beda
+   Copyright 2022 Nora Beda and SGE contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ namespace sandbox {
         }
 
         virtual void on_update() override {
-            auto window = sge::application::get()->get_window();
+            auto window = sge::application::get().get_window();
             float aspect_ratio = (float)window->get_width() / (float)window->get_height();
             
             glm::mat4 projection;
@@ -92,6 +92,6 @@ namespace sandbox {
     };
 } // namespace sandbox
 
-sge::ref<sge::application> create_app_instance() {
-    return sge::ref<sandbox::sandbox_app>::create();
+sge::application* create_app_instance() {
+    return new sandbox::sandbox_app;
 };

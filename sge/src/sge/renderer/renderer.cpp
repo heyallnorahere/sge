@@ -118,7 +118,7 @@ namespace sge {
             return;
         }
 
-        swapchain& swap_chain = application::get()->get_swapchain();
+        swapchain& swap_chain = application::get().get_swapchain();
         size_t current_image = swap_chain.get_current_image_index();
         renderer_data.frame_vertex_data[current_image].clear();
     }
@@ -193,8 +193,8 @@ namespace sge {
 
         flush_batch();
 
-        auto app = application::get();
-        swapchain& swap_chain = app->get_swapchain();
+        auto& app = application::get();
+        swapchain& swap_chain = app.get_swapchain();
 
         if (renderer_data.frame_vertex_data.empty()) {
             renderer_data.frame_vertex_data.resize(swap_chain.get_image_count());
@@ -278,7 +278,7 @@ namespace sge {
                 vertices.insert(vertices.end(), quad_vertices.begin(), quad_vertices.end());
             }
 
-            swapchain& swap_chain = application::get()->get_swapchain();
+            swapchain& swap_chain = application::get().get_swapchain();
             auto renderpass = swap_chain.get_render_pass();
 
             ref<pipeline> _pipeline;

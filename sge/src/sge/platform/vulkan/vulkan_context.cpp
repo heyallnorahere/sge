@@ -52,8 +52,8 @@ namespace sge {
     };
 
     static void choose_extensions(vk_data* data) {
-        ref<application> app = application::get();
-        app->get_window()->get_vulkan_extensions(data->instance_extensions);
+        auto& app = application::get();
+        app.get_window()->get_vulkan_extensions(data->instance_extensions);
 
         data->instance_extensions.insert("VK_KHR_get_physical_device_properties2");
         data->device_extensions.insert("VK_KHR_swapchain");
@@ -75,8 +75,8 @@ namespace sge {
         app_info.pEngineName = "sge";
         app_info.engineVersion = VK_MAKE_VERSION(0, 0, 1); // todo: cmake version
 
-        ref<application> app = application::get();
-        app_info.pApplicationName = app->get_title().c_str();
+        auto& app = application::get();
+        app_info.pApplicationName = app.get_title().c_str();
         app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 
         auto create_info = vk_init<VkInstanceCreateInfo>(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);

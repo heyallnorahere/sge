@@ -15,17 +15,18 @@
 */
 
 #pragma once
-extern sge::ref<sge::application> create_app_instance();
 int32_t main(int32_t argc, const char** argv) {
 #ifndef SGE_DEBUG
     try {
 #endif
-        auto app = create_app_instance();
-        sge::application::set(app);
-        app->init();
-        app->run();
-        app->shutdown();
-        sge::application::set(nullptr);
+        sge::application::create();
+
+        auto& app = sge::application::get();
+        app.init();
+        app.run();
+        app.shutdown();
+
+        sge::application::destroy();
         return 0;
 #ifndef SGE_DEBUG
     } catch (const std::runtime_error& exc) {
