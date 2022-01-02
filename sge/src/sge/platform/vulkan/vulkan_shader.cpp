@@ -125,6 +125,9 @@ namespace sge {
             vkDestroyShaderModule(device, stage_info.module, nullptr);
         }
         this->m_pipeline_info.clear();
+
+        this->m_reflection_data.resources.clear();
+        this->m_reflection_data.push_constant_buffer = push_constant_range();
     }
 
     static void compile_shader(shader_stage stage, const std::string& source,
@@ -204,6 +207,7 @@ namespace sge {
             data.set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
             data.binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
             data.type = type;
+            data.stage = stage;
 
             const auto& type = compiler.get_type(resource.type_id);
             if (type.array.empty()) {

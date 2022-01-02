@@ -16,6 +16,8 @@
 
 #define SGE_INCLUDE_MAIN
 #include <sge.h>
+#include <sge/renderer/renderer.h>
+#include <sge/renderer/pipeline.h>
 namespace sandbox {
     class sandbox_layer : public sge::layer {
     public:

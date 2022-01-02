@@ -30,6 +30,7 @@ namespace sge {
             uint32_t set, binding;
             resource_type type;
             size_t size, descriptor_count;
+            shader_stage stage;
         };
         struct push_constant_range {
             size_t size = 0;

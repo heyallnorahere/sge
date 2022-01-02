@@ -17,6 +17,7 @@
 #pragma once
 #include "sge/renderer/command_list.h"
 #include "sge/core/window.h"
+#include "sge/renderer/render_pass.h"
 namespace sge {
     class swapchain {
     public:
@@ -31,6 +32,7 @@ namespace sge {
 
         virtual void begin(command_list& cmdlist, const glm::vec4& clear_color) = 0;
         virtual void end(command_list& cmdlist) = 0;
+        virtual ref<render_pass> get_render_pass() = 0;
 
         virtual size_t get_image_count() = 0;
         virtual uint32_t get_width() = 0;

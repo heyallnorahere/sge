@@ -18,6 +18,7 @@
 #include "sge/renderer/swapchain.h"
 #include "sge/core/window.h"
 #include "sge/platform/vulkan/vulkan_command_list.h"
+#include "sge/platform/vulkan/vulkan_render_pass.h"
 namespace sge {
     class vulkan_swapchain : public swapchain {
     public:
@@ -31,6 +32,7 @@ namespace sge {
 
         virtual void begin(command_list& cmdlist, const glm::vec4& clear_color) override;
         virtual void end(command_list& cmdlist) override;
+        virtual ref<render_pass> get_render_pass() override { return this->m_render_pass; }
 
         virtual size_t get_image_count() override { return this->m_swapchain_images.size(); }
         virtual uint32_t get_width() override { return this->m_width; }
@@ -69,7 +71,7 @@ namespace sge {
         VkSurfaceKHR m_surface;
         uint32_t m_present_queue;
         VkSwapchainKHR m_swapchain;
-        VkRenderPass m_render_pass;
+        ref<vulkan_render_pass> m_render_pass;
 
         VkFormat m_image_format;
         std::vector<swapchain_image> m_swapchain_images;

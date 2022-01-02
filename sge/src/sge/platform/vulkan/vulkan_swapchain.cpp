@@ -54,7 +54,6 @@ namespace sge {
         this->m_command_buffers.clear();
         vkDestroyCommandPool(vk_device, this->m_command_pool, nullptr);
 
-        vkDestroyRenderPass(vk_device, this->m_render_pass, nullptr);
         this->destroy();
         vkDestroySurfaceKHR(instance, this->m_surface, nullptr);
     }
@@ -154,7 +153,7 @@ namespace sge {
         begin_info.pClearValues = &clear_value;
 
         begin_info.framebuffer = this->m_swapchain_images[this->m_current_image_index].framebuffer;
-        begin_info.renderPass = this->m_render_pass;
+        begin_info.renderPass = this->m_render_pass->get();
 
         vkCmdBeginRenderPass(cmdbuffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
     }
@@ -225,8 +224,11 @@ namespace sge {
         create_info.pDependencies = &dependency;
 
         VkDevice device = vulkan_context::get().get_device().get();
-        VkResult result = vkCreateRenderPass(device, &create_info, nullptr, &this->m_render_pass);
+        VkRenderPass vk_render_pass;
+        VkResult result = vkCreateRenderPass(device, &create_info, nullptr, &vk_render_pass);
         check_vk_result(result);
+
+        this->m_render_pass = ref<vulkan_render_pass>::create(vk_render_pass);
     }
 
     void vulkan_swapchain::allocate_command_buffers() {
@@ -530,7 +532,7 @@ namespace sge {
 
                 create_info.attachmentCount = 1;
                 create_info.pAttachments = &data.view;
-                create_info.renderPass = this->m_render_pass;
+                create_info.renderPass = this->m_render_pass->get();
                 create_info.width = this->m_width;
                 create_info.height = this->m_height;
                 create_info.layers = 1;
