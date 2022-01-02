@@ -30,18 +30,16 @@ struct vs_output {
     [[vk::location(2)]] int texture_index : TEXTUREINDEX0; 
 };
 
-/* commented out until uniform buffers
 struct camera_data_t {
     float4x4 view_projection;
 };
 ConstantBuffer<camera_data_t> camera_data : register(b0);
-*/
+
 
 vs_output main(vs_input input) {
     vs_output output;
 
-    //output.position = mul(camera_data.view_projection, float4(input.position, 0.f, 1.f));
-    output.position = float4(input.position, 0.f, 1.f);
+    output.position = mul(camera_data.view_projection, float4(input.position, 0.f, 1.f));
     output.color = input.color;
     output.uv = input.uv;
     output.texture_index = input.texture_index;

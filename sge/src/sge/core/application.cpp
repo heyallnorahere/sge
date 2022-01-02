@@ -74,12 +74,13 @@ namespace sge {
 
         while (this->m_running) {
             this->m_swapchain->new_frame();
+            renderer::new_frame();
 
-            {
-                size_t current_image = this->m_swapchain->get_current_image_index();
-                auto& cmdlist = this->m_swapchain->get_command_list(current_image);
-                renderer::begin_scene(cmdlist, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
-            }
+            size_t current_image = this->m_swapchain->get_current_image_index();
+            auto& cmdlist = this->m_swapchain->get_command_list(current_image);
+            cmdlist.begin();
+            this->m_swapchain->begin(cmdlist, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
+            renderer::set_command_list(cmdlist);
 
             // todo: timestep
 
@@ -89,16 +90,10 @@ namespace sge {
                     (*it)->on_update();
                 }
             }
+            
+            this->m_swapchain->end(cmdlist);
+            cmdlist.end();
 
-            renderer::draw_quad(glm::vec2(-1.f, -1.f), glm::vec2(1.f), glm::vec4(0.f, 1.f, 0.f, 1.f));
-            renderer::draw_quad(glm::vec2(-1.f, 0.f), glm::vec2(1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
-
-            renderer::next_batch();
-
-            renderer::draw_quad(glm::vec2(0.f, -1.f), glm::vec2(1.f), glm::vec4(1.f, 1.f, 0.f, 1.f));
-            renderer::draw_quad(glm::vec2(0.f, 0.f), glm::vec2(1.f), glm::vec4(1.f, 0.f, 0.f, 1.f));
-
-            renderer::end_scene();
             this->m_swapchain->present();
             this->m_window->on_update();
         }

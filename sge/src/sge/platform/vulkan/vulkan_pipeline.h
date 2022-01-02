@@ -16,6 +16,7 @@
 
 #pragma once
 #include "sge/renderer/pipeline.h"
+#include "sge/platform/vulkan/vulkan_uniform_buffer.h"
 namespace sge {
     class vulkan_pipeline : public pipeline {
     public:
@@ -23,7 +24,11 @@ namespace sge {
         virtual ~vulkan_pipeline() override;
 
         virtual void invalidate() override;
-        virtual const pipeline_spec& get_spec() override { return this->m_spec; }
+
+        virtual pipeline_spec& get_spec() override { return this->m_spec; }
+        virtual const pipeline_spec& get_spec() const override { return this->m_spec; }
+
+        virtual void set_uniform_buffer(ref<uniform_buffer> ubo, uint32_t binding) override;
 
         VkPipeline get_pipeline() { return this->m_pipeline; }
         VkPipelineLayout get_pipeline_layout() { return this->m_layout; }
@@ -40,16 +45,26 @@ namespace sge {
             std::map<uint32_t, descriptor_set_t> sets;
         };
 
+        struct descriptor_set_binding_t {
+            ref<vulkan_uniform_buffer> ubo;
+        };
+
         void create();
         void destroy();
 
         void create_descriptor_sets();
         void create_pipeline();
 
+        void write(ref<vulkan_uniform_buffer> ubo, uint32_t binding,
+                   std::vector<VkWriteDescriptorSet>& writes,
+                   std::vector<VkDescriptorBufferInfo>& buffer_info);
+
         VkPipeline m_pipeline;
         VkPipelineLayout m_layout;
 
         pipeline_spec m_spec;
         descriptor_sets_t m_descriptor_sets;
+
+        std::map<uint32_t, descriptor_set_binding_t> m_bindings;
     };
 } // namespace sge

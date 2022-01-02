@@ -45,7 +45,6 @@ namespace sge {
     };
 
     struct rendering_scene_t {
-        command_list* cmdlist;
         std::unique_ptr<batch_t> current_batch;
         std::vector<vertex_data_t> vertex_data;
     };
@@ -54,6 +53,10 @@ namespace sge {
         std::unordered_set<pipeline*> pipelines;
 
         bool empty() { return this->pipelines.empty(); }
+    };
+
+    struct camera_data_t {
+        glm::mat4 view_projection;
     };
 
     static struct {
@@ -66,6 +69,9 @@ namespace sge {
         std::unique_ptr<rendering_scene_t> current_scene;
         std::unordered_map<std::string, ref<pipeline>> pipelines;
         std::vector<std::vector<vertex_data_t>> frame_vertex_data;
+        command_list* cmdlist = nullptr;
+
+        ref<uniform_buffer> camera_buffer;
     } renderer_data;
 
     static void load_shaders() {
@@ -91,9 +97,13 @@ namespace sge {
 
         renderer_data._shader_library = std::make_unique<shader_library>();
         load_shaders();
+
+        renderer_data.camera_buffer = uniform_buffer::create(sizeof(camera_data_t));
     }
 
     void renderer::shutdown() {
+        renderer_data.camera_buffer.reset();
+
         renderer_data.frame_vertex_data.clear();
         renderer_data.pipelines.clear();
         renderer_data._shader_library.reset();
@@ -101,6 +111,16 @@ namespace sge {
 
         renderer_data.api->shutdown();
         renderer_data.api.reset();
+    }
+
+    void renderer::new_frame() {
+        if (renderer_data.frame_vertex_data.empty()) {
+            return;
+        }
+
+        swapchain& swap_chain = application::get()->get_swapchain();
+        size_t current_image = swap_chain.get_current_image_index();
+        renderer_data.frame_vertex_data[current_image].clear();
     }
 
     void renderer::add_shader_dependency(ref<shader> _shader, pipeline* _pipeline) {
@@ -152,25 +172,20 @@ namespace sge {
         return queue;
     }
 
-    void renderer::begin_scene(command_list& cmdlist, glm::vec4 clear_color) {
+    void renderer::begin_scene(const glm::mat4& view_projection) {
         if (renderer_data.current_scene) {
             throw std::runtime_error("a scene is already rendering!");
         }
 
-        auto app = application::get();
-        swapchain& swap_chain = app->get_swapchain();
+        camera_data_t camera_data;
+        camera_data.view_projection = view_projection;
+        renderer_data.camera_buffer->set_data(camera_data);
 
-        cmdlist.begin();
-        swap_chain.begin(cmdlist, clear_color);
-
-        auto scene = std::make_unique<rendering_scene_t>();
-        scene->cmdlist = &cmdlist;
-        renderer_data.current_scene = std::move(scene);
-
+        renderer_data.current_scene = std::make_unique<rendering_scene_t>();
         begin_batch();
     }
 
-    command_list& renderer::end_scene() {
+    void renderer::end_scene() {
         if (!renderer_data.current_scene) {
             throw std::runtime_error("there is no scene rendering!");
         }
@@ -184,16 +199,16 @@ namespace sge {
         if (renderer_data.frame_vertex_data.empty()) {
             renderer_data.frame_vertex_data.resize(swap_chain.get_image_count());
         }
+
         size_t current_image = swap_chain.get_current_image_index();
-        renderer_data.frame_vertex_data[current_image] = scene->vertex_data;
+        auto& frame_vertex_data = renderer_data.frame_vertex_data[current_image];
+        frame_vertex_data.insert(frame_vertex_data.end(), scene->vertex_data.begin(),
+                                 scene->vertex_data.end());
 
-        command_list& cmdlist = *scene->cmdlist;
         scene.reset();
-
-        swap_chain.end(cmdlist);
-        cmdlist.end();
-        return cmdlist;
     }
+
+    void renderer::set_command_list(command_list& cmdlist) { renderer_data.cmdlist = &cmdlist; }
 
     void renderer::begin_batch(const std::string& shader_name) {
         auto& scene = *renderer_data.current_scene;
@@ -214,6 +229,10 @@ namespace sge {
         }
 
         if (!batch->quads.empty()) {
+            if (renderer_data.cmdlist == nullptr) {
+                throw std::runtime_error("cannot add commands to an empty command list!");
+            }
+
             std::vector<vertex> vertices;
             std::vector<uint32_t> indices;
             for (const auto& quad : batch->quads) {
@@ -283,11 +302,12 @@ namespace sge {
                 };
 
                 _pipeline = pipeline::create(spec);
+                _pipeline->set_uniform_buffer(renderer_data.camera_buffer, 0);
                 renderer_data.pipelines.insert(std::make_pair(batch->shader_name, _pipeline));
             }
 
             draw_data data;
-            data.cmdlist = scene.cmdlist;
+            data.cmdlist = renderer_data.cmdlist;
             data.vertices = vertex_buffer::create(vertices);
             data.indices = index_buffer::create(indices);
             data._pipeline = _pipeline;

@@ -17,6 +17,7 @@
 #pragma once
 #include "sge/renderer/shader.h"
 #include "sge/renderer/render_pass.h"
+#include "sge/renderer/uniform_buffer.h"
 namespace sge {
     enum class vertex_attribute_type {
         float1,
@@ -60,6 +61,10 @@ namespace sge {
         virtual ~pipeline() = default;
 
         virtual void invalidate() = 0;
-        virtual const pipeline_spec& get_spec() = 0;
+
+        virtual pipeline_spec& get_spec() = 0;
+        virtual const pipeline_spec& get_spec() const = 0;
+
+        virtual void set_uniform_buffer(ref<uniform_buffer> ubo, uint32_t binding) = 0;
     };
 } // namespace sge

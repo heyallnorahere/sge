@@ -67,6 +67,50 @@ namespace sge {
     void vulkan_pipeline::invalidate() {
         this->destroy();
         this->create();
+
+        {
+            std::vector<VkWriteDescriptorSet> writes;
+            std::vector<VkDescriptorBufferInfo> buffer_info;
+            for (const auto& [binding, data] : this->m_bindings) {
+                if (data.ubo) {
+                    this->write(data.ubo, binding, writes, buffer_info);
+                }
+            }
+
+            if (!writes.empty()) {
+                VkDevice device = vulkan_context::get().get_device().get();
+                vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
+            }
+        }
+    }
+
+    void vulkan_pipeline::set_uniform_buffer(ref<uniform_buffer> ubo, uint32_t binding) {
+        auto vk_uniform_buffer = ubo.as<vulkan_uniform_buffer>();
+
+        {
+            bool invalid_bind = false;
+            if (this->m_bindings.find(binding) != this->m_bindings.end()) {
+                // once textures are a thing, check for those
+            } else {
+                this->m_bindings.insert(std::make_pair(binding, descriptor_set_binding_t()));
+            }
+
+            if (invalid_bind) {
+                throw std::runtime_error("cannot bind a uniform buffer to binding " +
+                                         std::to_string(binding) + "!");
+            }
+
+            this->m_bindings[binding].ubo = vk_uniform_buffer;
+        }
+
+        {
+            std::vector<VkWriteDescriptorSet> writes;
+            std::vector<VkDescriptorBufferInfo> buffer_info;
+            this->write(vk_uniform_buffer, binding, writes, buffer_info);
+
+            VkDevice device = vulkan_context::get().get_device().get();
+            vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
+        }
     }
 
     void vulkan_pipeline::get_descriptor_sets(
@@ -81,8 +125,6 @@ namespace sge {
     void vulkan_pipeline::create() {
         this->create_descriptor_sets();
         this->create_pipeline();
-
-        // todo(nora): update descriptor sets with bound objects
     }
 
     void vulkan_pipeline::destroy() {
@@ -399,5 +441,34 @@ namespace sge {
         result = vkCreateGraphicsPipelines(device, nullptr, 1, &pipeline_info, nullptr,
                                            &this->m_pipeline);
         check_vk_result(result);
+    }
+
+    void vulkan_pipeline::write(ref<vulkan_uniform_buffer> ubo, uint32_t binding,
+                                std::vector<VkWriteDescriptorSet>& writes,
+                                std::vector<VkDescriptorBufferInfo>& buffer_info) {
+        // we're gonna have to assume descriptor set 0
+        static constexpr uint32_t set = 0;
+        if (this->m_descriptor_sets.sets.find(set) == this->m_descriptor_sets.sets.end()) {
+            throw std::runtime_error("descriptor set " + std::to_string(set) + " does not exist!");
+        }
+
+        auto vk_buffer = ubo->get();
+        auto& buffer_data = buffer_info.emplace_back();
+        buffer_data.buffer = vk_buffer->get();
+        buffer_data.offset = 0;
+        buffer_data.range = vk_buffer->size();
+
+        for (VkDescriptorSet desc_set : this->m_descriptor_sets.sets[set].sets) {
+            auto write = vk_init<VkWriteDescriptorSet>(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+
+            write.pBufferInfo = &buffer_data;
+            write.dstSet = desc_set;
+            write.dstBinding = binding;
+            write.dstArrayElement = 0;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+            writes.push_back(write);
+        }
     }
 } // namespace sge

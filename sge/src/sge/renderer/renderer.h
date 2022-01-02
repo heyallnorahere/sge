@@ -47,6 +47,7 @@ namespace sge {
 
         static void init();
         static void shutdown();
+        static void new_frame();
 
         static void add_shader_dependency(ref<shader> _shader, pipeline* _pipeline);
         static void remove_shader_dependency(ref<shader> _shader, pipeline* _pipeline);
@@ -55,10 +56,10 @@ namespace sge {
         static ref<command_queue> get_queue(command_list_type type);
         static shader_library& get_shader_library();
 
-        static void begin_scene(command_list& cmdlist,
-                                glm::vec4 clear_color); // todo(nora): camera and/or render target
-        static command_list& end_scene();
+        static void begin_scene(const glm::mat4& view_projection); // todo(nora): camera
+        static void end_scene();
 
+        static void set_command_list(command_list& cmdlist);
         static void begin_batch(const std::string& shader_name = "default");
         static void next_batch(const std::string& shader_name = "default");
         static void flush_batch();

@@ -5,7 +5,7 @@ set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor")
 set(ASSET_DIR "${CMAKE_SOURCE_DIR}/assets")
 set(SGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/glm")
-set(SGE_LIBS spdlog)
+set(SGE_LIBS spdlog shaderc spirv-cross-glsl)
 
 # platform detection
 if(SGE_DESKTOP)
@@ -36,7 +36,7 @@ endif()
 # renderer api
 if(Vulkan_FOUND)
     list(APPEND SGE_INCLUDES ${Vulkan_INCLUDE_DIR})
-    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator shaderc spirv-cross-glsl)
+    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator)
     list(APPEND SGE_DEFINES SGE_USE_VULKAN)
     list(APPEND ENABLED_PLATFORMS vulkan)
 endif()

@@ -16,6 +16,7 @@
 
 #define SGE_INCLUDE_MAIN
 #include <sge.h>
+#include <sge/renderer/renderer.h>
 namespace sandbox {
     class sandbox_layer : public sge::layer {
     public:
@@ -26,6 +27,38 @@ namespace sandbox {
 
             dispatcher.dispatch<sge::window_resize_event>(
                 SGE_BIND_EVENT_FUNC(sandbox_layer::on_resize));
+        }
+
+        virtual void on_update() override {
+            auto window = sge::application::get()->get_window();
+            float aspect_ratio = (float)window->get_width() / (float)window->get_height();
+            
+            glm::mat4 projection;
+            {
+                static constexpr float orthographic_size = 10.f;
+
+                float left = -orthographic_size * aspect_ratio / 2.f;
+                float right = orthographic_size * aspect_ratio / 2.f;
+                float bottom = -orthographic_size / 2.f;
+                float top = orthographic_size / 2.f;
+
+                projection = glm::ortho(left, right, bottom, top, -1.f, 1.f);
+            }
+
+            glm::vec2 translation = glm::vec2(0.f, 0.f);
+            glm::mat4 model = glm::translate(glm::mat4(1.f), glm::vec3(translation, 0.f));
+
+            sge::renderer::begin_scene(projection * glm::inverse(model));
+
+            sge::renderer::draw_quad(glm::vec2(-1.f, -1.f), glm::vec2(1.f), glm::vec4(0.f, 1.f, 0.f, 1.f));
+            sge::renderer::draw_quad(glm::vec2(-1.f, 0.f), glm::vec2(1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
+
+            sge::renderer::next_batch();
+
+            sge::renderer::draw_quad(glm::vec2(0.f, -1.f), glm::vec2(1.f), glm::vec4(1.f, 1.f, 0.f, 1.f));
+            sge::renderer::draw_quad(glm::vec2(0.f, 0.f), glm::vec2(1.f), glm::vec4(1.f, 0.f, 0.f, 1.f));
+
+            sge::renderer::end_scene();
         }
 
     private:
