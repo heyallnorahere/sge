@@ -8,6 +8,7 @@ AllowShortFunctionsOnASingleLine: All
 Cpp11BracedListStyle: false
 AllowShortEnumsOnASingleLine: true
 BreakBeforeBraces: Attach
+AlwaysBreakTemplateDeclarations: Yes
 BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: false

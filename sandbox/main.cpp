@@ -18,10 +18,33 @@
 #include <sge.h>
 #include <sge/renderer/renderer.h>
 #include <sge/renderer/image.h>
+#include <sge/scene/scene.h>
+#include <sge/scene/components.h>
+#include <sge/scene/entity.h>
+
 namespace sandbox {
+    void add_quad_to_scene(sge::ref<sge::scene> scene, const std::string& name, glm::vec2 position,
+                           glm::vec2 size, glm::vec4 color) {
+        auto e = scene->create_entity(name);
+        auto& quad = e.add_component<sge::quad_component>();
+        quad.position = position;
+        quad.size = size;
+        quad.color = color;
+    }
+
     class sandbox_layer : public sge::layer {
     public:
-        sandbox_layer() : layer("Sandbox Layer") {}
+        sandbox_layer() : layer("Sandbox Layer") {
+            this->m_scene = sge::ref<sge::scene>::create();
+            add_quad_to_scene(this->m_scene, "quad 1", glm::vec2(-1.f, -1.f), glm::vec2(1.f),
+                              glm::vec4(0.f, 1.f, 0.f, 1.f));
+            add_quad_to_scene(this->m_scene, "quad 2", glm::vec2(-1.f, 0.f), glm::vec2(1.f),
+                              glm::vec4(0.f, 0.f, 1.f, 1.f));
+            add_quad_to_scene(this->m_scene, "quad 3", glm::vec2(0.f, -1.f), glm::vec2(1.f),
+                              glm::vec4(1.f, 1.f, 0.f, 1.f));
+            add_quad_to_scene(this->m_scene, "quad 4", glm::vec2(0.f, 0.f), glm::vec2(1.f),
+                              glm::vec4(1.f, 0.f, 0.f, 1.f));
+        }
 
         virtual void on_event(sge::event& event) override {
             sge::event_dispatcher dispatcher(event);
@@ -31,36 +54,8 @@ namespace sandbox {
         }
 
         virtual void on_update(sge::timestep ts) override {
-            auto window = sge::application::get().get_window();
-            float aspect_ratio = (float)window->get_width() / (float)window->get_height();
-            
-            glm::mat4 projection;
-            {
-                static constexpr float orthographic_size = 10.f;
+            this->m_scene->on_update(ts);
 
-                float left = -orthographic_size * aspect_ratio / 2.f;
-                float right = orthographic_size * aspect_ratio / 2.f;
-                float bottom = -orthographic_size / 2.f;
-                float top = orthographic_size / 2.f;
-
-                projection = glm::ortho(left, right, bottom, top, -1.f, 1.f);
-            }
-
-            glm::vec2 translation = glm::vec2(0.f, 0.f);
-            glm::mat4 model = glm::translate(glm::mat4(1.f), glm::vec3(translation, 0.f));
-
-            sge::renderer::begin_scene(projection * glm::inverse(model));
-
-            sge::renderer::draw_quad(glm::vec2(-1.f, -1.f), glm::vec2(1.f), glm::vec4(0.f, 1.f, 0.f, 1.f));
-            sge::renderer::draw_quad(glm::vec2(-1.f, 0.f), glm::vec2(1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
-
-            sge::renderer::next_batch();
-
-            sge::renderer::draw_quad(glm::vec2(0.f, -1.f), glm::vec2(1.f), glm::vec4(1.f, 1.f, 0.f, 1.f));
-            sge::renderer::draw_quad(glm::vec2(0.f, 0.f), glm::vec2(1.f), glm::vec4(1.f, 0.f, 0.f, 1.f));
-
-            sge::renderer::end_scene();
-            
             this->m_time_record += std::chrono::duration_cast<seconds_t>(ts);
             if (this->m_time_record.count() > 1) {
                 this->m_time_record -= seconds_t(1);
@@ -84,6 +79,7 @@ namespace sandbox {
 
         using seconds_t = std::chrono::duration<double>;
         seconds_t m_time_record = seconds_t(0);
+        sge::ref<sge::scene> m_scene;
     };
 
     class sandbox_app : public sge::application {
@@ -111,6 +107,4 @@ namespace sandbox {
     };
 } // namespace sandbox
 
-sge::application* create_app_instance() {
-    return new sandbox::sandbox_app;
-};
+sge::application* create_app_instance() { return new sandbox::sandbox_app; };

@@ -36,6 +36,7 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
+#include <cassert>
 
 #if __has_include(<filesystem>)
 #include <filesystem>
