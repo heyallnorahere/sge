@@ -60,7 +60,7 @@ namespace sge {
             auto [transform, quad] = group.get<transform_component, quad_component>(entity);
 
             // TODO: actually use the transoform
-            sge::renderer::draw_quad(quad.position, quad.size, quad.color);
+            sge::renderer::draw_quad(quad.position, quad.size, quad.color, quad.texture);
         }
         sge::renderer::end_scene();
     }

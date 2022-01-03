@@ -15,7 +15,7 @@
 */
 
 #pragma once
-
+#include "sge/renderer/texture.h"
 namespace sge {
     struct tag_component {
         std::string tag;
@@ -45,5 +45,6 @@ namespace sge {
         glm::vec2 position;
         glm::vec2 size;
         glm::vec4 color;
+        ref<texture_2d> texture;
     };
 } // namespace sge
