@@ -16,7 +16,9 @@
 
 #pragma once
 
-#include "entt/entt.hpp"
+#include "sge/events/event.h"
+#include "sge/events/window_events.h"
+#include <entt/entt.hpp>
 
 namespace sge {
 
@@ -34,8 +36,15 @@ namespace sge {
         void destroy_entity(entity entity);
 
         void on_update(timestep ts);
+        void on_event(event& e);
 
     private:
+        bool on_resize(window_resize_event& e);
+
+        template<typename T> void on_component_added(entity& entity, T& component) {
+            // no behavior
+        }
+
         entt::registry m_registry;
 
         friend class entity;

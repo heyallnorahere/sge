@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "scene.h"
+#include "sge/scene/scene.h"
 
 namespace sge {
     class entity {
@@ -29,6 +29,7 @@ namespace sge {
         T& add_component(Args&&... args) {
             assert(!has_all<T>() && "Entity already has component!");
             T& component = m_scene->m_registry.emplace<T>(m_handle, std::forward<Args>(args)...);
+            m_scene->on_component_added(*this, component);
             return component;
         }
 

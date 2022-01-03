@@ -27,6 +27,11 @@
 // events
 #include "sge/events/event.h"
 
+// scene
+#include "sge/scene/scene.h"
+#include "sge/scene/components.h"
+#include "sge/scene/entity.h"
+
 // main
 #ifdef SGE_INCLUDE_MAIN
 #include "sge/core/main.h"

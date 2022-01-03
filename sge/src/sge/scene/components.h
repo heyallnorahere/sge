@@ -16,6 +16,7 @@
 
 #pragma once
 #include "sge/renderer/texture.h"
+#include "sge/scene/runtime_camera.h"
 namespace sge {
     struct tag_component {
         std::string tag;
@@ -53,5 +54,15 @@ namespace sge {
 
         glm::vec4 color = glm::vec4(1.f);
         ref<texture_2d> texture;
+    };
+
+    struct camera_component {
+        camera_component() = default;
+
+        camera_component(const camera_component&) = default;
+        camera_component& operator=(const camera_component&) = default;
+
+        runtime_camera camera;
+        bool primary = true;
     };
 } // namespace sge

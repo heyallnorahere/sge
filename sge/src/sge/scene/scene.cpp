@@ -17,17 +17,18 @@
 #include "sgepch.h"
 #include "sge/core/application.h"
 #include "sge/core/window.h"
-#include <sge/renderer/renderer.h>
-#include "entity.h"
-#include "components.h"
+#include "sge/renderer/renderer.h"
+#include "sge/scene/entity.h"
+#include "sge/scene/components.h"
 
 namespace sge {
-
     entity scene::create_entity(const std::string& name) {
         entity e = { m_registry.create(), this };
+
         e.add_component<transform_component>();
         auto& t = e.add_component<tag_component>();
         t.tag = name.empty() ? "Entity" : name;
+
         return e;
     }
 
@@ -38,39 +39,60 @@ namespace sge {
         auto window = sge::application::get().get_window();
         float aspect_ratio = (float)window->get_width() / (float)window->get_height();
 
-        glm::mat4 projection;
+        runtime_camera* main_camera = nullptr;
+        glm::mat4 camera_transform;
         {
-            static constexpr float orthographic_size = 10.f;
-
-            float left = -orthographic_size * aspect_ratio / 2.f;
-            float right = orthographic_size * aspect_ratio / 2.f;
-            float bottom = -orthographic_size / 2.f;
-            float top = orthographic_size / 2.f;
-
-            projection = glm::ortho(left, right, bottom, top, -1.f, 1.f);
-        }
-
-        glm::vec2 translation = glm::vec2(0.f, 0.f);
-        glm::mat4 model = glm::translate(glm::mat4(1.f), glm::vec3(translation, 0.f));
-
-        sge::renderer::begin_scene(projection * glm::inverse(model));
-
-        auto group = m_registry.group<transform_component>(entt::get<sprite_renderer_component>);
-        for (auto entity : group) {
-            auto [transform, sprite] =
-                group.get<transform_component, sprite_renderer_component>(entity);
-
-            glm::vec2 position = transform.translation - transform.scale / 2.f;
-            float rotation = transform.rotation;
-            glm::vec2 size = transform.scale;
-            if (sprite.texture) {
-                sge::renderer::draw_rotated_quad(position, rotation, size, sprite.color,
-                                                 sprite.texture);
-            } else {
-                sge::renderer::draw_rotated_quad(position, rotation, size, sprite.color);
+            auto view = m_registry.view<transform_component, camera_component>();
+            for (entt::entity id : view) {
+                const auto& [camera_data, transform] =
+                    m_registry.get<camera_component, transform_component>(id);
+                
+                if (camera_data.primary) {
+                    main_camera = &camera_data.camera;
+                    camera_transform = transform.get_transform();
+                    break;
+                }
             }
         }
-        sge::renderer::end_scene();
+
+        if (main_camera != nullptr) {
+            glm::mat4 projection = main_camera->get_projection();
+            renderer::begin_scene(projection * glm::inverse(camera_transform));
+
+            auto group = m_registry.group<transform_component>(entt::get<sprite_renderer_component>);
+            for (auto entity : group) {
+                auto [transform, sprite] =
+                    group.get<transform_component, sprite_renderer_component>(entity);
+
+                glm::vec2 position = transform.translation - transform.scale / 2.f;
+                float rotation = transform.rotation;
+                glm::vec2 size = transform.scale;
+                if (sprite.texture) {
+                    renderer::draw_rotated_quad(position, rotation, size, sprite.color, sprite.texture);
+                } else {
+                    renderer::draw_rotated_quad(position, rotation, size, sprite.color);
+                }
+            }
+
+            renderer::end_scene();
+        }
     }
 
+    void scene::on_event(event& e) {
+        event_dispatcher dispatcher(e);
+
+        dispatcher.dispatch<window_resize_event>(SGE_BIND_EVENT_FUNC(scene::on_resize));
+
+        // todo(nora): pass to script components
+    }
+
+    bool scene::on_resize(window_resize_event& e) {
+        auto view = m_registry.view<camera_component>();
+        for (entt::entity id : view) {
+            auto& camera = view.get<camera_component>(id);
+            camera.camera.set_render_target_size(e.get_width(), e.get_height());
+        }
+
+        return false;
+    }
 } // namespace sge

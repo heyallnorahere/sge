@@ -16,11 +16,6 @@
 
 #define SGE_INCLUDE_MAIN
 #include <sge.h>
-#include <sge/renderer/renderer.h>
-#include <sge/renderer/image.h>
-#include <sge/scene/scene.h>
-#include <sge/scene/components.h>
-#include <sge/scene/entity.h>
 namespace sandbox {
     class sandbox_layer : public sge::layer {
     public:
@@ -44,6 +39,14 @@ namespace sandbox {
 
             auto& sprite = this->m_entity.add_component<sge::sprite_renderer_component>();
             sprite.texture = this->m_tux;
+
+            auto window = sge::application::get().get_window();
+            uint32_t width = window->get_width();
+            uint32_t height = window->get_height();
+
+            this->m_camera = this->m_scene->create_entity("Camera");
+            auto& camera_data = this->m_camera.add_component<sge::camera_component>();
+            camera_data.camera.set_render_target_size(width, height);
         }
 
         virtual void on_detach() override {
@@ -56,6 +59,10 @@ namespace sandbox {
 
             dispatcher.dispatch<sge::window_resize_event>(
                 SGE_BIND_EVENT_FUNC(sandbox_layer::on_resize));
+
+            if (!event.handled) {
+                this->m_scene->on_event(event);
+            }
         }
 
         virtual void on_update(sge::timestep ts) override {
@@ -63,6 +70,11 @@ namespace sandbox {
 
             auto& transform = this->m_entity.get_component<sge::transform_component>();
             transform.rotation += (float)ts.count() * 25.f;
+
+            auto& camera_data = this->m_camera.get_component<sge::camera_component>();
+            float size = camera_data.camera.get_orthographic_size();
+            size += (float)ts.count();
+            camera_data.camera.set_orthographic_size(size);
 
             this->m_time_record += std::chrono::duration_cast<seconds_t>(ts);
             if (this->m_time_record.count() > 1) {
@@ -89,7 +101,7 @@ namespace sandbox {
         seconds_t m_time_record = seconds_t(0);
         sge::ref<sge::scene> m_scene;
         sge::ref<sge::texture_2d> m_tux;
-        sge::entity m_entity;
+        sge::entity m_entity, m_camera;
     };
 
     class sandbox_app : public sge::application {
