@@ -17,6 +17,7 @@
 #define SGE_INCLUDE_MAIN
 #include <sge.h>
 #include <sge/renderer/renderer.h>
+#include <sge/renderer/image.h>
 namespace sandbox {
     class sandbox_layer : public sge::layer {
     public:
@@ -93,11 +94,20 @@ namespace sandbox {
         virtual void init_app() override {
             this->m_layer = new sandbox_layer;
             this->push_layer(this->m_layer);
+
+            auto image_data = sge::image_data::load("assets/images/tux.png");
+            this->m_tux = sge::image_2d::create(image_data, sge::image_usage_texture);
         }
 
-        virtual void shutdown_app() override { this->m_layer_stack.pop_layer(this->m_layer); }
+        virtual void shutdown_app() override {
+            this->m_tux.reset();
+
+            this->pop_layer(this->m_layer);
+            delete this->m_layer;
+        }
 
         sandbox_layer* m_layer;
+        sge::ref<sge::image_2d> m_tux;
     };
 } // namespace sandbox
 

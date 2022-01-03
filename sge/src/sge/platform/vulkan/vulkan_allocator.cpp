@@ -67,6 +67,18 @@ namespace sge {
         vmaDestroyBuffer(vk_allocator, buffer, allocation);
     }
 
+    void vulkan_allocator::alloc(const VkImageCreateInfo& create_info,
+                                 const VmaAllocationCreateInfo& alloc_info, VkImage& image,
+                                 VmaAllocation& allocation) {
+        VkResult result =
+            vmaCreateImage(vk_allocator, &create_info, &alloc_info, &image, &allocation, nullptr);
+        check_vk_result(result);
+    }
+
+    void vulkan_allocator::free(VkImage image, VmaAllocation allocation) {
+        vmaDestroyImage(vk_allocator, image, allocation);
+    }
+
     void* vulkan_allocator::map(VmaAllocation allocation) {
         void* gpu_data;
         VkResult result = vmaMapMemory(vk_allocator, allocation, &gpu_data);

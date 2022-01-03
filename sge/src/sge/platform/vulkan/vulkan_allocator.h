@@ -29,6 +29,12 @@ namespace sge {
                           VmaAllocation& allocation);
         static void free(VkBuffer buffer, VmaAllocation allocation);
 
+        // images
+        static void alloc(const VkImageCreateInfo& create_info,
+                          const VmaAllocationCreateInfo& alloc_info, VkImage& image,
+                          VmaAllocation& allocation);
+        static void free(VkImage image, VmaAllocation allocation);
+
         // mapping memory
         static void* map(VmaAllocation allocation);
         static void unmap(VmaAllocation allocation);
