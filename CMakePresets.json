@@ -22,10 +22,19 @@
                 "SHADERC_ENABLE_SHARED_CRT": "ON",
                 "SKIP_SPIRV_TOOLS_INSTALL": "ON",
                 "SPIRV_SKIP_EXECUTABLES": "ON",
-                "SPIRV_SKIP_TESTS": "ON"
+                "SPIRV_SKIP_TESTS": "ON",
+                "SPIRV_CROSS_ENABLE_TESTS": "OFF"
             },
             "warnings": {
                 "dev": false
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "debug",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
             }
         }
     ],
@@ -36,6 +45,14 @@
             "jobs": 8,
             "targets": [
                 "sge",
+                "sandbox"
+            ]
+        },
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "jobs": 8,
+            "targets": [
                 "sandbox"
             ]
         }

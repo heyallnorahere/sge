@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 add_subdirectory("spdlog")
 add_subdirectory("SPIRV-Cross")
 add_subdirectory("stb")
+add_subdirectory("entt")
 
 if(NOT SHADERC_DEPENDENCIES_SYNCED)
     find_package(Python3 REQUIRED)
