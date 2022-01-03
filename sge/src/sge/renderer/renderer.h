@@ -16,12 +16,12 @@
 
 #pragma once
 #include "sge/renderer/command_queue.h"
-#include "sge/core/window.h"
 #include "sge/renderer/shader.h"
 #include "sge/renderer/pipeline.h"
 #include "sge/renderer/command_list.h"
 #include "sge/renderer/vertex_buffer.h"
 #include "sge/renderer/index_buffer.h"
+#include "sge/renderer/texture.h"
 namespace sge {
     struct draw_data {
         command_list* cmdlist;
@@ -53,6 +53,9 @@ namespace sge {
         static void remove_shader_dependency(ref<shader> _shader, pipeline* _pipeline);
         static void on_shader_reloaded(ref<shader> _shader);
 
+        static ref<texture_2d> get_white_texture();
+        static ref<texture_2d> get_black_texture();
+
         static ref<command_queue> get_queue(command_list_type type);
         static shader_library& get_shader_library();
 
@@ -66,5 +69,7 @@ namespace sge {
         static void flush_batch();
 
         static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color);
+        static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color,
+                              ref<texture_2d> texture);
     };
 } // namespace sge

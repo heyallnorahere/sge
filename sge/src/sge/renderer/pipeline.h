@@ -18,6 +18,7 @@
 #include "sge/renderer/shader.h"
 #include "sge/renderer/render_pass.h"
 #include "sge/renderer/uniform_buffer.h"
+#include "sge/renderer/texture.h"
 namespace sge {
     enum class vertex_attribute_type {
         float1,
@@ -66,5 +67,6 @@ namespace sge {
         virtual const pipeline_spec& get_spec() const = 0;
 
         virtual void set_uniform_buffer(ref<uniform_buffer> ubo, uint32_t binding) = 0;
+        virtual void set_texture(ref<texture_2d> tex, uint32_t binding, uint32_t slot = 0) = 0;
     };
 } // namespace sge

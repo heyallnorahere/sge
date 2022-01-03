@@ -22,6 +22,7 @@
 #include "sge/platform/vulkan/vulkan_command_list.h"
 #include "sge/platform/vulkan/vulkan_context.h"
 #include "sge/platform/vulkan/vulkan_buffer.h"
+#include "sge/platform/vulkan/vulkan_texture.h"
 namespace sge {
     VkFormat get_vulkan_image_format(image_format format) {
         switch (format) {
@@ -160,6 +161,9 @@ namespace sge {
         }
 
         this->m_layout = new_layout;
+        for (auto tex : this->m_dependents) {
+            tex->on_layout_transition();
+        }
     }
 
     void vulkan_image_2d::create_image() {

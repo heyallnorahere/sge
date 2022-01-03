@@ -41,10 +41,10 @@ namespace sge {
         image_format format;
         switch (channels) {
         case 3:
-            format = image_format::RGB8_UINT;
+            format = image_format::RGB8_SRGB;
             break;
         case 4:
-            format = image_format::RGBA8_UINT;
+            format = image_format::RGBA8_SRGB;
             break;
         default:
             throw std::runtime_error("invalid image format!");

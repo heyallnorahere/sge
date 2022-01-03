@@ -17,6 +17,7 @@
 #pragma once
 #include "sge/renderer/pipeline.h"
 #include "sge/platform/vulkan/vulkan_uniform_buffer.h"
+#include "sge/platform/vulkan/vulkan_texture.h"
 namespace sge {
     class vulkan_pipeline : public pipeline {
     public:
@@ -29,6 +30,7 @@ namespace sge {
         virtual const pipeline_spec& get_spec() const override { return this->m_spec; }
 
         virtual void set_uniform_buffer(ref<uniform_buffer> ubo, uint32_t binding) override;
+        virtual void set_texture(ref<texture_2d> tex, uint32_t binding, uint32_t slot) override;
 
         VkPipeline get_pipeline() { return this->m_pipeline; }
         VkPipelineLayout get_pipeline_layout() { return this->m_layout; }
@@ -47,6 +49,7 @@ namespace sge {
 
         struct descriptor_set_binding_t {
             ref<vulkan_uniform_buffer> ubo;
+            std::vector<ref<vulkan_texture_2d>> textures;
         };
 
         void create();
@@ -56,8 +59,9 @@ namespace sge {
         void create_pipeline();
 
         void write(ref<vulkan_uniform_buffer> ubo, uint32_t binding,
-                   std::vector<VkWriteDescriptorSet>& writes,
-                   std::vector<VkDescriptorBufferInfo>& buffer_info);
+                   std::vector<VkWriteDescriptorSet>& writes);
+        void write(ref<vulkan_texture_2d> tex, uint32_t binding, uint32_t slot,
+                   std::vector<VkWriteDescriptorSet>& writes);
 
         VkPipeline m_pipeline;
         VkPipelineLayout m_layout;

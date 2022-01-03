@@ -22,6 +22,7 @@ namespace sge {
     VkFormat get_vulkan_image_format(image_format format);
     VkImageUsageFlags get_vulkan_image_usage(uint32_t usage);
 
+    class vulkan_texture_2d;
     class vulkan_image_2d : public image_2d {
     public:
         vulkan_image_2d(const image_spec& spec);
@@ -60,5 +61,8 @@ namespace sge {
         VkImageAspectFlags m_aspect;
 
         image_spec m_spec;
+
+        std::set<vulkan_texture_2d*> m_dependents;
+        friend class vulkan_texture_2d;
     };
 } // namespace sge

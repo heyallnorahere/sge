@@ -15,23 +15,25 @@
 */
 
 #pragma once
-#include "sge/renderer/uniform_buffer.h"
-#include "sge/platform/vulkan/vulkan_buffer.h"
+#include "sge/renderer/image.h"
 namespace sge {
-    class vulkan_uniform_buffer : public uniform_buffer {
+    enum class texture_wrap { clamp, repeat };
+    enum class texture_filter { linear, nearest };
+
+    struct texture_2d_spec {
+        ref<image_2d> image;
+        texture_wrap wrap = texture_wrap::repeat;
+        texture_filter filter = texture_filter::linear;
+    };
+
+    class texture_2d : public ref_counted {
     public:
-        vulkan_uniform_buffer(size_t size);
-        virtual ~vulkan_uniform_buffer() override = default;
+        static ref<texture_2d> create(const texture_2d_spec& spec);
 
-        virtual size_t get_size() override { return this->m_buffer->size(); }
+        virtual ~texture_2d() = default;
 
-        virtual void set_data(const void* data, size_t size, size_t offset) override;
-
-        ref<vulkan_buffer> get() { return this->m_buffer; }
-        const VkDescriptorBufferInfo& get_descriptor_info() { return this->m_descriptor_info; }
-
-    private:
-        ref<vulkan_buffer> m_buffer;
-        VkDescriptorBufferInfo m_descriptor_info;
+        virtual ref<image_2d> get_image() = 0;
+        virtual texture_wrap get_wrap() = 0;
+        virtual texture_filter get_filter() = 0;
     };
 } // namespace sge

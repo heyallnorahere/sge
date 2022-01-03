@@ -21,6 +21,11 @@ namespace sge {
     vulkan_uniform_buffer::vulkan_uniform_buffer(size_t size) {
         this->m_buffer = ref<vulkan_buffer>::create(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                                     VMA_MEMORY_USAGE_CPU_ONLY);
+        
+        this->m_descriptor_info = vk_init<VkDescriptorBufferInfo>();
+        this->m_descriptor_info.buffer = this->m_buffer->get();
+        this->m_descriptor_info.offset = 0;
+        this->m_descriptor_info.range = this->m_buffer->size();
     }
 
     void vulkan_uniform_buffer::set_data(const void* data, size_t size, size_t offset) {

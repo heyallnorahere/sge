@@ -32,11 +32,13 @@ namespace sge {
     struct quad_t {
         glm::vec2 position, size;
         glm::vec4 color;
+        size_t texture_index;
     };
 
     struct batch_t {
         ref<shader> _shader;
         std::vector<quad_t> quads;
+        std::vector<ref<texture_2d>> textures;
     };
 
     struct vertex_data_t {
@@ -47,6 +49,7 @@ namespace sge {
     struct rendering_scene_t {
         std::unique_ptr<batch_t> current_batch;
         std::vector<vertex_data_t> vertex_data;
+        std::unordered_map<ref<shader>, std::vector<ref<pipeline>>> used_pipelines;
     };
 
     struct shader_dependency_t {
@@ -59,6 +62,16 @@ namespace sge {
         glm::mat4 view_projection;
     };
 
+    struct used_pipeline_data_t {
+        std::vector<ref<pipeline>> currently_using;
+        std::queue<ref<pipeline>> used;
+    };
+
+    struct frame_renderer_data_t {
+        std::unordered_map<ref<shader>, used_pipeline_data_t> pipelines;
+        std::vector<vertex_data_t> vertex_data;
+    };
+
     static struct {
         std::unique_ptr<shader_library> _shader_library;
         std::unique_ptr<renderer_api> api;
@@ -67,11 +80,10 @@ namespace sge {
         std::unordered_map<ref<shader>, shader_dependency_t> shader_dependencies;
 
         std::unique_ptr<rendering_scene_t> current_scene;
-        std::unordered_map<ref<shader>, ref<pipeline>> pipelines;
-        std::vector<std::vector<vertex_data_t>> frame_vertex_data;
+        std::vector<frame_renderer_data_t> frame_renderer_data;
         command_list* cmdlist = nullptr;
-
         ref<uniform_buffer> camera_buffer;
+        ref<texture_2d> white_texture, black_texture;
     } renderer_data;
 
     static void load_shaders() {
@@ -99,13 +111,32 @@ namespace sge {
         load_shaders();
 
         renderer_data.camera_buffer = uniform_buffer::create(sizeof(camera_data_t));
+
+        {
+            texture_2d_spec spec;
+            spec.filter = texture_filter::linear;
+            spec.wrap = texture_wrap::repeat;
+
+            std::vector<uint8_t> data = { 0, 0, 0, 255 };
+            auto img_data = image_data::create(data.data(), data.size() * sizeof(uint8_t), 1, 1,
+                                               image_format::RGBA8_SRGB);
+            spec.image = image_2d::create(img_data, image_usage_none);
+            renderer_data.black_texture = texture_2d::create(spec);
+
+            data = { 255, 255, 255, 255 };
+            img_data = image_data::create(data.data(), data.size() * sizeof(uint8_t), 1, 1,
+                                          image_format::RGBA8_SRGB);
+            spec.image = image_2d::create(img_data, image_usage_none);
+            renderer_data.white_texture = texture_2d::create(spec);
+        }
     }
 
     void renderer::shutdown() {
+        renderer_data.black_texture.reset();
+        renderer_data.white_texture.reset();
         renderer_data.camera_buffer.reset();
 
-        renderer_data.frame_vertex_data.clear();
-        renderer_data.pipelines.clear();
+        renderer_data.frame_renderer_data.clear();
         renderer_data._shader_library.reset();
         renderer_data.queues.clear();
 
@@ -114,13 +145,21 @@ namespace sge {
     }
 
     void renderer::new_frame() {
-        if (renderer_data.frame_vertex_data.empty()) {
+        if (renderer_data.frame_renderer_data.empty()) {
             return;
         }
 
         swapchain& swap_chain = application::get().get_swapchain();
         size_t current_image = swap_chain.get_current_image_index();
-        renderer_data.frame_vertex_data[current_image].clear();
+        auto& frame_data = renderer_data.frame_renderer_data[current_image];
+        frame_data.vertex_data.clear();
+
+        for (auto& [_shader, data] : frame_data.pipelines) {
+            for (const auto& _pipeline : data.currently_using) {
+                data.used.push(_pipeline);
+            }
+            data.currently_using.clear();
+        }
     }
 
     void renderer::add_shader_dependency(ref<shader> _shader, pipeline* _pipeline) {
@@ -157,7 +196,8 @@ namespace sge {
         }
     }
 
-    shader_library& renderer::get_shader_library() { return *renderer_data._shader_library; }
+    ref<texture_2d> renderer::get_white_texture() { return renderer_data.white_texture; }
+    ref<texture_2d> renderer::get_black_texture() { return renderer_data.black_texture; }
 
     ref<command_queue> renderer::get_queue(command_list_type type) {
         ref<command_queue> queue;
@@ -171,6 +211,8 @@ namespace sge {
 
         return queue;
     }
+
+    shader_library& renderer::get_shader_library() { return *renderer_data._shader_library; }
 
     void renderer::begin_scene(const glm::mat4& view_projection) {
         if (renderer_data.current_scene) {
@@ -196,14 +238,21 @@ namespace sge {
         auto& app = application::get();
         swapchain& swap_chain = app.get_swapchain();
 
-        if (renderer_data.frame_vertex_data.empty()) {
-            renderer_data.frame_vertex_data.resize(swap_chain.get_image_count());
+        if (renderer_data.frame_renderer_data.empty()) {
+            renderer_data.frame_renderer_data.resize(swap_chain.get_image_count());
         }
 
         size_t current_image = swap_chain.get_current_image_index();
-        auto& frame_vertex_data = renderer_data.frame_vertex_data[current_image];
-        frame_vertex_data.insert(frame_vertex_data.end(), scene->vertex_data.begin(),
-                                 scene->vertex_data.end());
+        auto& frame_renderer_data = renderer_data.frame_renderer_data[current_image];
+        frame_renderer_data.vertex_data.insert(frame_renderer_data.vertex_data.end(),
+                                               scene->vertex_data.begin(),
+                                               scene->vertex_data.end());
+
+        for (const auto& [_shader, pipelines] : scene->used_pipelines) {
+            auto& pipeline_data = frame_renderer_data.pipelines[_shader];
+            pipeline_data.currently_using.insert(pipeline_data.currently_using.end(),
+                                                 pipelines.begin(), pipelines.end());
+        }
 
         scene.reset();
     }
@@ -251,9 +300,6 @@ namespace sge {
                 }
                 indices.insert(indices.end(), quad_indices.begin(), quad_indices.end());
 
-                // until textures
-                static constexpr int32_t texture_index = 0;
-
                 std::vector<vertex> quad_vertices(4);
 
                 // top right
@@ -261,28 +307,28 @@ namespace sge {
                 v->position = quad.position + quad.size;
                 v->color = quad.color;
                 v->uv = glm::vec2(1.f, 0.f);
-                v->texture_index = texture_index;
+                v->texture_index = (int32_t)quad.texture_index;
 
                 // bottom right
                 v = &quad_vertices[1];
                 v->position = quad.position + glm::vec2(quad.size.x, 0.f);
                 v->color = quad.color;
                 v->uv = glm::vec2(1.f, 1.f);
-                v->texture_index = texture_index;
+                v->texture_index = (int32_t)quad.texture_index;
 
                 // bottom left
                 v = &quad_vertices[2];
                 v->position = quad.position;
                 v->color = quad.color;
                 v->uv = glm::vec2(0.f, 1.f);
-                v->texture_index = texture_index;
+                v->texture_index = (int32_t)quad.texture_index;
 
                 // top left
                 v = &quad_vertices[3];
                 v->position = quad.position + glm::vec2(0.f, quad.size.y);
                 v->color = quad.color;
                 v->uv = glm::vec2(0.f, 0.f);
-                v->texture_index = texture_index;
+                v->texture_index = (int32_t)quad.texture_index;
 
                 vertices.insert(vertices.end(), quad_vertices.begin(), quad_vertices.end());
             }
@@ -291,9 +337,19 @@ namespace sge {
             auto renderpass = swap_chain.get_render_pass();
 
             ref<pipeline> _pipeline;
-            if (renderer_data.pipelines.find(batch->_shader) != renderer_data.pipelines.end()) {
-                _pipeline = renderer_data.pipelines[batch->_shader];
-            } else {
+            if (!renderer_data.frame_renderer_data.empty()) {
+                size_t image_index = swap_chain.get_current_image_index();
+                auto& frame_data = renderer_data.frame_renderer_data[image_index];
+
+                if (frame_data.pipelines.find(batch->_shader) != frame_data.pipelines.end()) {
+                    auto& queue = frame_data.pipelines[batch->_shader].used;
+                    if (!queue.empty()) {
+                        _pipeline = queue.front();
+                        queue.pop();
+                    }
+                }
+            }
+            if (!_pipeline) {
                 pipeline_spec spec;
                 spec._shader = batch->_shader;
                 spec.renderpass = renderpass;
@@ -307,7 +363,11 @@ namespace sge {
 
                 _pipeline = pipeline::create(spec);
                 _pipeline->set_uniform_buffer(renderer_data.camera_buffer, 0);
-                renderer_data.pipelines.insert(std::make_pair(batch->_shader, _pipeline));
+            }
+
+            for (size_t i = 0; i < batch->textures.size(); i++) {
+                // gonna have to assume 1
+                _pipeline->set_texture(batch->textures[i], 1, i);
             }
 
             draw_data data;
@@ -321,18 +381,45 @@ namespace sge {
             vertex_data.vertices = data.vertices;
             vertex_data.indices = data.indices;
             scene.vertex_data.push_back(vertex_data);
+
+            if (scene.used_pipelines.find(batch->_shader) == scene.used_pipelines.end()) {
+                scene.used_pipelines.insert(
+                    std::make_pair(batch->_shader, std::vector<ref<pipeline>>()));
+            }
+            scene.used_pipelines[batch->_shader].push_back(_pipeline);
         }
 
         batch.reset();
     }
 
     void renderer::draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color) {
+        draw_quad(position, size, color, renderer_data.white_texture);
+    }
+
+    void renderer::draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color,
+                             ref<texture_2d> texture) {
         auto& batch = *renderer_data.current_scene->current_batch;
 
         quad_t quad;
         quad.position = position;
         quad.size = size;
         quad.color = color;
+
+        {
+            std::optional<size_t> texture_index;
+            for (size_t i = 0; i < batch.textures.size(); i++) {
+                if (batch.textures[i] == texture) {
+                    texture_index = i;
+                }
+            }
+
+            if (texture_index.has_value()) {
+                quad.texture_index = texture_index.value();
+            } else {
+                quad.texture_index = batch.textures.size();
+                batch.textures.push_back(texture);
+            }
+        }
 
         batch.quads.push_back(quad);
     }

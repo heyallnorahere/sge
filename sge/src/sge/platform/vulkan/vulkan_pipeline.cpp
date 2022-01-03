@@ -54,6 +54,28 @@ namespace sge {
         renderer::add_shader_dependency(this->m_spec._shader, this);
 
         this->create();
+
+        {
+            auto vk_shader = this->m_spec._shader.as<vulkan_shader>();
+            const auto& reflection_data = vk_shader->get_reflection_data();
+
+            for (const auto& [name, resource] : reflection_data.resources) {
+                if (resource.set > 0) {
+                    continue;
+                }
+
+                using resource_type = vulkan_shader::resource_type;
+                if (resource.type == resource_type::image ||
+                    resource.type == resource_type::sampled_image) {
+                    this->m_bindings[resource.binding].textures.resize(resource.descriptor_count);
+
+                    ref<texture_2d> black_texture = renderer::get_black_texture();
+                    for (uint32_t i = 0; i < resource.descriptor_count; i++) {
+                        this->set_texture(black_texture, resource.binding, i);
+                    }
+                }
+            }
+        }
     }
 
     vulkan_pipeline::~vulkan_pipeline() {
@@ -70,10 +92,13 @@ namespace sge {
 
         {
             std::vector<VkWriteDescriptorSet> writes;
-            std::vector<VkDescriptorBufferInfo> buffer_info;
             for (const auto& [binding, data] : this->m_bindings) {
                 if (data.ubo) {
-                    this->write(data.ubo, binding, writes, buffer_info);
+                    this->write(data.ubo, binding, writes);
+                }
+
+                for (size_t i = 0; i < data.textures.size(); i++) {
+                    this->write(data.textures[i], binding, i, writes);
                 }
             }
 
@@ -90,7 +115,9 @@ namespace sge {
         {
             bool invalid_bind = false;
             if (this->m_bindings.find(binding) != this->m_bindings.end()) {
-                // once textures are a thing, check for those
+                if (!this->m_bindings[binding].textures.empty()) {
+                    invalid_bind = true;
+                }
             } else {
                 this->m_bindings.insert(std::make_pair(binding, descriptor_set_binding_t()));
             }
@@ -105,8 +132,42 @@ namespace sge {
 
         {
             std::vector<VkWriteDescriptorSet> writes;
-            std::vector<VkDescriptorBufferInfo> buffer_info;
-            this->write(vk_uniform_buffer, binding, writes, buffer_info);
+            this->write(vk_uniform_buffer, binding, writes);
+
+            VkDevice device = vulkan_context::get().get_device().get();
+            vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
+        }
+    }
+
+    void vulkan_pipeline::set_texture(ref<texture_2d> tex, uint32_t binding, uint32_t slot) {
+        auto vk_texture = tex.as<vulkan_texture_2d>();
+
+        {
+            bool invalid_bind = false;
+            if (this->m_bindings.find(binding) != this->m_bindings.end()) {
+                if (this->m_bindings[binding].ubo) {
+                    invalid_bind = true;
+                }
+            } else {
+                this->m_bindings.insert(std::make_pair(binding, descriptor_set_binding_t()));
+            }
+
+            if (invalid_bind) {
+                throw std::runtime_error("cannot bind a texture to binding " +
+                                         std::to_string(binding) + "!");
+            }
+
+            auto& binding_data = this->m_bindings[binding];
+
+            if (slot >= binding_data.textures.size()) {
+                throw std::runtime_error("invalid texture slot!");
+            }
+            binding_data.textures[slot] = vk_texture;
+        }
+
+        {
+            std::vector<VkWriteDescriptorSet> writes;
+            this->write(vk_texture, binding, slot, writes);
 
             VkDevice device = vulkan_context::get().get_device().get();
             vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
@@ -443,30 +504,45 @@ namespace sge {
         check_vk_result(result);
     }
 
+    // we're gonna have to assume descriptor set 0
+    static constexpr uint32_t written_set = 0;
+
     void vulkan_pipeline::write(ref<vulkan_uniform_buffer> ubo, uint32_t binding,
-                                std::vector<VkWriteDescriptorSet>& writes,
-                                std::vector<VkDescriptorBufferInfo>& buffer_info) {
-        // we're gonna have to assume descriptor set 0
-        static constexpr uint32_t set = 0;
-        if (this->m_descriptor_sets.sets.find(set) == this->m_descriptor_sets.sets.end()) {
-            throw std::runtime_error("descriptor set " + std::to_string(set) + " does not exist!");
+                                std::vector<VkWriteDescriptorSet>& writes) {
+        if (this->m_descriptor_sets.sets.find(written_set) == this->m_descriptor_sets.sets.end()) {
+            throw std::runtime_error("descriptor set " + std::to_string(written_set) +
+                                     " does not exist!");
         }
 
-        auto vk_buffer = ubo->get();
-        auto& buffer_data = buffer_info.emplace_back();
-        buffer_data.buffer = vk_buffer->get();
-        buffer_data.offset = 0;
-        buffer_data.range = vk_buffer->size();
-
-        for (VkDescriptorSet desc_set : this->m_descriptor_sets.sets[set].sets) {
+        for (VkDescriptorSet desc_set : this->m_descriptor_sets.sets[written_set].sets) {
             auto write = vk_init<VkWriteDescriptorSet>(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
 
-            write.pBufferInfo = &buffer_data;
+            write.pBufferInfo = &ubo->get_descriptor_info();
             write.dstSet = desc_set;
             write.dstBinding = binding;
             write.dstArrayElement = 0;
             write.descriptorCount = 1;
             write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+            writes.push_back(write);
+        }
+    }
+
+    void vulkan_pipeline::write(ref<vulkan_texture_2d> tex, uint32_t binding, uint32_t slot, std::vector<VkWriteDescriptorSet>& writes) {
+        if (this->m_descriptor_sets.sets.find(written_set) == this->m_descriptor_sets.sets.end()) {
+            throw std::runtime_error("descriptor set " + std::to_string(written_set) +
+                                     " does not exist!");
+        }
+
+        for (VkDescriptorSet desc_set : this->m_descriptor_sets.sets[written_set].sets) {
+            auto write = vk_init<VkWriteDescriptorSet>(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+
+            write.pImageInfo = &tex->get_descriptor_info();
+            write.dstSet = desc_set;
+            write.dstBinding = binding;
+            write.dstArrayElement = slot;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
             writes.push_back(write);
         }
