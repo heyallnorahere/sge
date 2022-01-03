@@ -31,6 +31,7 @@ namespace sge {
 
     struct quad_t {
         glm::vec2 position, size;
+        float rotation;
         glm::vec4 color;
         size_t texture_index;
     };
@@ -279,6 +280,19 @@ namespace sge {
         begin_batch();
     }
 
+    static glm::vec2 rotate_vertex(glm::vec2 position, float rotation) {
+        glm::vec2 normalized = position * 2.f - 1.f;
+        float angle = glm::degrees(glm::atan(normalized.y, normalized.x));
+
+        angle -= rotation;
+
+        glm::vec2 new_position;
+        new_position.x = glm::cos(glm::radians(angle));
+        new_position.y = glm::sin(glm::radians(angle));
+
+        return (new_position + 1.f) / 2.f;
+    }
+
     void renderer::flush_batch() {
         auto& scene = *renderer_data.current_scene;
         auto& batch = scene.current_batch;
@@ -304,28 +318,32 @@ namespace sge {
 
                 // top right
                 vertex* v = &quad_vertices[0];
-                v->position = quad.position + quad.size;
+                v->position =
+                    quad.position + quad.size * rotate_vertex(glm::vec2(1.f), quad.rotation);
                 v->color = quad.color;
                 v->uv = glm::vec2(1.f, 0.f);
                 v->texture_index = (int32_t)quad.texture_index;
 
                 // bottom right
                 v = &quad_vertices[1];
-                v->position = quad.position + glm::vec2(quad.size.x, 0.f);
+                v->position =
+                    quad.position + quad.size * rotate_vertex(glm::vec2(1.f, 0.f), quad.rotation);
                 v->color = quad.color;
                 v->uv = glm::vec2(1.f, 1.f);
                 v->texture_index = (int32_t)quad.texture_index;
 
                 // bottom left
                 v = &quad_vertices[2];
-                v->position = quad.position;
+                v->position =
+                    quad.position + quad.size * rotate_vertex(glm::vec2(0.f), quad.rotation);
                 v->color = quad.color;
                 v->uv = glm::vec2(0.f, 1.f);
                 v->texture_index = (int32_t)quad.texture_index;
 
                 // top left
                 v = &quad_vertices[3];
-                v->position = quad.position + glm::vec2(0.f, quad.size.y);
+                v->position =
+                    quad.position + quad.size * rotate_vertex(glm::vec2(0.f, 1.f), quad.rotation);
                 v->color = quad.color;
                 v->uv = glm::vec2(0.f, 0.f);
                 v->texture_index = (int32_t)quad.texture_index;
@@ -392,8 +410,36 @@ namespace sge {
         batch.reset();
     }
 
+    size_t renderer::push_texture(ref<texture_2d> texture) {
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        std::optional<size_t> texture_index;
+        for (size_t i = 0; i < batch.textures.size(); i++) {
+            if (batch.textures[i] == texture) {
+                texture_index = i;
+            }
+        }
+
+        if (texture_index.has_value()) {
+            return texture_index.value();
+        } else {
+            size_t index = batch.textures.size();
+            batch.textures.push_back(texture);
+            return index;
+        }
+    }
+
     void renderer::draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color) {
-        draw_quad(position, size, color, renderer_data.white_texture);
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        quad_t quad;
+        quad.position = position;
+        quad.size = size;
+        quad.rotation = 0.f;
+        quad.color = color;
+        quad.texture_index = push_texture(renderer_data.white_texture);
+
+        batch.quads.push_back(quad);
     }
 
     void renderer::draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color,
@@ -403,23 +449,37 @@ namespace sge {
         quad_t quad;
         quad.position = position;
         quad.size = size;
+        quad.rotation = 0.f;
         quad.color = color;
+        quad.texture_index = push_texture(texture);
 
-        {
-            std::optional<size_t> texture_index;
-            for (size_t i = 0; i < batch.textures.size(); i++) {
-                if (batch.textures[i] == texture) {
-                    texture_index = i;
-                }
-            }
+        batch.quads.push_back(quad);
+    }
 
-            if (texture_index.has_value()) {
-                quad.texture_index = texture_index.value();
-            } else {
-                quad.texture_index = batch.textures.size();
-                batch.textures.push_back(texture);
-            }
-        }
+    void renderer::draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
+                                     glm::vec4 color) {
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        quad_t quad;
+        quad.position = position;
+        quad.size = size;
+        quad.rotation = rotation;
+        quad.color = color;
+        quad.texture_index = push_texture(renderer_data.white_texture);
+
+        batch.quads.push_back(quad);
+    }
+
+    void renderer::draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
+                                     glm::vec4 color, ref<texture_2d> texture) {
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        quad_t quad;
+        quad.position = position;
+        quad.size = size;
+        quad.rotation = rotation;
+        quad.color = color;
+        quad.texture_index = push_texture(texture);
 
         batch.quads.push_back(quad);
     }

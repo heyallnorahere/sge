@@ -141,7 +141,7 @@ namespace sge {
             }
         }
 
-        const auto& layer_names = context.get_layers();
+        const auto& layer_names = context.get_device_layers();
         std::vector<const char*> device_layers;
         {
             uint32_t layer_count = 0;

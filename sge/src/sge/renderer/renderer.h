@@ -64,12 +64,20 @@ namespace sge {
 
         static void set_command_list(command_list& cmdlist);
         static void set_shader(ref<shader> _shader);
+
         static void begin_batch();
         static void next_batch();
         static void flush_batch();
 
+        static size_t push_texture(ref<texture_2d> texture);
+
         static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color);
         static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color,
                               ref<texture_2d> texture);
+
+        static void draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
+                                      glm::vec4 color);
+        static void draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
+                                      glm::vec4 color, ref<texture_2d> texture);
     };
 } // namespace sge

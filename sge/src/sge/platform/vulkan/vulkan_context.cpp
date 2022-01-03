@@ -45,7 +45,7 @@ namespace sge {
 
     struct vk_data {
         uint32_t vulkan_version;
-        std::set<std::string> instance_extensions, device_extensions, layer_names;
+        std::set<std::string> instance_extensions, instance_layers, device_extensions, device_layers;
         VkInstance instance = nullptr;
         VkDebugUtilsMessengerEXT debug_messenger = nullptr;
         std::unique_ptr<vulkan_device> device;
@@ -60,7 +60,8 @@ namespace sge {
 
 #ifdef SGE_DEBUG
         data->instance_extensions.insert("VK_EXT_debug_utils");
-        data->layer_names.insert("VK_LAYER_KHRONOS_validation");
+        data->instance_layers.insert("VK_LAYER_KHRONOS_validation");
+        data->device_layers.insert("VK_LAYER_KHRONOS_validation");
 #endif
 
         if (data->vulkan_version < VK_API_VERSION_1_1) {
@@ -114,7 +115,7 @@ namespace sge {
             vkEnumerateInstanceLayerProperties(&layer_count, layers.data());
 
             // verify layer availability
-            for (const auto& selected_layer : data->layer_names) {
+            for (const auto& selected_layer : data->instance_layers) {
                 bool found = false;
                 for (const auto& available_layer : layers) {
                     if (selected_layer == available_layer.layerName) {
@@ -293,11 +294,10 @@ namespace sge {
     VkInstance vulkan_context::get_instance() { return this->m_data->instance; }
     vulkan_device& vulkan_context::get_device() { return *this->m_data->device; }
 
-    const std::set<std::string>& vulkan_context::get_instance_extensions() {
-        return this->m_data->instance_extensions;
-    }
     const std::set<std::string>& vulkan_context::get_device_extensions() {
         return this->m_data->device_extensions;
     }
-    const std::set<std::string>& vulkan_context::get_layers() { return this->m_data->layer_names; }
+    const std::set<std::string>& vulkan_context::get_device_layers() {
+        return this->m_data->device_layers;
+    }
 } // namespace sge

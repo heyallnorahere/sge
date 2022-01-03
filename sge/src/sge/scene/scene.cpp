@@ -27,7 +27,7 @@ namespace sge {
         entity e = { m_registry.create(), this };
         e.add_component<transform_component>();
         auto& t = e.add_component<tag_component>();
-        t.tag = name.empty() ? "entity" : name;
+        t.tag = name.empty() ? "Entity" : name;
         return e;
     }
 
@@ -55,12 +55,20 @@ namespace sge {
 
         sge::renderer::begin_scene(projection * glm::inverse(model));
 
-        auto group = m_registry.group<transform_component>(entt::get<quad_component>);
+        auto group = m_registry.group<transform_component>(entt::get<sprite_renderer_component>);
         for (auto entity : group) {
-            auto [transform, quad] = group.get<transform_component, quad_component>(entity);
+            auto [transform, sprite] =
+                group.get<transform_component, sprite_renderer_component>(entity);
 
-            // TODO: actually use the transoform
-            sge::renderer::draw_quad(quad.position, quad.size, quad.color, quad.texture);
+            glm::vec2 position = transform.translation - transform.scale / 2.f;
+            float rotation = transform.rotation;
+            glm::vec2 size = transform.scale;
+            if (sprite.texture) {
+                sge::renderer::draw_rotated_quad(position, rotation, size, sprite.color,
+                                                 sprite.texture);
+            } else {
+                sge::renderer::draw_rotated_quad(position, rotation, size, sprite.color);
+            }
         }
         sge::renderer::end_scene();
     }

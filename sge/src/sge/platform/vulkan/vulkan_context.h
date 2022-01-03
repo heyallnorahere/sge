@@ -31,9 +31,8 @@ namespace sge {
         VkInstance get_instance();
         vulkan_device& get_device();
 
-        const std::set<std::string>& get_instance_extensions();
         const std::set<std::string>& get_device_extensions();
-        const std::set<std::string>& get_layers();
+        const std::set<std::string>& get_device_layers();
 
     private:
         vulkan_context() = default;

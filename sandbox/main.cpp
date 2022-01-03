@@ -21,23 +21,7 @@
 #include <sge/scene/scene.h>
 #include <sge/scene/components.h>
 #include <sge/scene/entity.h>
-
 namespace sandbox {
-    void add_quad_to_scene(sge::ref<sge::scene> scene, const std::string& name, glm::vec2 position,
-                           glm::vec2 size, glm::vec4 color, sge::ref<sge::texture_2d> texture) {
-        auto e = scene->create_entity(name);
-        auto& quad = e.add_component<sge::quad_component>();
-        quad.position = position;
-        quad.size = size;
-        quad.color = color;
-        quad.texture = texture;
-
-        if (!quad.texture) {
-            auto white_texture = sge::renderer::get_white_texture();
-            quad.texture = white_texture;
-        }
-    }
-
     class sandbox_layer : public sge::layer {
     public:
         sandbox_layer() : layer("Sandbox Layer") {}
@@ -45,7 +29,7 @@ namespace sandbox {
         virtual void on_attach() override {
             auto image_data = sge::image_data::load("assets/images/tux.png");
             auto img = sge::image_2d::create(image_data, sge::image_usage_texture);
-            
+
             sge::texture_2d_spec spec;
             spec.image = img;
             spec.filter = sge::texture_filter::linear;
@@ -53,14 +37,13 @@ namespace sandbox {
             this->m_tux = sge::texture_2d::create(spec);
 
             this->m_scene = sge::ref<sge::scene>::create();
-            add_quad_to_scene(this->m_scene, "penguin 1", glm::vec2(-1.f, -1.f), glm::vec2(1.f),
-                              glm::vec4(0.f, 1.f, 0.f, 1.f), this->m_tux);
-            add_quad_to_scene(this->m_scene, "penguin 2", glm::vec2(-1.f, 0.f), glm::vec2(1.f),
-                              glm::vec4(0.f, 0.f, 1.f, 1.f), this->m_tux);
-            add_quad_to_scene(this->m_scene, "penguin 3", glm::vec2(0.f, -1.f), glm::vec2(1.f),
-                              glm::vec4(1.f, 1.f, 0.f, 1.f), this->m_tux);
-            add_quad_to_scene(this->m_scene, "penguin 4", glm::vec2(0.f, 0.f), glm::vec2(1.f),
-                              glm::vec4(1.f, 0.f, 0.f, 1.f), this->m_tux);
+            this->m_entity = this->m_scene->create_entity("Penguin");
+
+            auto& transform = this->m_entity.get_component<sge::transform_component>();
+            transform.scale = glm::vec2(10.f);
+
+            auto& sprite = this->m_entity.add_component<sge::sprite_renderer_component>();
+            sprite.texture = this->m_tux;
         }
 
         virtual void on_detach() override {
@@ -77,6 +60,9 @@ namespace sandbox {
 
         virtual void on_update(sge::timestep ts) override {
             this->m_scene->on_update(ts);
+
+            auto& transform = this->m_entity.get_component<sge::transform_component>();
+            transform.rotation += (float)ts.count() * 25.f;
 
             this->m_time_record += std::chrono::duration_cast<seconds_t>(ts);
             if (this->m_time_record.count() > 1) {
@@ -103,7 +89,8 @@ namespace sandbox {
         seconds_t m_time_record = seconds_t(0);
         sge::ref<sge::scene> m_scene;
         sge::ref<sge::texture_2d> m_tux;
-   };
+        sge::entity m_entity;
+    };
 
     class sandbox_app : public sge::application {
     public:

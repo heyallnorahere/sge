@@ -21,8 +21,10 @@ namespace sge {
         std::string tag;
 
         tag_component() = default;
-        tag_component(const tag_component&) = default;
         tag_component(const std::string& t) : tag(t) {}
+
+        tag_component(const tag_component&) = default;
+        tag_component& operator=(const tag_component&) = default;
     };
 
     struct transform_component {
@@ -31,8 +33,10 @@ namespace sge {
         glm::vec2 scale = glm::vec2(1.f, 1.f);
 
         transform_component() = default;
-        transform_component(const transform_component&) = default;
         transform_component(const glm::vec3& t) : translation(t) {}
+
+        transform_component(const transform_component&) = default;
+        transform_component& operator=(const transform_component&) = default;
 
         glm::mat4 get_transform() const {
             return glm::translate(glm::mat4(1.0f), glm::vec3(translation, 0.f)) *
@@ -41,10 +45,13 @@ namespace sge {
         }
     };
 
-    struct quad_component {
-        glm::vec2 position;
-        glm::vec2 size;
-        glm::vec4 color;
+    struct sprite_renderer_component {
+        sprite_renderer_component() = default;
+
+        sprite_renderer_component(const sprite_renderer_component&) = default;
+        sprite_renderer_component& operator=(const sprite_renderer_component&) = default;
+
+        glm::vec4 color = glm::vec4(1.f);
         ref<texture_2d> texture;
     };
 } // namespace sge
