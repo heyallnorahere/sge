@@ -26,6 +26,8 @@
 
 // events
 #include "sge/events/event.h"
+#include "sge/events/window_events.h"
+#include "sge/events/input_events.h"
 
 // scene
 #include "sge/scene/scene.h"

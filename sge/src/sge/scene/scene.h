@@ -41,7 +41,8 @@ namespace sge {
     private:
         bool on_resize(window_resize_event& e);
 
-        template<typename T> void on_component_added(entity& entity, T& component) {
+        template <typename T>
+        void on_component_added(entity& entity, T& component) {
             // no behavior
         }
 

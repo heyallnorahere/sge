@@ -20,6 +20,7 @@
 #endif
 #include "sge/platform/desktop/desktop_window.h"
 #include "sge/events/window_events.h"
+#include "sge/events/input_events.h"
 namespace sge {
     static uint32_t glfw_window_count = 0;
 
@@ -117,30 +118,143 @@ namespace sge {
             }
         });
 
+#define MAP_KEY(key) case GLFW_KEY_##key: code = key_code::key; break
         glfwSetKeyCallback(this->m_window, [](GLFWwindow* window, int32_t key, int32_t scancode,
                                               int32_t action, int32_t mods) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
 
             if (wd->event_callback != nullptr) {
+                key_code code;
+                switch (key) {
+                    MAP_KEY(SPACE);
+                    MAP_KEY(APOSTROPHE);
+                    MAP_KEY(COMMA);
+                    MAP_KEY(MINUS);
+                    MAP_KEY(PERIOD);
+                    MAP_KEY(SLASH);
+                case GLFW_KEY_0:
+                    code = key_code::ZERO;
+                    break;
+                case GLFW_KEY_1:
+                    code = key_code::ONE;
+                    break;
+                case GLFW_KEY_2:
+                    code = key_code::TWO;
+                    break;
+                case GLFW_KEY_3:
+                    code = key_code::THREE;
+                    break;
+                case GLFW_KEY_4:
+                    code = key_code::FOUR;
+                    break;
+                case GLFW_KEY_5:
+                    code = key_code::FIVE;
+                    break;
+                case GLFW_KEY_6:
+                    code = key_code::SIX;
+                    break;
+                case GLFW_KEY_7:
+                    code = key_code::SEVEN;
+                    break;
+                case GLFW_KEY_8:
+                    code = key_code::EIGHT;
+                    break;
+                case GLFW_KEY_9:
+                    code = key_code::NINE;
+                    break;
+                    MAP_KEY(SEMICOLON);
+                    MAP_KEY(EQUAL);
+                    MAP_KEY(A);
+                    MAP_KEY(B);
+                    MAP_KEY(C);
+                    MAP_KEY(D);
+                    MAP_KEY(E);
+                    MAP_KEY(F);
+                    MAP_KEY(G);
+                    MAP_KEY(H);
+                    MAP_KEY(I);
+                    MAP_KEY(J);
+                    MAP_KEY(K);
+                    MAP_KEY(L);
+                    MAP_KEY(M);
+                    MAP_KEY(N);
+                    MAP_KEY(O);
+                    MAP_KEY(P);
+                    MAP_KEY(Q);
+                    MAP_KEY(R);
+                    MAP_KEY(S);
+                    MAP_KEY(T);
+                    MAP_KEY(U);
+                    MAP_KEY(V);
+                    MAP_KEY(W);
+                    MAP_KEY(X);
+                    MAP_KEY(Y);
+                    MAP_KEY(Z);
+                    MAP_KEY(LEFT_BRACKET);
+                    MAP_KEY(BACKSLASH);
+                    MAP_KEY(RIGHT_BRACKET);
+                    MAP_KEY(GRAVE_ACCENT);
+                    MAP_KEY(ESCAPE);
+                    MAP_KEY(ENTER);
+                    MAP_KEY(TAB);
+                    MAP_KEY(BACKSPACE);
+                    MAP_KEY(INSERT);
+                    MAP_KEY(DELETE);
+                    MAP_KEY(RIGHT);
+                    MAP_KEY(LEFT);
+                    MAP_KEY(DOWN);
+                    MAP_KEY(UP);
+                    MAP_KEY(F1);
+                    MAP_KEY(F2);
+                    MAP_KEY(F3);
+                    MAP_KEY(F4);
+                    MAP_KEY(F5);
+                    MAP_KEY(F6);
+                    MAP_KEY(F7);
+                    MAP_KEY(F8);
+                    MAP_KEY(F9);
+                    MAP_KEY(F10);
+                    MAP_KEY(F11);
+                    MAP_KEY(F12);
+                    MAP_KEY(F13);
+                    MAP_KEY(F14);
+                    MAP_KEY(F15);
+                    MAP_KEY(F16);
+                    MAP_KEY(F17);
+                    MAP_KEY(F18);
+                    MAP_KEY(F19);
+                    MAP_KEY(F20);
+                    MAP_KEY(F21);
+                    MAP_KEY(F22);
+                    MAP_KEY(F23);
+                    MAP_KEY(F24);
+                    MAP_KEY(F25);
+                    MAP_KEY(LEFT_SHIFT);
+                    MAP_KEY(LEFT_CONTROL);
+                    MAP_KEY(LEFT_ALT);
+                    MAP_KEY(RIGHT_SHIFT);
+                    MAP_KEY(RIGHT_CONTROL);
+                    MAP_KEY(RIGHT_ALT);
+                default:
+                    // this key won't be used
+                    return;
+                }
+
+                event* e = nullptr;
                 switch (action) {
                 case GLFW_PRESS:
-                    // todo: key pressed event
+                    e = new key_pressed_event(code, 0);
                     break;
                 case GLFW_RELEASE:
-                    // todo: key released event
+                    e = new key_released_event(code);
                     break;
                 case GLFW_REPEAT:
-                    // todo: key pressed event but with a flag i guess
+                    e = new key_pressed_event(code, 1);
                     break;
                 }
-            }
-        });
 
-        glfwSetCharCallback(this->m_window, [](GLFWwindow* window, uint32_t scancode) {
-            window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
-
-            if (wd->event_callback != nullptr) {
-                // todo: event stuff
+                wd->event_callback(*e);
+                delete e;
             }
         });
     }
