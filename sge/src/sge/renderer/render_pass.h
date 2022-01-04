@@ -15,11 +15,19 @@
 */
 
 #pragma once
+#include "sge/renderer/command_list.h"
 namespace sge {
+    enum class render_pass_parent_type {
+        swap_chain,
+    };
+
     class render_pass : public ref_counted {
     public:
         virtual ~render_pass() = default;
 
-        // todo(nora): begin() and end()?
+        virtual render_pass_parent_type get_parent_type() = 0;
+
+        virtual void begin(command_list& cmdlist, const glm::vec4& clear_color) = 0;
+        virtual void end(command_list& cmdlist) = 0;
     };
 } // namespace sge

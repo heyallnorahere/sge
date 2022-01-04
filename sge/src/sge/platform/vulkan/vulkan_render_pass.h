@@ -16,15 +16,23 @@
 
 #pragma once
 #include "sge/renderer/render_pass.h"
+#include "sge/platform/vulkan/vulkan_swapchain.h"
 namespace sge {
     class vulkan_render_pass : public render_pass {
     public:
-        vulkan_render_pass(VkRenderPass vk_render_pass); // todo(nora): NOT THIS
+        vulkan_render_pass(vulkan_swapchain* parent);
         virtual ~vulkan_render_pass() override;
 
+        virtual render_pass_parent_type get_parent_type() override;
+
+        virtual void begin(command_list& cmdlist, const glm::vec4& clear_color) override;
+        virtual void end(command_list& cmdlist) override;
+
         VkRenderPass get() { return this->m_render_pass; }
+        vulkan_swapchain* get_swapchain_parent() { return this->m_swapchain_parent; }
 
     private:
+        vulkan_swapchain* m_swapchain_parent = nullptr;
         VkRenderPass m_render_pass;
     };
 } // namespace sge

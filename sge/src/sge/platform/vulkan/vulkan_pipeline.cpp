@@ -373,16 +373,22 @@ namespace sge {
         rasterizer.depthBiasEnable = false;
         rasterizer.lineWidth = 1.f;
 
-        // todo(nora): swapchain shenanigans
         auto blend_attachment_state = vk_init<VkPipelineColorBlendAttachmentState>();
         blend_attachment_state.colorWriteMask = 0xf;
         blend_attachment_state.blendEnable = true;
-        blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-        blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
-        blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
-        blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        
+        switch (this->m_spec.renderpass->get_parent_type()) {
+        case render_pass_parent_type::swap_chain:
+            blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+            blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
+            blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
+            blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            break;
+        default:
+            throw std::runtime_error("this shouldn't be reached");
+        }
 
         auto color_blend_state = vk_init<VkPipelineColorBlendStateCreateInfo>(
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);

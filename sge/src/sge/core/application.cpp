@@ -97,7 +97,9 @@ namespace sge {
                 size_t current_image = this->m_swapchain->get_current_image_index();
                 auto& cmdlist = this->m_swapchain->get_command_list(current_image);
                 cmdlist.begin();
-                this->m_swapchain->begin(cmdlist, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
+
+                auto renderpass = this->m_swapchain->get_render_pass();
+                renderpass->begin(cmdlist, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
                 renderer::set_command_list(cmdlist);
 
                 timestep ts;
@@ -117,7 +119,7 @@ namespace sge {
                     (*it)->on_update(ts);
                 }
 
-                this->m_swapchain->end(cmdlist);
+                renderpass->end(cmdlist);
                 cmdlist.end();
 
                 this->m_swapchain->present();

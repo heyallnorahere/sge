@@ -18,6 +18,7 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_swapchain.h"
 #include "sge/platform/vulkan/vulkan_context.h"
+#include "sge/platform/vulkan/vulkan_render_pass.h"
 namespace sge {
     vulkan_swapchain::vulkan_swapchain(ref<window> _window) {
         VkInstance instance = vulkan_context::get().get_instance();
@@ -136,50 +137,6 @@ namespace sge {
         this->m_current_frame %= max_frames_in_flight;
     }
 
-    void vulkan_swapchain::begin(command_list& cmdlist, const glm::vec4& clear_color) {
-        auto& vk_cmdlist = (vulkan_command_list&)cmdlist;
-        VkCommandBuffer cmdbuffer = vk_cmdlist.get();
-
-        auto begin_info = vk_init<VkRenderPassBeginInfo>(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-
-        VkRect2D render_area;
-        render_area.extent = { this->m_width, this->m_height };
-        render_area.offset = { 0, 0 };
-        begin_info.renderArea = render_area;
-
-        auto clear_value = vk_init<VkClearValue>();
-        memcpy(clear_value.color.float32, &clear_color, sizeof(float) * 4);
-        begin_info.clearValueCount = 1;
-        begin_info.pClearValues = &clear_value;
-
-        begin_info.framebuffer = this->m_swapchain_images[this->m_current_image_index].framebuffer;
-        begin_info.renderPass = this->m_render_pass->get();
-
-        vkCmdBeginRenderPass(cmdbuffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
-
-        VkViewport viewport;
-        viewport.minDepth = 0.f;
-        viewport.maxDepth = 1.f;
-
-        viewport.x = 0;
-        viewport.width = (float)this->m_width;
-
-        viewport.y = (float)this->m_height;
-        viewport.height = -viewport.y;
-        vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
-
-        VkRect2D scissor;
-        scissor.offset = { 0, 0 };
-        scissor.extent = { this->m_width, this->m_height };
-        vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
-    }
-
-    void vulkan_swapchain::end(command_list& cmdlist) {
-        auto& vk_cmdlist = (vulkan_command_list&)cmdlist;
-        VkCommandBuffer cmdbuffer = vk_cmdlist.get();
-        vkCmdEndRenderPass(cmdbuffer);
-    }
-
     bool vulkan_swapchain::acquire_next_image() {
         VkDevice device = vulkan_context::get().get_device().get();
         VkSemaphore semaphore = this->m_sync_objects[this->m_current_frame].image_available;
@@ -194,57 +151,6 @@ namespace sge {
         }
 
         return false;
-    }
-
-    void vulkan_swapchain::create_render_pass() {
-        auto color_attachment = vk_init<VkAttachmentDescription>();
-        color_attachment.format = this->m_image_format;
-        color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-        auto color_attachment_ref = vk_init<VkAttachmentReference>();
-        color_attachment_ref.attachment = 0;
-        color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        auto subpass = vk_init<VkSubpassDescription>();
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &color_attachment_ref;
-
-        auto dependency = vk_init<VkSubpassDependency>();
-
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.dstSubpass = 0;
-
-        dependency.srcStageMask = dependency.dstStageMask =
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-        dependency.srcAccessMask = 0;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-        auto create_info =
-            vk_init<VkRenderPassCreateInfo>(VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-
-        create_info.attachmentCount = 1;
-        create_info.pAttachments = &color_attachment;
-
-        create_info.subpassCount = 1;
-        create_info.pSubpasses = &subpass;
-
-        create_info.dependencyCount = 1;
-        create_info.pDependencies = &dependency;
-
-        VkDevice device = vulkan_context::get().get_device().get();
-        VkRenderPass vk_render_pass;
-        VkResult result = vkCreateRenderPass(device, &create_info, nullptr, &vk_render_pass);
-        check_vk_result(result);
-
-        this->m_render_pass = ref<vulkan_render_pass>::create(vk_render_pass);
     }
 
     void vulkan_swapchain::allocate_command_buffers() {
@@ -306,7 +212,7 @@ namespace sge {
     void vulkan_swapchain::create(bool render_pass) {
         this->create_swapchain();
         if (render_pass) {
-            this->create_render_pass();
+            this->m_render_pass = ref<vulkan_render_pass>::create(this);
         }
         this->acquire_images();
 
@@ -506,6 +412,7 @@ namespace sge {
     }
 
     void vulkan_swapchain::acquire_images() {
+        auto vk_render_pass = this->m_render_pass.as<vulkan_render_pass>();
         VkDevice device = vulkan_context::get().get_device().get();
 
         uint32_t image_count = 0;
@@ -548,7 +455,7 @@ namespace sge {
 
                 create_info.attachmentCount = 1;
                 create_info.pAttachments = &data.view;
-                create_info.renderPass = this->m_render_pass->get();
+                create_info.renderPass = vk_render_pass->get();
                 create_info.width = this->m_width;
                 create_info.height = this->m_height;
                 create_info.layers = 1;
