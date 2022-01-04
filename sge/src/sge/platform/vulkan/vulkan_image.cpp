@@ -46,14 +46,14 @@ namespace sge {
         }
 
         VkImageUsageFlags flags = 0;
-        if (usage & image_usage_texture != 0) {
+        if ((usage & image_usage_texture) != 0) {
             flags |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         }
-        if (usage & image_usage_attachment) {
+        if ((usage & image_usage_attachment) != 0) {
             // maybe pass depth boolean?
             flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         }
-        if (usage & image_usage_storage) {
+        if ((usage & image_usage_storage) != 0) {
             flags |= VK_IMAGE_USAGE_STORAGE_BIT;
         }
         return flags;

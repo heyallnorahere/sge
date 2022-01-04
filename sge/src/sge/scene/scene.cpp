@@ -35,9 +35,7 @@ namespace sge {
     void scene::destroy_entity(entity e) { m_registry.destroy(e); }
 
     void scene::on_update(timestep ts) {
-        // Temporary: construct static camera with aspect ratio from app window
-        auto window = sge::application::get().get_window();
-        float aspect_ratio = (float)window->get_width() / (float)window->get_height();
+        // todo(nora): update script components
 
         runtime_camera* main_camera = nullptr;
         glm::mat4 camera_transform;
