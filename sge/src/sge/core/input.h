@@ -15,27 +15,19 @@
 */
 
 #pragma once
-// this header is NOT to be included by the core sge library.
-
-// precompiled header
-#include "sgepch.h"
-
-// core
-#include "sge/core/application.h"
-#include "sge/core/window.h"
-#include "sge/core/input.h"
-
-// events
+#include "sge/core/key_codes.h"
 #include "sge/events/event.h"
-#include "sge/events/window_events.h"
-#include "sge/events/input_events.h"
+namespace sge {
+    class input {
+    public:
+        input() = delete;
 
-// scene
-#include "sge/scene/scene.h"
-#include "sge/scene/components.h"
-#include "sge/scene/entity.h"
+        static void init();
+        static void shutdown();
+        static void on_event(event& e);
 
-// main
-#ifdef SGE_INCLUDE_MAIN
-#include "sge/core/main.h"
-#endif
+        static bool get_key(key_code code);
+
+        // todo: action mapping
+    };
+} // namespace sge

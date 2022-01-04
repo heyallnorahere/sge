@@ -17,6 +17,7 @@
 #include "sgepch.h"
 #include "sge/core/application.h"
 #include "sge/renderer/renderer.h"
+#include "sge/core/input.h"
 
 extern sge::application* create_app_instance();
 namespace sge {
@@ -45,6 +46,8 @@ namespace sge {
         dispatcher.dispatch<window_resize_event>(
             SGE_BIND_EVENT_FUNC(application::on_window_resize));
 
+        input::on_event(e);
+
         for (auto& _layer : this->m_layer_stack) {
             if (e.handled) {
                 break;
@@ -62,6 +65,8 @@ namespace sge {
         renderer::init();
         this->m_swapchain = swapchain::create(this->m_window);
 
+        input::init();
+
         this->init_app();
     }
 
@@ -69,6 +74,8 @@ namespace sge {
         spdlog::info("shutting down application: {0}...", this->m_title);
 
         this->shutdown_app();
+
+        input::shutdown();
 
         this->m_swapchain.reset();
         renderer::shutdown();
