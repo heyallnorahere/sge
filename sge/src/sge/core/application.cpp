@@ -83,38 +83,39 @@ namespace sge {
         this->m_running = true;
 
         while (this->m_running) {
-            this->m_swapchain->new_frame();
-            renderer::new_frame();
-
-            size_t current_image = this->m_swapchain->get_current_image_index();
-            auto& cmdlist = this->m_swapchain->get_command_list(current_image);
-            cmdlist.begin();
-            this->m_swapchain->begin(cmdlist, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
-            renderer::set_command_list(cmdlist);
-
-            timestep ts;
-            {
-                using namespace std::chrono;
-
-                static high_resolution_clock clock;
-                static high_resolution_clock::time_point t0 = clock.now();
-                high_resolution_clock::time_point t1 = clock.now();
-
-                ts = duration_cast<timestep>(t1 - t0);
-                t0 = t1;
-            }
-
             if (!this->m_minimized) {
+                this->m_swapchain->new_frame();
+                renderer::new_frame();
+
+                size_t current_image = this->m_swapchain->get_current_image_index();
+                auto& cmdlist = this->m_swapchain->get_command_list(current_image);
+                cmdlist.begin();
+                this->m_swapchain->begin(cmdlist, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
+                renderer::set_command_list(cmdlist);
+
+                timestep ts;
+                {
+                    using namespace std::chrono;
+
+                    static high_resolution_clock clock;
+                    static high_resolution_clock::time_point t0 = clock.now();
+                    high_resolution_clock::time_point t1 = clock.now();
+
+                    ts = duration_cast<timestep>(t1 - t0);
+                    t0 = t1;
+                }
+
                 for (auto it = this->m_layer_stack.rbegin(); it != this->m_layer_stack.rend();
                      it++) {
                     (*it)->on_update(ts);
                 }
+
+                this->m_swapchain->end(cmdlist);
+                cmdlist.end();
+
+                this->m_swapchain->present();
             }
 
-            this->m_swapchain->end(cmdlist);
-            cmdlist.end();
-
-            this->m_swapchain->present();
             this->m_window->on_update();
         }
     }
