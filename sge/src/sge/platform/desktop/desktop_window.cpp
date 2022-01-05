@@ -118,7 +118,32 @@ namespace sge {
             }
         });
 
-#define MAP_KEY(key) case GLFW_KEY_##key: code = key_code::key; break
+        glfwSetMouseButtonCallback(
+            this->m_window, [](GLFWwindow* window, int32_t button, int32_t action, int32_t mods) {
+                window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
+
+                if (wd->event_callback != nullptr) {
+                    mouse_button mbutton;
+                    switch (button) {
+                    case GLFW_MOUSE_BUTTON_LEFT:
+                        mbutton = mouse_button::left;
+                        break;
+                    case GLFW_MOUSE_BUTTON_RIGHT:
+                        mbutton = mouse_button::right;
+                        break;
+                    case GLFW_MOUSE_BUTTON_MIDDLE:
+                        mbutton = mouse_button::middle;
+                        break;
+                    default:
+                        // unhandled
+                        break;
+                    }
+
+                    mouse_button_event e(mbutton, action == GLFW_REPEAT);
+                    wd->event_callback(e);
+                }
+            });
+
         glfwSetKeyCallback(this->m_window, [](GLFWwindow* window, int32_t key, int32_t scancode,
                                               int32_t action, int32_t mods) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
@@ -126,6 +151,10 @@ namespace sge {
             if (wd->event_callback != nullptr) {
                 key_code code;
                 switch (key) {
+#define MAP_KEY(key)                                                                               \
+    case GLFW_KEY_##key:                                                                           \
+        code = key_code::key;                                                                      \
+        break
                     MAP_KEY(SPACE);
                     MAP_KEY(APOSTROPHE);
                     MAP_KEY(COMMA);
@@ -235,8 +264,9 @@ namespace sge {
                     MAP_KEY(RIGHT_SHIFT);
                     MAP_KEY(RIGHT_CONTROL);
                     MAP_KEY(RIGHT_ALT);
+#undef MAP_KEY
                 default:
-                    // this key won't be used
+                    // not handled
                     return;
                 }
 
@@ -255,6 +285,24 @@ namespace sge {
 
                 wd->event_callback(*e);
                 delete e;
+            }
+        });
+
+        glfwSetScrollCallback(this->m_window, [](GLFWwindow* window, double x, double y) {
+            window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
+
+            if (wd->event_callback != nullptr) {
+                mouse_scrolled_event e(glm::vec2((float)x, (float)y));
+                wd->event_callback(e);
+            }
+        });
+
+        glfwSetCursorPosCallback(this->m_window, [](GLFWwindow* window, double x, double y) {
+            window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
+
+            if (wd->event_callback != nullptr) {
+                mouse_moved_event e(glm::vec2((float)x, (float)y));
+                wd->event_callback(e);
             }
         });
     }

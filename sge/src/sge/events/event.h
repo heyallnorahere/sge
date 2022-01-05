@@ -23,6 +23,9 @@ namespace sge {
         key_pressed,
         key_released,
         key_typed,
+        mouse_moved,
+        mouse_scrolled,
+        mouse_button
     };
 
 #define EVENT_ID_DECL(id)                                                                          \

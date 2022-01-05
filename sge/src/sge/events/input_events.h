@@ -58,4 +58,45 @@ namespace sge {
     private:
         key_code m_key;
     };
+
+    class mouse_moved_event : public event {
+    public:
+        mouse_moved_event(glm::vec2 position) { this->m_position = position; }
+
+        glm::vec2 get_position() { return this->m_position; }
+
+        EVENT_ID_DECL(mouse_moved)
+
+    private:
+        glm::vec2 m_position;
+    };
+
+    class mouse_scrolled_event : public event {
+    public:
+        mouse_scrolled_event(glm::vec2 offset) { this->m_offset = offset; }
+
+        glm::vec2 get_offset() { return this->m_offset; }
+
+        EVENT_ID_DECL(mouse_scrolled)
+
+    private:
+        glm::vec2 m_offset;
+    };
+
+    class mouse_button_event : public event {
+    public:
+        mouse_button_event(mouse_button button, bool released) {
+            this->m_button = button;
+            this->m_released = released;
+        }
+
+        mouse_button get_button() { return this->m_button; }
+        bool get_released() { return this->m_released; }
+
+        EVENT_ID_DECL(mouse_button);
+
+    private:
+        mouse_button m_button;
+        bool m_released;
+    };
 } // namespace sge

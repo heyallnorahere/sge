@@ -27,6 +27,7 @@ namespace sge {
         static void on_event(event& e);
 
         static bool get_key(key_code code);
+        static bool get_mouse_button(mouse_button button);
 
         // todo: action mapping
     };

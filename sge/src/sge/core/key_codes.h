@@ -107,4 +107,6 @@ namespace sge {
         RIGHT_CONTROL,
         RIGHT_ALT
     };
+
+    enum class mouse_button { left, right, middle };
 } // namespace sge
