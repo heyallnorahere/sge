@@ -31,6 +31,7 @@
 #include <functional>
 #include <memory>
 #include <queue>
+#include <stack>
 #include <limits>
 #include <optional>
 #include <thread>

@@ -22,6 +22,7 @@
 #include "sge/renderer/vertex_buffer.h"
 #include "sge/renderer/index_buffer.h"
 #include "sge/renderer/texture.h"
+#include "sge/renderer/render_pass.h"
 namespace sge {
     struct draw_data {
         command_list* cmdlist;
@@ -68,6 +69,10 @@ namespace sge {
         static void begin_batch();
         static void next_batch();
         static void flush_batch();
+
+        static void push_render_pass(ref<render_pass> renderpass, const glm::vec4& clear_color);
+        static ref<render_pass> pop_render_pass();
+        static void begin_render_pass();
 
         static size_t push_texture(ref<texture_2d> texture);
 

@@ -50,7 +50,7 @@ namespace sge {
     struct rendering_scene_t {
         std::unique_ptr<batch_t> current_batch;
         std::vector<vertex_data_t> vertex_data;
-        std::unordered_map<ref<shader>, std::vector<ref<pipeline>>> used_pipelines;
+        std::unordered_map<ref<render_pass>, std::vector<ref<pipeline>>> used_pipelines;
     };
 
     struct shader_dependency_t {
@@ -68,9 +68,19 @@ namespace sge {
         std::queue<ref<pipeline>> used;
     };
 
+    struct render_pass_pipeline_data_t {
+        std::unordered_map<ref<shader>, used_pipeline_data_t> data;
+    };
+
     struct frame_renderer_data_t {
-        std::unordered_map<ref<shader>, used_pipeline_data_t> pipelines;
+        std::unordered_map<ref<render_pass>, render_pass_pipeline_data_t> pipelines;
         std::vector<vertex_data_t> vertex_data;
+    };
+
+    struct render_pass_data_t {
+        ref<render_pass> pass;
+        bool active;
+        glm::vec4 clear_color;
     };
 
     static struct {
@@ -82,7 +92,9 @@ namespace sge {
 
         std::unique_ptr<rendering_scene_t> current_scene;
         std::vector<frame_renderer_data_t> frame_renderer_data;
+        std::stack<render_pass_data_t> render_passes;
         command_list* cmdlist = nullptr;
+
         ref<uniform_buffer> camera_buffer;
         ref<texture_2d> white_texture, black_texture;
     } renderer_data;
@@ -137,6 +149,9 @@ namespace sge {
         renderer_data.white_texture.reset();
         renderer_data.camera_buffer.reset();
 
+        if (!renderer_data.render_passes.empty()) {
+            throw std::runtime_error("not all render passes have been popped!");
+        }
         renderer_data.frame_renderer_data.clear();
         renderer_data._shader_library.reset();
         renderer_data.queues.clear();
@@ -155,11 +170,13 @@ namespace sge {
         auto& frame_data = renderer_data.frame_renderer_data[current_image];
         frame_data.vertex_data.clear();
 
-        for (auto& [_shader, data] : frame_data.pipelines) {
-            for (const auto& _pipeline : data.currently_using) {
-                data.used.push(_pipeline);
+        for (auto& [renderpass, pipelines] : frame_data.pipelines) {
+            for (auto& [_shader, data] : pipelines.data) {
+                for (const auto& _pipeline : data.currently_using) {
+                    data.used.push(_pipeline);
+                }
+                data.currently_using.clear();
             }
-            data.currently_using.clear();
         }
     }
 
@@ -249,10 +266,16 @@ namespace sge {
                                                scene->vertex_data.begin(),
                                                scene->vertex_data.end());
 
-        for (const auto& [_shader, pipelines] : scene->used_pipelines) {
-            auto& pipeline_data = frame_renderer_data.pipelines[_shader];
-            pipeline_data.currently_using.insert(pipeline_data.currently_using.end(),
-                                                 pipelines.begin(), pipelines.end());
+        
+
+        for (const auto& [pass, pipelines] : scene->used_pipelines) {
+            auto& pipeline_data = frame_renderer_data.pipelines[pass];
+            
+            for (auto _pipeline : pipelines) {
+                auto _shader = _pipeline->get_spec()._shader;
+                auto& pipelines = pipeline_data.data[_shader];
+                pipelines.currently_using.push_back(_pipeline);
+            }
         }
 
         scene.reset();
@@ -299,6 +322,9 @@ namespace sge {
         if (!batch) {
             return;
         }
+
+        begin_render_pass();
+        auto pass = renderer_data.render_passes.top().pass;
 
         if (!batch->quads.empty()) {
             if (renderer_data.cmdlist == nullptr) {
@@ -351,16 +377,14 @@ namespace sge {
                 vertices.insert(vertices.end(), quad_vertices.begin(), quad_vertices.end());
             }
 
-            swapchain& swap_chain = application::get().get_swapchain();
-            auto renderpass = swap_chain.get_render_pass();
-
             ref<pipeline> _pipeline;
             if (!renderer_data.frame_renderer_data.empty()) {
+                swapchain& swap_chain = application::get().get_swapchain();
                 size_t image_index = swap_chain.get_current_image_index();
                 auto& frame_data = renderer_data.frame_renderer_data[image_index];
 
-                if (frame_data.pipelines.find(batch->_shader) != frame_data.pipelines.end()) {
-                    auto& queue = frame_data.pipelines[batch->_shader].used;
+                if (frame_data.pipelines[pass].data.find(batch->_shader) != frame_data.pipelines[pass].data.end()) {
+                    auto& queue = frame_data.pipelines[pass].data[batch->_shader].used;
                     if (!queue.empty()) {
                         _pipeline = queue.front();
                         queue.pop();
@@ -370,7 +394,7 @@ namespace sge {
             if (!_pipeline) {
                 pipeline_spec spec;
                 spec._shader = batch->_shader;
-                spec.renderpass = renderpass;
+                spec.renderpass = pass;
                 spec.input_layout.stride = sizeof(vertex);
                 spec.input_layout.attributes = {
                     { vertex_attribute_type::float2, offsetof(vertex, position) },
@@ -400,14 +424,49 @@ namespace sge {
             vertex_data.indices = data.indices;
             scene.vertex_data.push_back(vertex_data);
 
-            if (scene.used_pipelines.find(batch->_shader) == scene.used_pipelines.end()) {
+            if (scene.used_pipelines.find(pass) == scene.used_pipelines.end()) {
                 scene.used_pipelines.insert(
-                    std::make_pair(batch->_shader, std::vector<ref<pipeline>>()));
+                    std::make_pair(pass, std::vector<ref<pipeline>>()));
             }
-            scene.used_pipelines[batch->_shader].push_back(_pipeline);
+            scene.used_pipelines[pass].push_back(_pipeline);
         }
 
         batch.reset();
+    }
+
+    void renderer::push_render_pass(ref<render_pass> renderpass, const glm::vec4& clear_color) {
+        if (!renderer_data.render_passes.empty()) {
+            auto& front = renderer_data.render_passes.top();
+            if (front.active) {
+                front.pass->end(*renderer_data.cmdlist);
+                front.active = false;
+            }
+        }
+
+        render_pass_data_t pass_data;
+        pass_data.pass = renderpass;
+        pass_data.clear_color = clear_color;
+        pass_data.active = false;
+        renderer_data.render_passes.push(pass_data);
+    }
+
+    ref<render_pass> renderer::pop_render_pass() {
+        auto pass_data = renderer_data.render_passes.top();
+        renderer_data.render_passes.pop();
+
+        if (pass_data.active) {
+            pass_data.pass->end(*renderer_data.cmdlist);
+        }
+
+        return pass_data.pass;
+    }
+
+    void renderer::begin_render_pass() {
+        auto& pass_data = renderer_data.render_passes.top();
+        if (!pass_data.active) {
+            pass_data.pass->begin(*renderer_data.cmdlist, pass_data.clear_color);
+            pass_data.active = true;
+        }
     }
 
     size_t renderer::push_texture(ref<texture_2d> texture) {

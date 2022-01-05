@@ -97,10 +97,10 @@ namespace sge {
                 size_t current_image = this->m_swapchain->get_current_image_index();
                 auto& cmdlist = this->m_swapchain->get_command_list(current_image);
                 cmdlist.begin();
-
-                auto renderpass = this->m_swapchain->get_render_pass();
-                renderpass->begin(cmdlist, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
                 renderer::set_command_list(cmdlist);
+
+                auto pass = this->m_swapchain->get_render_pass();
+                renderer::push_render_pass(pass, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
 
                 timestep ts;
                 {
@@ -119,7 +119,9 @@ namespace sge {
                     (*it)->on_update(ts);
                 }
 
-                renderpass->end(cmdlist);
+                if (renderer::pop_render_pass() != pass) {
+                    throw std::runtime_error("a render pass was pushed, but not popped!");
+                }
                 cmdlist.end();
 
                 this->m_swapchain->present();
