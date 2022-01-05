@@ -59,13 +59,13 @@ namespace sge {
     void application::init() {
         spdlog::info("initializing application: {0}...", this->m_title);
 
+        input::init();
         this->m_window = window::create(this->m_title, 1600, 900);
         this->m_window->set_event_callback(SGE_BIND_EVENT_FUNC(application::on_event));
 
         renderer::init();
         this->m_swapchain = swapchain::create(this->m_window);
 
-        input::init();
 
         this->init_app();
     }
@@ -75,12 +75,12 @@ namespace sge {
 
         this->shutdown_app();
 
-        input::shutdown();
 
         this->m_swapchain.reset();
         renderer::shutdown();
 
         this->m_window.reset();
+        input::shutdown();
     }
 
     void application::run() {

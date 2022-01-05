@@ -22,6 +22,7 @@ namespace sge {
     struct input_data_t {
         std::map<key_code, bool> key_status;
         std::map<mouse_button, bool> mouse_button_status;
+        glm::vec2 mouse_position = glm::vec2(0.f);
     };
     static std::unique_ptr<input_data_t> input_data;
 
@@ -51,12 +52,18 @@ namespace sge {
         return false;
     }
 
+    static bool input_mouse_position(mouse_moved_event& e) {
+        input_data->mouse_position = e.get_position();
+        return false;
+    }
+
     void input::on_event(event& e) {
         event_dispatcher dispatcher(e);
 
         dispatcher.dispatch<key_pressed_event>(input_on_pressed);
         dispatcher.dispatch<key_released_event>(input_on_released);
         dispatcher.dispatch<mouse_button_event>(input_mouse_button);
+        dispatcher.dispatch<mouse_moved_event>(input_mouse_position);
     }
 
     bool input::get_key(key_code code) {
@@ -73,5 +80,13 @@ namespace sge {
         }
 
         return input_data->mouse_button_status[button];
+    }
+
+    glm::vec2 input::get_mouse_position() {
+        return input_data->mouse_position;
+    }
+
+    void input::set_mouse_position(glm::vec2 position) {
+        input_data->mouse_position = position;
     }
 } // namespace sge

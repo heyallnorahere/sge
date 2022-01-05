@@ -29,6 +29,9 @@ namespace sge {
         static bool get_key(key_code code);
         static bool get_mouse_button(mouse_button button);
 
+        static glm::vec2 get_mouse_position();
+        static void set_mouse_position(glm::vec2 position);
+
         // todo: action mapping
     };
 } // namespace sge

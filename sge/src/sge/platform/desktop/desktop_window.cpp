@@ -21,6 +21,7 @@
 #include "sge/platform/desktop/desktop_window.h"
 #include "sge/events/window_events.h"
 #include "sge/events/input_events.h"
+#include "sge/core/input.h"
 namespace sge {
     static uint32_t glfw_window_count = 0;
 
@@ -298,10 +299,15 @@ namespace sge {
         });
 
         glfwSetCursorPosCallback(this->m_window, [](GLFWwindow* window, double x, double y) {
+            auto position = glm::vec2((float)x, (float)y);
+            if (glm::length(input::get_mouse_position()) < 0.0001f) {
+                input::set_mouse_position(position);
+            }
+
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
 
             if (wd->event_callback != nullptr) {
-                mouse_moved_event e(glm::vec2((float)x, (float)y));
+                mouse_moved_event e(position);
                 wd->event_callback(e);
             }
         });
