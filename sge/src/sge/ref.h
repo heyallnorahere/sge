@@ -110,7 +110,7 @@ namespace sge {
 
         template <typename U>
         ref<U> as() const {
-            return ref<U>((U*)this);
+            return ref<U>((U*)this->m_instance);
         }
 
         template <typename... Args>
