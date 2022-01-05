@@ -24,6 +24,9 @@
                 "SPIRV_SKIP_EXECUTABLES": "ON",
                 "SPIRV_SKIP_TESTS": "ON",
                 "SPIRV_CROSS_ENABLE_TESTS": "OFF",
+                "BOX2D_BUILD_DOCS": "OFF",
+                "BOX2D_BUILD_UNIT_TESTS": "OFF",
+                "BOX2D_BUILD_TESTBED": "OFF",
                 "CMAKE_OSX_ARCHITECTURES": "x86_64;arm64"
             },
             "warnings": {

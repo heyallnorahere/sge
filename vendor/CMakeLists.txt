@@ -3,6 +3,7 @@ add_subdirectory("spdlog")
 add_subdirectory("SPIRV-Cross")
 add_subdirectory("stb")
 add_subdirectory("entt")
+add_subdirectory("box2d")
 
 if(NOT SHADERC_DEPENDENCIES_SYNCED)
     find_package(Python3 REQUIRED)
