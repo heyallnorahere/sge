@@ -29,17 +29,22 @@ namespace sge {
             return "unknown/unimplemented";
         }
     }
+
     inline void check_vk_result(VkResult result) {
         if (result != VK_SUCCESS) {
             throw std::runtime_error("vulkan error thrown: " + vk_result_name(result));
         }
     }
-    template <typename T> inline T vk_init() {
+
+    template <typename T>
+    inline T vk_init() {
         T data;
         memset(&data, 0, sizeof(T));
         return data;
     }
-    template <typename T> inline T vk_init(VkStructureType struct_type) {
+    
+    template <typename T>
+    inline T vk_init(VkStructureType struct_type) {
         T data = vk_init<T>();
         data.sType = struct_type;
         return data;

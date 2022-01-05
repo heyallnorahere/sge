@@ -73,5 +73,5 @@ endif()
 
 message(STATUS "SGE: Linking against libraries: ${SGE_LIBS}")
 message(STATUS "SGE: Including directories: ${SGE_INCLUDES}")
-message(STATUS "SGE: Defining preprocessor definitions: ${SGE_DEFINES}")
-message(STATUS "SGE: Included platform-specific code: ${ENABLED_PLATFORMS}")
+message(STATUS "SGE: Defining preprocessor macros: ${SGE_DEFINES}")
+message(STATUS "SGE: Enabled platform code: ${ENABLED_PLATFORMS}")

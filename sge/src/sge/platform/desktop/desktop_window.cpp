@@ -137,10 +137,10 @@ namespace sge {
                         break;
                     default:
                         // unhandled
-                        break;
+                        return;
                     }
 
-                    mouse_button_event e(mbutton, action == GLFW_REPEAT);
+                    mouse_button_event e(mbutton, action == GLFW_RELEASE);
                     wd->event_callback(e);
                 }
             });

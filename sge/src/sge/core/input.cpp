@@ -47,7 +47,8 @@ namespace sge {
 
     static bool input_mouse_button(mouse_button_event& e) {
         mouse_button button = e.get_button();
-        input_data->mouse_button_status[button] = !e.get_released();
+        bool released = e.get_released();
+        input_data->mouse_button_status[button] = !released;
 
         return false;
     }

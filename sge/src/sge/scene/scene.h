@@ -38,15 +38,22 @@ namespace sge {
         void on_update(timestep ts);
         void on_event(event& e);
 
+        void set_viewport_size(uint32_t width, uint32_t height);
+
     private:
-        bool on_resize(window_resize_event& e);
 
         template <typename T>
         void on_component_added(entity& entity, T& component) {
             // no behavior
         }
 
+        template<typename T>
+        void on_component_removed(entity& entity, T& component) {
+            // no behavior
+        }
+
         entt::registry m_registry;
+        uint32_t m_viewport_width, m_viewport_height;
 
         friend class entity;
     };

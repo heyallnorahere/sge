@@ -31,6 +31,7 @@ namespace sge {
 
     void runtime_camera::set_render_target_size(uint32_t width, uint32_t height) {
         this->m_aspect_ratio = (float)width / (float)height;
+        this->recalculate_projection();
     }
 
     void runtime_camera::recalculate_projection() {

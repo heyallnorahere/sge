@@ -35,7 +35,21 @@ namespace sge {
     void scene::destroy_entity(entity e) { m_registry.destroy(e); }
 
     void scene::on_update(timestep ts) {
-        // todo(nora): update script components
+        {
+            auto view = m_registry.view<native_script_component>();
+            for (auto entt_entity : view) {
+                entity entity(entt_entity, this);
+                auto& nsc = entity.get_component<native_script_component>();
+
+                if (nsc.script == nullptr && nsc.instantiate != nullptr) {
+                    nsc.instantiate(entity);
+                }
+
+                if (nsc.script != nullptr) {
+                    nsc.script->on_update(ts);
+                }
+            }
+        }
 
         runtime_camera* main_camera = nullptr;
         glm::mat4 camera_transform;
@@ -79,18 +93,29 @@ namespace sge {
     void scene::on_event(event& e) {
         event_dispatcher dispatcher(e);
 
-        dispatcher.dispatch<window_resize_event>(SGE_BIND_EVENT_FUNC(scene::on_resize));
+        auto view = m_registry.view<native_script_component>();
+        for (auto entt_entity : view) {
+            entity entity(entt_entity, this);
+            auto& nsc = entity.get_component<native_script_component>();
+            
+            if (nsc.script == nullptr && nsc.instantiate != nullptr) {
+                nsc.instantiate(entity);
+            }
 
-        // todo(nora): pass to script components
+            if (nsc.script != nullptr) {
+                nsc.script->on_event(e);
+            }
+        }
     }
 
-    bool scene::on_resize(window_resize_event& e) {
+    void scene::set_viewport_size(uint32_t width, uint32_t height) {
+        this->m_viewport_width = width;
+        this->m_viewport_height = height;
+
         auto view = m_registry.view<camera_component>();
         for (entt::entity id : view) {
             auto& camera = view.get<camera_component>(id);
-            camera.camera.set_render_target_size(e.get_width(), e.get_height());
+            camera.camera.set_render_target_size(width, height);
         }
-
-        return false;
     }
 } // namespace sge

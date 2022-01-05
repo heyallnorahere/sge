@@ -27,7 +27,10 @@ namespace sge {
 
         template <typename T, typename... Args>
         T& add_component(Args&&... args) {
-            assert(!has_all<T>() && "Entity already has component!");
+            if (has_all<T>()) {
+                throw std::runtime_error("entity already has component!");
+            }
+
             T& component = m_scene->m_registry.emplace<T>(m_handle, std::forward<Args>(args)...);
             m_scene->on_component_added(*this, component);
             return component;
@@ -35,7 +38,10 @@ namespace sge {
 
         template <typename T>
         T& get_component() {
-            assert(has_all<T>() && "Entity does not have component!");
+            if (!has_all<T>()) {
+                throw std::runtime_error("entity does not have component!");
+            }
+
             return m_scene->m_registry.get<T>(m_handle);
         }
 
@@ -51,7 +57,11 @@ namespace sge {
 
         template <typename T>
         void remove_component() {
-            assert(has_all<T>() && "Entity does not have component!");
+            if (!has_all<T>()) {
+                throw std::runtime_error("entity does not have component!");
+            }
+
+            m_scene->on_component_removed(*this, this->get_component<T>());
             m_scene->m_registry.remove<T>(m_handle);
         }
 

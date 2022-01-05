@@ -17,6 +17,8 @@
 #pragma once
 #include "sge/renderer/texture.h"
 #include "sge/scene/runtime_camera.h"
+#include "sge/scene/entity_script.h"
+#include "sge/scene/entity.h"
 namespace sge {
     struct tag_component {
         std::string tag;
@@ -65,4 +67,61 @@ namespace sge {
         runtime_camera camera;
         bool primary = true;
     };
+
+    struct native_script_component {
+        native_script_component() = default;
+
+        // probably shouldnt use these though
+        native_script_component(const native_script_component&) = default;
+        native_script_component& operator=(const native_script_component&) = default;
+
+        entity_script* script = nullptr;
+
+        std::function<void(entity parent)> instantiate = nullptr;
+        std::function<void()> destroy = nullptr;
+
+        template <typename T>
+        void bind() {
+            static_assert(!std::is_same_v<entity_script, T>, "why would you do this");
+            static_assert(std::is_base_of_v<entity_script, T>,
+                          "cannot cast the given type to entity_script");
+
+            if (script != nullptr) {
+                destroy();
+            }
+
+            instantiate = [this](entity parent) {
+                script = (entity_script*)new T;
+                script->m_parent = parent;
+                script->on_attach();
+            };
+
+            destroy = [this]() {
+                script->on_detach();
+                delete script;
+                script = nullptr;
+
+                instantiate = nullptr;
+                destroy = nullptr;
+            };
+        }
+    };
+
+    //=== scene::on_component_added/on_component_removed ====
+    template <>
+    inline void scene::on_component_added<camera_component>(entity& entity,
+                                                            camera_component& component) {
+        uint32_t width = m_viewport_width;
+        uint32_t height = m_viewport_height;
+
+        component.camera.set_render_target_size(width, height);
+    }
+
+    template <>
+    inline void scene::on_component_removed<native_script_component>(
+        entity& entity, native_script_component& component) {
+        if (component.script != nullptr) {
+            component.destroy();
+        }
+    }
 } // namespace sge
