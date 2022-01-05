@@ -132,7 +132,7 @@ namespace sge {
             static const char* const portability_subset = "VK_KHR_portability_subset";
             for (const auto& extension : extensions) {
                 bool requested =
-                    selected_extensions.find(extension.extensionName) == selected_extensions.end();
+                    selected_extensions.find(extension.extensionName) != selected_extensions.end();
 
                 if (!requested && (strcmp(portability_subset, extension.extensionName) == 0)) {
                     device_extensions.push_back(portability_subset);

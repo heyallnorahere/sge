@@ -55,10 +55,10 @@ struct ps_input {
 };
 
 Texture2D textures[30] : register(t1);
-SamplerState samplers[30] : register(s1);
+SamplerState tex_samplers[30] : register(s1);
 
 float4 main(ps_input input) : SV_TARGET {
-    float4 tex_color = textures[input.texture_index].Sample(samplers[input.texture_index],
+    float4 tex_color = textures[input.texture_index].Sample(tex_samplers[input.texture_index],
         input.uv);
     return tex_color * input.color;
 }
