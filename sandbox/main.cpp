@@ -49,22 +49,6 @@ namespace sandbox {
             this->m_camera = this->m_scene->create_entity("Camera");
             auto& camera_data = this->m_camera.add_component<sge::camera_component>();
             camera_data.camera.set_render_target_size(width, height);
-
-            sge::framebuffer_attachment_spec attachment_spec;
-            attachment_spec.additional_usage = sge::image_usage_texture;
-            attachment_spec.format = sge::image_format::RGBA8_SRGB;
-            attachment_spec.type = sge::framebuffer_attachment_type::color;
-
-            sge::framebuffer_spec fb_spec;
-            fb_spec.enable_blending = true;
-            fb_spec.blend_mode = sge::framebuffer_blend_mode::src_alpha_one_minus_src_alpha;
-            fb_spec.width = width;
-            fb_spec.height = height;
-            fb_spec.clear_on_load = true;
-            fb_spec.attachments.push_back(attachment_spec);
-
-            this->m_framebuffer = sge::framebuffer::create(fb_spec);
-            this->invalidate_texture();
         }
 
         virtual void on_detach() override {
@@ -92,14 +76,7 @@ namespace sandbox {
             size += (float)ts.count();
             camera_data.camera.set_orthographic_size(size);
 
-            sge::renderer::push_render_pass(this->m_framebuffer->get_render_pass(), glm::vec4(0.f));
             this->m_scene->on_update(ts);
-            sge::renderer::pop_render_pass();
-
-            sge::renderer::begin_scene(glm::mat4(1.f));
-            sge::renderer::draw_quad(glm::vec2(-1.f), glm::vec2(2.f), glm::vec4(1.f),
-                                     this->m_framebuffer_texture);
-            sge::renderer::end_scene();
 
             this->m_time_record += std::chrono::duration_cast<seconds_t>(ts);
             if (this->m_time_record.count() > 1) {
@@ -109,15 +86,6 @@ namespace sandbox {
         }
 
     private:
-        void invalidate_texture() {
-            sge::texture_2d_spec spec;
-            spec.filter = sge::texture_filter::linear;
-            spec.wrap = sge::texture_wrap::repeat;
-            spec.image =
-                this->m_framebuffer->get_attachment(sge::framebuffer_attachment_type::color, 0);
-            this->m_framebuffer_texture = sge::texture_2d::create(spec);
-        }
-
         bool on_resize(sge::window_resize_event& event) {
             uint32_t width = event.get_width();
             uint32_t height = event.get_height();
@@ -126,9 +94,6 @@ namespace sandbox {
                 spdlog::info("window was minimized");
             } else {
                 spdlog::info("window was resized to: ({0}, {1})", width, height);
-
-                this->m_framebuffer->resize(width, height);
-                this->invalidate_texture();
             }
 
             return false;
@@ -139,8 +104,6 @@ namespace sandbox {
         sge::ref<sge::scene> m_scene;
         sge::ref<sge::texture_2d> m_tux;
         sge::entity m_entity, m_camera;
-        sge::ref<sge::framebuffer> m_framebuffer;
-        sge::ref<sge::texture_2d> m_framebuffer_texture;
     };
 
     class sandbox_app : public sge::application {
