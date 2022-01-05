@@ -373,27 +373,78 @@ namespace sge {
         rasterizer.depthBiasEnable = false;
         rasterizer.lineWidth = 1.f;
 
-        auto blend_attachment_state = vk_init<VkPipelineColorBlendAttachmentState>();
-        blend_attachment_state.colorWriteMask = 0xf;
-        blend_attachment_state.blendEnable = true;
-        
+        std::vector<VkPipelineColorBlendAttachmentState> blend_attachment_states;
         switch (this->m_spec.renderpass->get_parent_type()) {
-        case render_pass_parent_type::swap_chain:
-            blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-            blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-            blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
-            blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
-            blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-            blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        case render_pass_parent_type::swapchain:
+            blend_attachment_states.resize(1);
+            blend_attachment_states[0] = vk_init<VkPipelineColorBlendAttachmentState>();
+            blend_attachment_states[0].colorWriteMask = 0xf;
+            blend_attachment_states[0].blendEnable = true;
+            blend_attachment_states[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+            blend_attachment_states[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            blend_attachment_states[0].colorBlendOp = VK_BLEND_OP_ADD;
+            blend_attachment_states[0].alphaBlendOp = VK_BLEND_OP_ADD;
+            blend_attachment_states[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            blend_attachment_states[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
             break;
+        case render_pass_parent_type::framebuffer: {
+            auto fb = vk_render_pass->get_framebuffer_parent();
+            const auto& spec = fb->get_spec();
+
+            size_t attachment_count = fb->get_attachment_count(framebuffer_attachment_type::color);
+            blend_attachment_states.resize(attachment_count);
+
+            for (size_t i = 0; i < attachment_count; i++) {
+                auto& blend_attachment_state = blend_attachment_states[i];
+                blend_attachment_state = vk_init<VkPipelineColorBlendAttachmentState>();
+                blend_attachment_state.colorWriteMask = 0xf;
+
+                if (!spec.enable_blending) {
+                    continue;
+                }
+
+                blend_attachment_state.blendEnable = true;
+                blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
+                blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
+
+                switch (spec.blend_mode) {
+                case framebuffer_blend_mode::src_alpha_one_minus_src_alpha:
+                    blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+					blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+
+					blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+					blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+
+                    break;
+                case framebuffer_blend_mode::one_zero:
+                	blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+					blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+
+					blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+					blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+
+                    break;
+                case framebuffer_blend_mode::zero_src_color:
+                	blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+					blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+
+					blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+					blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+                    
+                    break;
+                default:
+                    throw std::runtime_error("invalid blend mode!");
+                }
+            }
+        } break;
         default:
             throw std::runtime_error("this shouldn't be reached");
         }
 
         auto color_blend_state = vk_init<VkPipelineColorBlendStateCreateInfo>(
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
-        color_blend_state.attachmentCount = 1;
-        color_blend_state.pAttachments = &blend_attachment_state;
+        color_blend_state.attachmentCount = blend_attachment_states.size();
+        color_blend_state.pAttachments = blend_attachment_states.data();
 
         auto viewport_state = vk_init<VkPipelineViewportStateCreateInfo>(
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
@@ -534,7 +585,8 @@ namespace sge {
         }
     }
 
-    void vulkan_pipeline::write(ref<vulkan_texture_2d> tex, uint32_t binding, uint32_t slot, std::vector<VkWriteDescriptorSet>& writes) {
+    void vulkan_pipeline::write(ref<vulkan_texture_2d> tex, uint32_t binding, uint32_t slot,
+                                std::vector<VkWriteDescriptorSet>& writes) {
         if (this->m_descriptor_sets.sets.find(written_set) == this->m_descriptor_sets.sets.end()) {
             throw std::runtime_error("descriptor set " + std::to_string(written_set) +
                                      " does not exist!");

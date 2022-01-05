@@ -129,6 +129,8 @@ namespace sge {
 
             this->m_window->on_update();
         }
+
+        renderer::wait();
     }
 
     bool application::on_window_close(window_close_event& e) {

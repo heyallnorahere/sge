@@ -14,15 +14,22 @@
    limitations under the License.
 */
 
-#pragma once
-#include "sge/renderer/renderer.h"
+#include "sgepch.h"
+#include "sge/renderer/framebuffer.h"
+#ifdef SGE_USE_VULKAN
+#include "sge/platform/vulkan/vulkan_base.h"
+#include "sge/platform/vulkan/vulkan_framebuffer.h"
+#endif
 namespace sge {
-    class vulkan_renderer : public renderer_api {
-    public:
-        virtual void init() override;
-        virtual void shutdown() override;
-        virtual void wait() override;
+    ref<framebuffer> framebuffer::create(const framebuffer_spec& spec) {
+        if (spec.attachments.empty()) {
+            throw std::runtime_error("cannot create a framebuffer from no attachments!");
+        }
+        
+#ifdef SGE_USE_VULKAN
+        return ref<vulkan_framebuffer>::create(spec);
+#endif
 
-        virtual void submit(const draw_data& data) override;
-    };
+        return nullptr;
+    }
 } // namespace sge

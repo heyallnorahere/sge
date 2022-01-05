@@ -19,6 +19,7 @@
 #include "sge/platform/vulkan/vulkan_render_pass.h"
 #include "sge/platform/vulkan/vulkan_context.h"
 #include "sge/platform/vulkan/vulkan_command_list.h"
+#include "sge/platform/vulkan/vulkan_image.h"
 namespace sge {
     vulkan_render_pass::vulkan_render_pass(vulkan_swapchain* parent) {
         this->m_swapchain_parent = parent;
@@ -70,6 +71,72 @@ namespace sge {
         check_vk_result(result);
     }
 
+    vulkan_render_pass::vulkan_render_pass(vulkan_framebuffer* parent) {
+        this->m_framebuffer_parent = parent;
+        const auto& spec = parent->get_spec();
+
+        std::vector<VkAttachmentDescription> attachment_descs;
+        std::vector<VkAttachmentReference> color_attachments;
+        std::unique_ptr<VkAttachmentReference> depth_attachment;
+
+        std::set<framebuffer_attachment_type> types;
+        parent->get_attachment_types(types);
+
+        if (types.find(framebuffer_attachment_type::color) != types.end()) {
+            size_t attachment_count =
+                parent->get_attachment_count(framebuffer_attachment_type::color);
+
+            for (uint32_t i = 0; (size_t)i < attachment_count; i++) {
+                auto attachment = parent->get_attachment(framebuffer_attachment_type::color, i);
+                auto vk_image = attachment.as<vulkan_image_2d>();
+
+                auto attachment_ref = vk_init<VkAttachmentReference>();
+                attachment_ref.attachment = i;
+                attachment_ref.layout = vk_image->get_layout();
+                color_attachments.push_back(attachment_ref);
+
+                auto attachment_desc = vk_init<VkAttachmentDescription>();
+                attachment_desc.format = vk_image->get_vulkan_format();
+                attachment_desc.finalLayout = vk_image->get_layout();
+                attachment_desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                attachment_desc.samples = VK_SAMPLE_COUNT_1_BIT;
+                attachment_desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                attachment_desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                attachment_desc.loadOp =
+                    spec.clear_on_load ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+                attachment_desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                attachment_descs.push_back(attachment_desc);
+            }
+        }
+
+        // todo(nora): depth attachment
+
+        // also maybe subpass dependencies
+
+        auto subpass = vk_init<VkSubpassDescription>();
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+        if (!color_attachments.empty()) {
+            subpass.colorAttachmentCount = color_attachments.size();
+            subpass.pColorAttachments = color_attachments.data();
+        }
+
+        if (depth_attachment) {
+            subpass.pDepthStencilAttachment = depth_attachment.get();
+        }
+
+        auto create_info =
+            vk_init<VkRenderPassCreateInfo>(VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
+        create_info.subpassCount = 1;
+        create_info.pSubpasses = &subpass;
+        create_info.attachmentCount = attachment_descs.size();
+        create_info.pAttachments = attachment_descs.data();
+
+        VkDevice device = vulkan_context::get().get_device().get();
+        VkResult result = vkCreateRenderPass(device, &create_info, nullptr, &this->m_render_pass);
+        check_vk_result(result);
+    }
+
     vulkan_render_pass::~vulkan_render_pass() {
         VkDevice device = vulkan_context::get().get_device().get();
         vkDestroyRenderPass(device, this->m_render_pass, nullptr);
@@ -77,7 +144,9 @@ namespace sge {
 
     render_pass_parent_type vulkan_render_pass::get_parent_type() {
         if (this->m_swapchain_parent != nullptr) {
-            return render_pass_parent_type::swap_chain;
+            return render_pass_parent_type::swapchain;
+        } else if (this->m_framebuffer_parent != nullptr) {
+            return render_pass_parent_type::framebuffer;
         }
 
         throw std::runtime_error("what lmao");
@@ -92,8 +161,12 @@ namespace sge {
 
             size_t current_image = this->m_swapchain_parent->get_current_image_index();
             fb = this->m_swapchain_parent->get_framebuffer(current_image);
+        } else if (this->m_framebuffer_parent != nullptr) {
+            extent = { this->m_framebuffer_parent->get_width(),
+                       this->m_framebuffer_parent->get_height() };
+            fb = this->m_framebuffer_parent->get();
         } else {
-            throw std::runtime_error("framebuffers arent implemented yet");
+            throw std::runtime_error("this should not be hit");
         }
 
         auto& vk_cmdlist = (vulkan_command_list&)cmdlist;

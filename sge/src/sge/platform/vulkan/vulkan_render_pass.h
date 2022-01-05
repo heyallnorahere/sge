@@ -17,10 +17,12 @@
 #pragma once
 #include "sge/renderer/render_pass.h"
 #include "sge/platform/vulkan/vulkan_swapchain.h"
+#include "sge/platform/vulkan/vulkan_framebuffer.h"
 namespace sge {
     class vulkan_render_pass : public render_pass {
     public:
         vulkan_render_pass(vulkan_swapchain* parent);
+        vulkan_render_pass(vulkan_framebuffer* parent);
         virtual ~vulkan_render_pass() override;
 
         virtual render_pass_parent_type get_parent_type() override;
@@ -30,9 +32,11 @@ namespace sge {
 
         VkRenderPass get() { return this->m_render_pass; }
         vulkan_swapchain* get_swapchain_parent() { return this->m_swapchain_parent; }
+        vulkan_framebuffer* get_framebuffer_parent() { return this->m_framebuffer_parent; }
 
     private:
         vulkan_swapchain* m_swapchain_parent = nullptr;
+        vulkan_framebuffer* m_framebuffer_parent = nullptr;
         VkRenderPass m_render_pass;
     };
 } // namespace sge

@@ -25,12 +25,19 @@
 #include "sge/core/application.h"
 namespace sge {
     void vulkan_renderer::init() { vulkan_context::create(VK_API_VERSION_1_1); }
-
     void vulkan_renderer::shutdown() { vulkan_context::destroy(); }
+
+    void vulkan_renderer::wait() {
+        VkDevice device = vulkan_context::get().get_device().get();
+        vkDeviceWaitIdle(device);
+    }
 
     void vulkan_renderer::submit(const draw_data& data) {
         auto vk_cmdlist = (vulkan_command_list*)data.cmdlist;
         VkCommandBuffer cmdbuffer = vk_cmdlist->get();
+
+        // see vulkan_pipeline.cpp:406
+        vkCmdSetLineWidth(cmdbuffer, 1.f);
 
         auto vk_vertex_buffer = data.vertices.as<vulkan_vertex_buffer>();
         VkBuffer vbo = vk_vertex_buffer->get()->get();

@@ -180,6 +180,8 @@ namespace sge {
         }
     }
 
+    void renderer::wait() { renderer_data.api->wait(); }
+
     void renderer::add_shader_dependency(ref<shader> _shader, pipeline* _pipeline) {
         if (renderer_data.shader_dependencies.find(_shader) ==
             renderer_data.shader_dependencies.end()) {
@@ -266,11 +268,9 @@ namespace sge {
                                                scene->vertex_data.begin(),
                                                scene->vertex_data.end());
 
-        
-
         for (const auto& [pass, pipelines] : scene->used_pipelines) {
             auto& pipeline_data = frame_renderer_data.pipelines[pass];
-            
+
             for (auto _pipeline : pipelines) {
                 auto _shader = _pipeline->get_spec()._shader;
                 auto& pipelines = pipeline_data.data[_shader];
@@ -383,7 +383,8 @@ namespace sge {
                 size_t image_index = swap_chain.get_current_image_index();
                 auto& frame_data = renderer_data.frame_renderer_data[image_index];
 
-                if (frame_data.pipelines[pass].data.find(batch->_shader) != frame_data.pipelines[pass].data.end()) {
+                if (frame_data.pipelines[pass].data.find(batch->_shader) !=
+                    frame_data.pipelines[pass].data.end()) {
                     auto& queue = frame_data.pipelines[pass].data[batch->_shader].used;
                     if (!queue.empty()) {
                         _pipeline = queue.front();
@@ -425,8 +426,7 @@ namespace sge {
             scene.vertex_data.push_back(vertex_data);
 
             if (scene.used_pipelines.find(pass) == scene.used_pipelines.end()) {
-                scene.used_pipelines.insert(
-                    std::make_pair(pass, std::vector<ref<pipeline>>()));
+                scene.used_pipelines.insert(std::make_pair(pass, std::vector<ref<pipeline>>()));
             }
             scene.used_pipelines[pass].push_back(_pipeline);
         }

@@ -18,7 +18,8 @@
 #include "sge/renderer/command_list.h"
 namespace sge {
     enum class render_pass_parent_type {
-        swap_chain,
+        swapchain,
+        framebuffer
     };
 
     class render_pass : public ref_counted {

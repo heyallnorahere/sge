@@ -38,6 +38,7 @@ namespace sge {
 
         virtual void init() = 0;
         virtual void shutdown() = 0;
+        virtual void wait() = 0;
 
         virtual void submit(const draw_data& data) = 0;
     };
@@ -49,6 +50,7 @@ namespace sge {
         static void init();
         static void shutdown();
         static void new_frame();
+        static void wait();
 
         static void add_shader_dependency(ref<shader> _shader, pipeline* _pipeline);
         static void remove_shader_dependency(ref<shader> _shader, pipeline* _pipeline);

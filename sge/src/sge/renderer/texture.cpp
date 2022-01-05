@@ -22,6 +22,12 @@
 #endif
 namespace sge {
     ref<texture_2d> texture_2d::create(const texture_2d_spec& spec) {
+        if (!spec.image) {
+            throw std::runtime_error("cannot create a texture from nullptr!");
+        } else if ((spec.image->get_usage() & image_usage_texture) == 0) {
+            throw std::runtime_error("cannot create a texture from the passed image!");
+        }
+
 #ifdef SGE_USE_VULKAN
         return ref<vulkan_texture_2d>::create(spec);
 #endif
