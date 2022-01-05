@@ -23,7 +23,8 @@
                 "SKIP_SPIRV_TOOLS_INSTALL": "ON",
                 "SPIRV_SKIP_EXECUTABLES": "ON",
                 "SPIRV_SKIP_TESTS": "ON",
-                "SPIRV_CROSS_ENABLE_TESTS": "OFF"
+                "SPIRV_CROSS_ENABLE_TESTS": "OFF",
+                "CMAKE_OSX_ARCHITECTURES": "x86_64;arm64"
             },
             "warnings": {
                 "dev": false

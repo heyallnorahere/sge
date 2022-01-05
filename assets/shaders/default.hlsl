@@ -54,8 +54,8 @@ struct ps_input {
     [[vk::location(2)]] int texture_index : TEXTUREINDEX0; 
 };
 
-Texture2D textures[30] : register(t1);
-SamplerState tex_samplers[30] : register(s1);
+Texture2D textures[16] : register(t1);
+SamplerState tex_samplers[16] : register(s1);
 
 float4 main(ps_input input) : SV_TARGET {
     float4 tex_color = textures[input.texture_index].Sample(tex_samplers[input.texture_index],
