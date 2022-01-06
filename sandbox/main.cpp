@@ -90,20 +90,46 @@ namespace sandbox {
 
             this->m_scene = sge::ref<sge::scene>::create();
             this->m_scene->set_viewport_size(width, height);
-            this->m_entity = this->m_scene->create_entity("Penguin");
 
-            auto& transform = this->m_entity.get_component<sge::transform_component>();
-            transform.scale = glm::vec2(5.f);
+            // Tux
+            {
+                this->m_entity = this->m_scene->create_entity("Penguin");
+                auto& transform = this->m_entity.get_component<sge::transform_component>();
+                transform.scale = glm::vec2(5.f);
+                auto& sprite = this->m_entity.add_component<sge::sprite_renderer_component>();
+                sprite.texture = this->m_tux;
+                auto& rb = this->m_entity.add_component<sge::rigid_body_component>();
+                rb.type = sge::rigid_body_component::body_type::dynamic;
+                auto& bc = this->m_entity.add_component<sge::box_collider_component>();
+                bc.restitution = 0.8f;
+            }
 
-            auto& sprite = this->m_entity.add_component<sge::sprite_renderer_component>();
-            sprite.texture = this->m_tux;
+            // Ground
+            {
+                this->m_ground = this->m_scene->create_entity("Ground");
+                auto& transform = this->m_ground.get_component<sge::transform_component>();
+                transform.scale = glm::vec2(10.f, 1.f);
+                transform.translation = glm::vec2(0, -10.f);
+                auto& sprite = this->m_ground.add_component<sge::sprite_renderer_component>();
+                sprite.color = glm::vec4(0.04f, 0.45f, 0.19f, 1.f);
+                auto& rb = this->m_ground.add_component<sge::rigid_body_component>();
+                rb.type = sge::rigid_body_component::body_type::static_;
+                auto& bc = this->m_ground.add_component<sge::box_collider_component>();
+            }
 
-            this->m_camera = this->m_scene->create_entity("Camera");
-            this->m_camera.add_component<sge::camera_component>();
-            this->m_camera.add_component<sge::native_script_component>().bind<camera_controller>();
+            // Camera
+            {
+                this->m_camera = this->m_scene->create_entity("Camera");
+                this->m_camera.add_component<sge::camera_component>();
+                this->m_camera.add_component<sge::native_script_component>()
+                    .bind<camera_controller>();
+            }
+
+            this->m_scene->on_start();
         }
 
         virtual void on_detach() override {
+            this->m_scene->on_stop();
             this->m_scene.reset();
             this->m_tux.reset();
         }
@@ -119,18 +145,7 @@ namespace sandbox {
             }
         }
 
-        virtual void on_update(sge::timestep ts) override {
-            auto& transform = this->m_entity.get_component<sge::transform_component>();
-            transform.rotation += (float)ts.count() * 25.f;
-
-            this->m_scene->on_update(ts);
-
-            this->m_time_record += std::chrono::duration_cast<seconds_t>(ts);
-            if (this->m_time_record.count() > 1) {
-                this->m_time_record -= seconds_t(1);
-                spdlog::info("FPS: {0}", 1 / ts.count());
-            }
-        }
+        virtual void on_update(sge::timestep ts) override { this->m_scene->on_update(ts); }
 
         virtual void on_imgui_render() override {
             ImGui::Begin("Sandbox");
@@ -160,7 +175,7 @@ namespace sandbox {
         seconds_t m_time_record = seconds_t(0);
         sge::ref<sge::scene> m_scene;
         sge::ref<sge::texture_2d> m_tux;
-        sge::entity m_entity, m_camera;
+        sge::entity m_entity, m_camera, m_ground;
     };
 
     class sandbox_app : public sge::application {
