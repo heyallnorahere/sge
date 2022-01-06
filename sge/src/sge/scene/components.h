@@ -77,8 +77,8 @@ namespace sge {
 
         entity_script* script = nullptr;
 
-        std::function<void(entity parent)> instantiate = nullptr;
-        std::function<void()> destroy = nullptr;
+        void(*instantiate)(native_script_component* nsc, entity parent) = nullptr;
+        void(*destroy)(native_script_component* nsc) = nullptr;
 
         template <typename T>
         void bind() {
@@ -87,22 +87,22 @@ namespace sge {
                           "cannot cast the given type to entity_script");
 
             if (script != nullptr) {
-                destroy();
+                destroy(this);
             }
 
-            instantiate = [this](entity parent) {
-                script = (entity_script*)new T;
-                script->m_parent = parent;
-                script->on_attach();
+            instantiate = [](native_script_component* nsc, entity parent) {
+                nsc->script = (entity_script*)new T;
+                nsc->script->m_parent = parent;
+                nsc->script->on_attach();
             };
 
-            destroy = [this]() {
-                script->on_detach();
-                delete script;
-                script = nullptr;
+            destroy = [](native_script_component* nsc) {
+                nsc->script->on_detach();
+                delete nsc->script;
+                nsc->script = nullptr;
 
-                instantiate = nullptr;
-                destroy = nullptr;
+                nsc->instantiate = nullptr;
+                nsc->destroy = nullptr;
             };
         }
     };
@@ -121,7 +121,7 @@ namespace sge {
     inline void scene::on_component_removed<native_script_component>(
         entity& entity, native_script_component& component) {
         if (component.script != nullptr) {
-            component.destroy();
+            component.destroy(&component);
         }
     }
 } // namespace sge

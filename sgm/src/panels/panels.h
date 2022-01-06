@@ -16,10 +16,32 @@
 
 #pragma once
 #include "panel.h"
+#include <sge/renderer/texture.h>
 namespace sgm {
     class renderer_info_panel : public panel {
     public:
-        virtual void update() override;
+        virtual void render() override;
+
         virtual std::string get_title() override { return "Renderer Info"; }
+        virtual panel_id get_id() override { return panel_id::renderer_info; }
+    };
+
+    class viewport_panel : public panel {
+    public:
+        virtual void update(timestep ts) override;
+
+        virtual void begin(const char* title, bool* open) override;
+        virtual void render() override;
+
+        virtual std::string get_title() override { return "Viewport"; }
+        virtual panel_id get_id() override { return panel_id::viewport; }
+
+    private:
+        void verify_size();
+        void invalidate_texture();
+
+        ref<texture_2d> m_current_texture;
+        std::vector<ref<texture_2d>> m_old_textures;
+        std::optional<glm::uvec2> m_new_size;
     };
 } // namespace sgm

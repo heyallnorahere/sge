@@ -16,7 +16,18 @@
 
 #include "sgmpch.h"
 #include "editor_layer.h"
+#include "editor_scene.h"
 namespace sgm {
+    void editor_layer::on_update(timestep ts) {
+        for (auto& _panel : m_panels) {
+            _panel->update(ts);
+        }
+
+        editor_scene::on_update(ts);
+    }
+
+    void editor_layer::on_event(event& e) { editor_scene::on_event(e); }
+
     void editor_layer::on_imgui_render() {
         static constexpr ImGuiConfigFlags required_flags =
             ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
@@ -28,14 +39,14 @@ namespace sgm {
 
         update_dockspace();
 
-        for (auto& _panel : this->m_panels) {
+        for (auto& _panel : m_panels) {
             if (_panel->open()) {
                 // begin imgui window
                 std::string title = _panel->get_title();
                 _panel->begin(title.c_str(), &_panel->open());
 
-                // update the panel
-                _panel->update();
+                // render the panel
+                _panel->render();
 
                 // end imgui window
                 ImGui::End();
@@ -81,7 +92,7 @@ namespace sgm {
             }
 
             if (ImGui::BeginMenu("View")) {
-                for (auto& _panel : this->m_panels) {
+                for (auto& _panel : m_panels) {
                     std::string title = _panel->get_title();
                     ImGui::MenuItem(title.c_str(), nullptr, &_panel->open());
                 }

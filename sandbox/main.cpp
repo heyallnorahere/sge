@@ -123,7 +123,7 @@ namespace sandbox {
             auto& transform = this->m_entity.get_component<sge::transform_component>();
             transform.rotation += (float)ts.count() * 25.f;
 
-            this->m_scene->on_update(ts);
+            this->m_scene->on_runtime_update(ts);
 
             this->m_time_record += std::chrono::duration_cast<seconds_t>(ts);
             if (this->m_time_record.count() > 1) {

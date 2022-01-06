@@ -18,16 +18,22 @@
 #include "sgm.h"
 #include "editor_layer.h"
 #include "panels/panels.h"
+#include "editor_scene.h"
 namespace sgm {
     void sgm_app::on_init() {
+        editor_scene::create();
+
         m_editor_layer = new editor_layer;
         push_layer(m_editor_layer);
 
         m_editor_layer->add_panel<renderer_info_panel>();
+        m_editor_layer->add_panel<viewport_panel>();
     }
 
     void sgm_app::on_shutdown() {
         pop_layer(m_editor_layer);
         delete m_editor_layer;
+
+        editor_scene::destroy();
     }
 } // namespace sgm

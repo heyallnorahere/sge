@@ -21,6 +21,8 @@ namespace sgm {
     public:
         editor_layer() : layer("Editor Layer") {}
 
+        virtual void on_update(timestep ts) override;
+        virtual void on_event(event& e) override;
         virtual void on_imgui_render() override;
 
         template <typename T>

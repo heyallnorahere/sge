@@ -16,14 +16,20 @@
 
 #pragma once
 namespace sge {
+    enum class panel_id { renderer_info, viewport };
+
     class panel {
     public:
         virtual ~panel() = default;
 
-        virtual void update() = 0;
-        virtual std::string get_title() = 0;
+        virtual void update(timestep ts) {}
 
         virtual void begin(const char* title, bool* open) { ImGui::Begin(title, open); }
+        virtual void render() = 0;
+
+        virtual std::string get_title() = 0;
+        virtual panel_id get_id() = 0;
+
         bool& open() { return m_open; }
 
     protected:

@@ -18,7 +18,7 @@
 #include "panels/panels.h"
 #include <sge/renderer/renderer.h>
 namespace sgm {
-    void renderer_info_panel::update() {
+    void renderer_info_panel::render() {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Text("%f FPS", io.Framerate);
 

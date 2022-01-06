@@ -15,23 +15,21 @@
 */
 
 #pragma once
-#include "sge/events/event.h"
-namespace sge {
-    class layer {
+#include <sge/renderer/framebuffer.h>
+namespace sgm {
+    class editor_scene {
     public:
-        layer(const std::string& name = "Layer") { this->m_name = name; }
-        virtual ~layer() = default;
+        editor_scene() = delete;
 
-        virtual void on_attach() {}
-        virtual void on_detach() {}
+        static void create();
+        static void destroy();
 
-        virtual void on_update(timestep ts) {}
-        virtual void on_event(event& e) {}
-        virtual void on_imgui_render() {}
+        static void on_update(timestep ts);
+        static void on_event(event& e);
 
-        const std::string& get_name() const { return this->m_name; }
+        static void set_viewport_size(uint32_t width, uint32_t height);
 
-    protected:
-        std::string m_name;
+        static ref<scene> get_scene();
+        static ref<framebuffer> get_framebuffer();
     };
-}; // namespace sge
+}

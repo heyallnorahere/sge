@@ -32,9 +32,18 @@ namespace sge {
         return e;
     }
 
-    void scene::destroy_entity(entity e) { m_registry.destroy(e); }
+    void scene::destroy_entity(entity e) {
+        if (e.has_all<native_script_component>()) {
+            auto& nsc = e.get_component<native_script_component>();
+            if (nsc.script != nullptr) {
+                nsc.destroy(&nsc);
+            }
+        }
 
-    void scene::on_update(timestep ts) {
+        m_registry.destroy(e);
+    }
+
+    void scene::on_runtime_update(timestep ts) {
         {
             auto view = m_registry.view<native_script_component>();
             for (auto entt_entity : view) {
@@ -42,7 +51,7 @@ namespace sge {
                 auto& nsc = entity.get_component<native_script_component>();
 
                 if (nsc.script == nullptr && nsc.instantiate != nullptr) {
-                    nsc.instantiate(entity);
+                    nsc.instantiate(&nsc, entity);
                 }
 
                 if (nsc.script != nullptr) {
@@ -69,25 +78,26 @@ namespace sge {
 
         if (main_camera != nullptr) {
             glm::mat4 projection = main_camera->get_projection();
-            renderer::begin_scene(projection * glm::inverse(camera_transform));
-
-            auto group = m_registry.group<transform_component>(entt::get<sprite_renderer_component>);
-            for (auto entity : group) {
-                auto [transform, sprite] =
-                    group.get<transform_component, sprite_renderer_component>(entity);
-
-                glm::vec2 position = transform.translation - transform.scale / 2.f;
-                float rotation = transform.rotation;
-                glm::vec2 size = transform.scale;
-                if (sprite.texture) {
-                    renderer::draw_rotated_quad(position, rotation, size, sprite.color, sprite.texture);
-                } else {
-                    renderer::draw_rotated_quad(position, rotation, size, sprite.color);
-                }
-            }
-
-            renderer::end_scene();
+            render(projection * glm::inverse(camera_transform));
         }
+    }
+
+    void scene::on_editor_update(timestep ts) {
+        // todo(nora): get editor camera data
+        glm::mat4 projection;
+        {
+            static constexpr float camera_size = 10.f;
+            float aspect_ratio = (float)m_viewport_width / (float)m_viewport_height;
+            
+            float left = -camera_size * aspect_ratio / 2.f;
+            float right = camera_size * aspect_ratio / 2.f;
+            float bottom = -camera_size / 2.f;
+            float top = camera_size / 2.f;
+
+            projection = glm::ortho(left, right, bottom, top, -1.f, 1.f);
+        }
+
+        render(projection);
     }
 
     void scene::on_event(event& e) {
@@ -99,7 +109,7 @@ namespace sge {
             auto& nsc = entity.get_component<native_script_component>();
             
             if (nsc.script == nullptr && nsc.instantiate != nullptr) {
-                nsc.instantiate(entity);
+                nsc.instantiate(&nsc, entity);
             }
 
             if (nsc.script != nullptr) {
@@ -109,13 +119,34 @@ namespace sge {
     }
 
     void scene::set_viewport_size(uint32_t width, uint32_t height) {
-        this->m_viewport_width = width;
-        this->m_viewport_height = height;
+        m_viewport_width = width;
+        m_viewport_height = height;
 
         auto view = m_registry.view<camera_component>();
         for (entt::entity id : view) {
             auto& camera = view.get<camera_component>(id);
             camera.camera.set_render_target_size(width, height);
         }
+    }
+
+    void scene::render(const glm::mat4& view_projection) {
+        renderer::begin_scene(view_projection);
+
+        auto group = m_registry.group<transform_component>(entt::get<sprite_renderer_component>);
+        for (auto entity : group) {
+            auto [transform, sprite] =
+                group.get<transform_component, sprite_renderer_component>(entity);
+
+            glm::vec2 position = transform.translation - transform.scale / 2.f;
+            float rotation = transform.rotation;
+            glm::vec2 size = transform.scale;
+            if (sprite.texture) {
+                renderer::draw_rotated_quad(position, rotation, size, sprite.color, sprite.texture);
+            } else {
+                renderer::draw_rotated_quad(position, rotation, size, sprite.color);
+            }
+        }
+
+        renderer::end_scene();
     }
 } // namespace sge
