@@ -17,14 +17,17 @@
 #include "sgmpch.h"
 #include "sgm.h"
 #include "editor_layer.h"
+#include "panels/panels.h"
 namespace sgm {
     void sgm_app::on_init() {
-        this->m_editor_layer = new editor_layer;
-        this->push_layer(this->m_editor_layer);
+        m_editor_layer = new editor_layer;
+        push_layer(m_editor_layer);
+
+        m_editor_layer->add_panel<renderer_info_panel>();
     }
 
     void sgm_app::on_shutdown() {
-        this->pop_layer(this->m_editor_layer);
-        delete this->m_editor_layer;
+        pop_layer(m_editor_layer);
+        delete m_editor_layer;
     }
 } // namespace sgm

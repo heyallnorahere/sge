@@ -15,16 +15,11 @@
 */
 
 #pragma once
-#include "sge/renderer/renderer.h"
-namespace sge {
-    class vulkan_renderer : public renderer_api {
+#include "panel.h"
+namespace sgm {
+    class renderer_info_panel : public panel {
     public:
-        virtual void init() override;
-        virtual void shutdown() override;
-        virtual void wait() override;
-
-        virtual void submit(const draw_data& data) override;
-
-        virtual device_info query_device_info() override;
+        virtual void update() override;
+        virtual std::string get_title() override { return "Renderer Info"; }
     };
-} // namespace sge
+} // namespace sgm

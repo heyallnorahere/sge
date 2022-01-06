@@ -15,6 +15,7 @@
 */
 
 #pragma once
+#include "panel.h"
 namespace sgm {
     class editor_layer : public layer {
     public:
@@ -22,8 +23,18 @@ namespace sgm {
 
         virtual void on_imgui_render() override;
 
+        template <typename T>
+        void add_panel() {
+            static_assert(std::is_base_of_v<panel, T>, "T must be derived from panel!");
+
+            panel* instance = (panel*)new T;
+            m_panels.push_back(std::unique_ptr<panel>(instance));
+        }
+
     private:
         void update_dockspace();
         void menu_bar();
+
+        std::vector<std::unique_ptr<panel>> m_panels;
     };
 } // namespace sgm

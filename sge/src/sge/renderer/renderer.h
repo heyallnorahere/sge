@@ -29,7 +29,11 @@ namespace sge {
         ref<vertex_buffer> vertices;
         ref<index_buffer> indices;
         ref<pipeline> _pipeline;
-        // todo(nora): textures
+    };
+    
+    struct device_info {
+        std::string name;
+        std::string graphics_api;
     };
 
     class renderer_api {
@@ -41,6 +45,8 @@ namespace sge {
         virtual void wait() = 0;
 
         virtual void submit(const draw_data& data) = 0;
+
+        virtual device_info query_device_info() = 0;
     };
 
     class renderer {
@@ -88,5 +94,24 @@ namespace sge {
                                       glm::vec4 color);
         static void draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
                                       glm::vec4 color, ref<texture_2d> texture);
+
+        struct stats {
+            uint32_t draw_calls;
+            uint32_t quad_count;
+
+            uint32_t vertex_count;
+            uint32_t index_count;
+
+            void reset() {
+                draw_calls = 0;
+                quad_count = 0;
+
+                vertex_count = 0;
+                index_count = 0;
+            }
+        };
+        static stats get_stats();
+
+        static device_info query_device_info();
     };
 } // namespace sge

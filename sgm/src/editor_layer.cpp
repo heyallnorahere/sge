@@ -27,6 +27,20 @@ namespace sgm {
         }
 
         update_dockspace();
+
+        for (auto& _panel : this->m_panels) {
+            if (_panel->open()) {
+                // begin imgui window
+                std::string title = _panel->get_title();
+                _panel->begin(title.c_str(), &_panel->open());
+
+                // update the panel
+                _panel->update();
+
+                // end imgui window
+                ImGui::End();
+            }
+        }
     }
 
     void editor_layer::update_dockspace() {
@@ -61,6 +75,15 @@ namespace sgm {
                 if (ImGui::MenuItem("Exit")) {
                     auto& app = application::get();
                     app.quit();
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("View")) {
+                for (auto& _panel : this->m_panels) {
+                    std::string title = _panel->get_title();
+                    ImGui::MenuItem(title.c_str(), nullptr, &_panel->open());
                 }
 
                 ImGui::EndMenu();

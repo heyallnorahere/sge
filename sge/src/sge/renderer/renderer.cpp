@@ -97,6 +97,8 @@ namespace sge {
 
         ref<uniform_buffer> camera_buffer;
         ref<texture_2d> white_texture, black_texture;
+
+        renderer::stats stats;
     } renderer_data;
 
     static void load_shaders() {
@@ -178,6 +180,8 @@ namespace sge {
                 data.currently_using.clear();
             }
         }
+
+        renderer_data.stats.reset();
     }
 
     void renderer::wait() { renderer_data.api->wait(); }
@@ -436,6 +440,11 @@ namespace sge {
                 scene.used_pipelines.insert(std::make_pair(pass, std::vector<ref<pipeline>>()));
             }
             scene.used_pipelines[pass].push_back(_pipeline);
+
+            renderer_data.stats.draw_calls++;
+            renderer_data.stats.quad_count += batch->quads.size();
+            renderer_data.stats.vertex_count += vertices.size();
+            renderer_data.stats.index_count += indices.size();
         }
 
         batch.reset();
@@ -549,4 +558,7 @@ namespace sge {
 
         batch.quads.push_back(quad);
     }
+
+    renderer::stats renderer::get_stats() { return renderer_data.stats; }
+    device_info renderer::query_device_info() { return renderer_data.api->query_device_info(); }
 } // namespace sge

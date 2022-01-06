@@ -64,4 +64,24 @@ namespace sge {
 
         vkCmdDrawIndexed(cmdbuffer, data.indices->get_index_count(), 1, 0, 0, 0);
     }
+
+    device_info vulkan_renderer::query_device_info() {
+        auto& context = vulkan_context::get();
+        auto physical_device = context.get_device().get_physical_device();
+
+        VkPhysicalDeviceProperties properties;
+        physical_device.get_properties(properties);
+
+        uint32_t vulkan_version = context.get_vulkan_version();
+        uint32_t major = VK_VERSION_MAJOR(vulkan_version);
+        uint32_t minor = VK_VERSION_MINOR(vulkan_version);
+        uint32_t patch = VK_VERSION_PATCH(vulkan_version);
+        std::string version_string =
+            std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+
+        device_info info;
+        info.name = properties.deviceName;
+        info.graphics_api = "Vulkan " + version_string;
+        return info;
+    }
 } // namespace sge
