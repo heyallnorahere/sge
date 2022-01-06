@@ -54,6 +54,9 @@ namespace fs = std::experimental::filesystem;
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
+
 #include "sge/ref.h"
 
 namespace sge {

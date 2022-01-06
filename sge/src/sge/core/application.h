@@ -20,6 +20,7 @@
 #include "sge/events/event.h"
 #include "sge/events/window_events.h"
 #include "sge/renderer/swapchain.h"
+#include "sge/imgui/imgui_layer.h"
 int32_t main(int32_t argc, const char** argv);
 namespace sge {
     class application {
@@ -56,6 +57,7 @@ namespace sge {
         ref<window> m_window;
         std::unique_ptr<swapchain> m_swapchain;
         bool m_running, m_minimized;
+        imgui_layer* m_imgui_layer = nullptr;
 
     private:
         bool on_window_resize(window_resize_event& e);

@@ -5,7 +5,7 @@ set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor")
 set(ASSET_DIR "${CMAKE_SOURCE_DIR}/assets")
 set(SGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/glm")
-set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d)
+set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui)
 
 # platform detection
 if(SGE_DESKTOP)

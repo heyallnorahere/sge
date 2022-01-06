@@ -18,8 +18,10 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_texture.h"
 #include "sge/platform/vulkan/vulkan_context.h"
+#include <backends/imgui_impl_vulkan.h>
 namespace sge {
     vulkan_texture_2d::vulkan_texture_2d(const texture_2d_spec& spec) {
+        this->m_imgui_id = (ImTextureID)nullptr;
         this->m_wrap = spec.wrap;
         this->m_filter = spec.filter;
         this->m_image = spec.image.as<vulkan_image_2d>();
@@ -45,10 +47,24 @@ namespace sge {
     }
 
     vulkan_texture_2d::~vulkan_texture_2d() {
+        if (this->m_imgui_id != (ImTextureID)nullptr) {
+            ImGui_ImplVulkan_RemoveTexture(this->m_imgui_id);
+        }
+
         this->m_image->m_dependents.erase(this);
 
         VkDevice device = vulkan_context::get().get_device().get();
         vkDestroySampler(device, this->m_sampler, nullptr);
+    }
+
+    ImTextureID vulkan_texture_2d::get_imgui_id() {
+        if (this->m_imgui_id == (ImTextureID)nullptr) {
+            VkImageView view = this->m_image->get_view();
+            VkImageLayout layout = this->m_image->get_layout();
+            this->m_imgui_id = ImGui_ImplVulkan_AddTexture(this->m_sampler, view, layout);
+        }
+
+        return this->m_imgui_id;
     }
 
     void vulkan_texture_2d::create_sampler() {
@@ -119,6 +135,12 @@ namespace sge {
     }
 
     void vulkan_texture_2d::on_layout_transition() {
-        this->m_descriptor_info.imageLayout = this->m_image->get_layout();
+        VkImageLayout layout = this->m_image->get_layout();
+        this->m_descriptor_info.imageLayout = layout;
+
+        if (this->m_imgui_id != (ImTextureID)nullptr) {
+            VkImageView view = this->m_image->get_view();
+            ImGui_ImplVulkan_UpdateTextureInfo(this->m_imgui_id, this->m_sampler, view, layout);
+        }
     }
 } // namespace sge

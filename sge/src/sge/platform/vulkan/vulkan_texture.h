@@ -27,7 +27,8 @@ namespace sge {
         virtual texture_wrap get_wrap() override { return this->m_wrap; }
         virtual texture_filter get_filter() override { return this->m_filter; }
 
-        VkSampler get_sampler() { return this->m_sampler; }
+        virtual ImTextureID get_imgui_id() override;
+
         const VkDescriptorImageInfo& get_descriptor_info() { return this->m_descriptor_info; }
 
     private:
@@ -41,6 +42,7 @@ namespace sge {
         texture_filter m_filter;
 
         VkDescriptorImageInfo m_descriptor_info;
+        ImTextureID m_imgui_id;
 
         friend class vulkan_image_2d;
     };

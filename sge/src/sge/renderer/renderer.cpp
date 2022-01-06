@@ -182,6 +182,13 @@ namespace sge {
 
     void renderer::wait() { renderer_data.api->wait(); }
 
+    void renderer::clear_render_data() {
+        wait();
+
+        renderer_data.frame_renderer_data.clear();
+        renderer_data.shader_dependencies.clear();
+    }
+
     void renderer::add_shader_dependency(ref<shader> _shader, pipeline* _pipeline) {
         if (renderer_data.shader_dependencies.find(_shader) ==
             renderer_data.shader_dependencies.end()) {

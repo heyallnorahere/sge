@@ -15,27 +15,16 @@
 */
 
 #pragma once
-#include "sge/renderer/image.h"
+#include "sge/renderer/command_list.h"
 namespace sge {
-    enum class texture_wrap { clamp, repeat };
-    enum class texture_filter { linear, nearest };
-
-    struct texture_2d_spec {
-        ref<image_2d> image;
-        texture_wrap wrap = texture_wrap::repeat;
-        texture_filter filter = texture_filter::linear;
-    };
-
-    class texture_2d : public ref_counted {
+    class imgui_backend {
     public:
-        static ref<texture_2d> create(const texture_2d_spec& spec);
+        static std::unique_ptr<imgui_backend> create_platform_backend();
+        static std::unique_ptr<imgui_backend> create_renderer_backend();
 
-        virtual ~texture_2d() = default;
+        virtual ~imgui_backend() = default;
 
-        virtual ref<image_2d> get_image() = 0;
-        virtual texture_wrap get_wrap() = 0;
-        virtual texture_filter get_filter() = 0;
-
-        virtual ImTextureID get_imgui_id() = 0;
+        virtual void begin() = 0;
+        virtual void render(command_list& cmdlist) {}
     };
 } // namespace sge

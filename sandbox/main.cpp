@@ -132,6 +132,15 @@ namespace sandbox {
             }
         }
 
+        virtual void on_imgui_render() override {
+            ImGui::Begin("Sandbox");
+
+            ImGui::Text("Hello!");
+            ImGui::Image(this->m_tux->get_imgui_id(), ImVec2(50.f, 50.f));
+
+            ImGui::End();
+        }
+
     private:
         bool on_resize(sge::window_resize_event& event) {
             uint32_t width = event.get_width();

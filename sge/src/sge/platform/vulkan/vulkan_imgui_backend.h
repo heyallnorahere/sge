@@ -15,27 +15,20 @@
 */
 
 #pragma once
-#include "sge/renderer/image.h"
+#include "sge/imgui/imgui_backend.h"
 namespace sge {
-    enum class texture_wrap { clamp, repeat };
-    enum class texture_filter { linear, nearest };
-
-    struct texture_2d_spec {
-        ref<image_2d> image;
-        texture_wrap wrap = texture_wrap::repeat;
-        texture_filter filter = texture_filter::linear;
-    };
-
-    class texture_2d : public ref_counted {
+    class vulkan_imgui_backend : public imgui_backend {
     public:
-        static ref<texture_2d> create(const texture_2d_spec& spec);
+        vulkan_imgui_backend();
+        virtual ~vulkan_imgui_backend() override;
 
-        virtual ~texture_2d() = default;
+        virtual void begin() override;
+        virtual void render(command_list& cmdlist) override;
 
-        virtual ref<image_2d> get_image() = 0;
-        virtual texture_wrap get_wrap() = 0;
-        virtual texture_filter get_filter() = 0;
+    private:
+        void init();
+        void build_font_atlas();
 
-        virtual ImTextureID get_imgui_id() = 0;
+        VkDescriptorPool m_descriptor_pool;
     };
 } // namespace sge

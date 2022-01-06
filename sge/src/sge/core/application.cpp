@@ -66,6 +66,8 @@ namespace sge {
         renderer::init();
         this->m_swapchain = swapchain::create(this->m_window);
 
+        this->m_imgui_layer = new imgui_layer;
+        this->push_overlay(this->m_imgui_layer);
 
         this->init_app();
     }
@@ -73,8 +75,13 @@ namespace sge {
     void application::shutdown() {
         spdlog::info("shutting down application: {0}...", this->m_title);
 
+        renderer::clear_render_data();
+
         this->shutdown_app();
 
+        this->pop_overlay(this->m_imgui_layer);
+        delete this->m_imgui_layer;
+        this->m_imgui_layer = nullptr;
 
         this->m_swapchain.reset();
         renderer::shutdown();
@@ -119,6 +126,12 @@ namespace sge {
                     (*it)->on_update(ts);
                 }
 
+                this->m_imgui_layer->begin();
+                for (auto& layer : this->m_layer_stack) {
+                    layer->on_imgui_render();
+                }
+                this->m_imgui_layer->end(cmdlist);
+
                 if (renderer::pop_render_pass() != pass) {
                     throw std::runtime_error("a render pass was pushed, but not popped!");
                 }
@@ -129,8 +142,6 @@ namespace sge {
 
             this->m_window->on_update();
         }
-
-        renderer::wait();
     }
 
     bool application::on_window_close(window_close_event& e) {

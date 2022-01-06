@@ -52,6 +52,8 @@ namespace sge {
         static void new_frame();
         static void wait();
 
+        static void clear_render_data();
+
         static void add_shader_dependency(ref<shader> _shader, pipeline* _pipeline);
         static void remove_shader_dependency(ref<shader> _shader, pipeline* _pipeline);
         static void on_shader_reloaded(ref<shader> _shader);

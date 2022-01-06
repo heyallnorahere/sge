@@ -40,6 +40,7 @@ namespace sge {
             return *this->m_command_buffers[index];
         }
 
+        VkSurfaceKHR get_surface() { return this->m_surface; }
         VkFormat get_image_format() { return this->m_image_format; }
         VkFramebuffer get_framebuffer(size_t index) {
             return this->m_swapchain_images[index].framebuffer;
