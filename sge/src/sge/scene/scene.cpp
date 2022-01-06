@@ -160,30 +160,9 @@ namespace sge {
 
         if (main_camera != nullptr) {
             glm::mat4 projection = main_camera->get_projection();
-<<<<<<< HEAD
             render(projection * glm::inverse(camera_transform));
         }
     }
-=======
-            renderer::begin_scene(projection * glm::inverse(camera_transform));
-
-            auto group =
-                this->m_registry.group<transform_component>(entt::get<sprite_renderer_component>);
-            for (auto entity : group) {
-                auto [transform, sprite] =
-                    group.get<transform_component, sprite_renderer_component>(entity);
-
-                glm::vec2 position = transform.translation - transform.scale / 2.f;
-                float rotation = transform.rotation;
-                glm::vec2 size = transform.scale;
-                if (sprite.texture) {
-                    renderer::draw_rotated_quad(position, rotation, size, sprite.color,
-                                                sprite.texture);
-                } else {
-                    renderer::draw_rotated_quad(position, rotation, size, sprite.color);
-                }
-            }
->>>>>>> upstream
 
     void scene::on_editor_update(timestep ts) {
         // todo(nora): get editor camera data
