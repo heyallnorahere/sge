@@ -21,5 +21,9 @@ namespace sgm {
         editor_layer() : layer("Editor Layer") {}
 
         virtual void on_imgui_render() override;
+
+    private:
+        void update_dockspace();
+        void menu_bar();
     };
 } // namespace sgm
