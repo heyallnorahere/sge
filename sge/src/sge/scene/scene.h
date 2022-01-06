@@ -20,6 +20,8 @@
 #include "sge/events/window_events.h"
 #include <entt/entt.hpp>
 
+class b2World;
+
 namespace sge {
 
     class entity;
@@ -35,6 +37,8 @@ namespace sge {
         entity create_entity(const std::string& name = std::string());
         void destroy_entity(entity entity);
 
+        void on_start();
+        void on_stop();
         void on_runtime_update(timestep ts);
         void on_editor_update(timestep ts); // todo(nora): pass editor camera
         void on_event(event& e);
@@ -47,7 +51,7 @@ namespace sge {
             // no behavior
         }
 
-        template<typename T>
+        template <typename T>
         void on_component_removed(entity& entity, T& component) {
             // no behavior
         }
@@ -56,6 +60,7 @@ namespace sge {
 
         entt::registry m_registry;
         uint32_t m_viewport_width, m_viewport_height;
+        b2World* m_physics_world = nullptr;
 
         friend class entity;
     };

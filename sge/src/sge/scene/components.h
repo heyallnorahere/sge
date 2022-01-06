@@ -107,6 +107,39 @@ namespace sge {
         }
     };
 
+    struct rigid_body_component {
+        enum class body_type { static_ = 0, kinematic, dynamic };
+        body_type type = body_type::static_;
+        bool fixed_rotation = false;
+
+        // Pointer to partner Box2D body object
+        void* runtime_body = nullptr;
+
+        rigid_body_component() = default;
+        rigid_body_component(const rigid_body_component&) = default;
+        rigid_body_component& operator=(const rigid_body_component&) = default;
+    };
+
+    struct box_collider_component {
+        // This is the size from the origin in all directions.  This defines a unit box centered on
+        // the origin (relative to the coordinate space of the entity.)  The size/transformation of
+        // the entity is applied to this size. As such, this is the right default values for a box
+        // that is the same size as the sprite that is drawn.
+        glm::vec2 size = { 0.5f, 0.5f };
+
+        float density = 1.f;
+        float friction = 0.5f;
+        float restitution = 0.f;
+        float restitution_threadhold = 0.5f;
+
+        // Pointer to the partner Box2D Fixture object
+        void* runtime_fixture = nullptr;
+
+        box_collider_component() = default;
+        box_collider_component(const box_collider_component&) = default;
+        box_collider_component& operator=(const box_collider_component&) = default;
+    };
+
     //=== scene::on_component_added/on_component_removed ====
     template <>
     inline void scene::on_component_added<camera_component>(entity& entity,
@@ -124,4 +157,5 @@ namespace sge {
             component.destroy(&component);
         }
     }
+
 } // namespace sge
