@@ -69,7 +69,7 @@ namespace sge {
         this->m_imgui_layer = new imgui_layer;
         this->push_overlay(this->m_imgui_layer);
 
-        this->init_app();
+        this->on_init();
     }
 
     void application::shutdown() {
@@ -77,7 +77,7 @@ namespace sge {
 
         renderer::clear_render_data();
 
-        this->shutdown_app();
+        this->on_shutdown();
 
         this->pop_overlay(this->m_imgui_layer);
         delete this->m_imgui_layer;
@@ -126,6 +126,7 @@ namespace sge {
                     (*it)->on_update(ts);
                 }
 
+                renderer::begin_render_pass();
                 this->m_imgui_layer->begin();
                 for (auto& layer : this->m_layer_stack) {
                     layer->on_imgui_render();

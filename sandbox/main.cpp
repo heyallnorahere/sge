@@ -168,12 +168,12 @@ namespace sandbox {
         sandbox_app() : application("Sandbox") {}
 
     protected:
-        virtual void init_app() override {
+        virtual void on_init() override {
             this->m_layer = new sandbox_layer;
             this->push_layer(this->m_layer);
         }
 
-        virtual void shutdown_app() override {
+        virtual void on_shutdown() override {
             this->pop_layer(this->m_layer);
             delete this->m_layer;
         }

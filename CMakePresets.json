@@ -48,7 +48,7 @@
             "configurePreset": "default",
             "jobs": 8,
             "targets": [
-                "sge",
+                "sgm",
                 "sandbox"
             ]
         },
@@ -57,6 +57,7 @@
             "configurePreset": "debug",
             "jobs": 8,
             "targets": [
+                "sgm",
                 "sandbox"
             ]
         }

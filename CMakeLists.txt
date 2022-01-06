@@ -13,4 +13,5 @@ add_subdirectory("vendor")
 
 # my code
 add_subdirectory("sge")
+add_subdirectory("sgm")
 add_subdirectory("sandbox")

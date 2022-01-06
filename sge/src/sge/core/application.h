@@ -49,8 +49,8 @@ namespace sge {
         swapchain& get_swapchain() { return *this->m_swapchain; }
 
     protected:
-        virtual void init_app() {}
-        virtual void shutdown_app() {}
+        virtual void on_init() {}
+        virtual void on_shutdown() {}
 
         layer_stack m_layer_stack;
         std::string m_title;
