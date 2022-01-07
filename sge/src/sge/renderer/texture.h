@@ -20,7 +20,7 @@ namespace sge {
     enum class texture_wrap { clamp, repeat };
     enum class texture_filter { linear, nearest };
 
-    struct texture_2d_spec {
+    struct texture_spec {
         ref<image_2d> image;
         texture_wrap wrap = texture_wrap::repeat;
         texture_filter filter = texture_filter::linear;
@@ -28,7 +28,7 @@ namespace sge {
 
     class texture_2d : public ref_counted {
     public:
-        static ref<texture_2d> create(const texture_2d_spec& spec);
+        static ref<texture_2d> create(const texture_spec& spec);
 
         virtual ~texture_2d() = default;
 

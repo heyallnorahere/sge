@@ -87,7 +87,7 @@ namespace sgm {
         }
         m_old_textures[current_image] = m_current_texture;
 
-        texture_2d_spec spec;
+        texture_spec spec;
         spec.image = attachment;
         spec.filter = texture_filter::linear;
         spec.wrap = texture_wrap::repeat;

@@ -20,7 +20,7 @@
 #include "sge/platform/vulkan/vulkan_context.h"
 #include <backends/imgui_impl_vulkan.h>
 namespace sge {
-    vulkan_texture_2d::vulkan_texture_2d(const texture_2d_spec& spec) {
+    vulkan_texture_2d::vulkan_texture_2d(const texture_spec& spec) {
         this->m_imgui_id = (ImTextureID)nullptr;
         this->m_wrap = spec.wrap;
         this->m_filter = spec.filter;

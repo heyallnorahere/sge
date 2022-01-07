@@ -15,24 +15,14 @@
 */
 
 #pragma once
-namespace sge {
-    enum class panel_id { renderer_info, viewport, scene_hierarchy, editor, content_browser };
-
-    class panel {
+#include <sge/renderer/texture.h>
+namespace sgm {
+    class icon_directory {
     public:
-        virtual ~panel() = default;
+        icon_directory() = delete;
 
-        virtual void update(timestep ts) {}
-
-        virtual void begin(const char* title, bool* open) { ImGui::Begin(title, open); }
-        virtual void render() = 0;
-
-        virtual std::string get_title() = 0;
-        virtual panel_id get_id() = 0;
-
-        bool& open() { return m_open; }
-
-    protected:
-        bool m_open = true;
+        static void load();
+        static void clear();
+        static ref<texture_2d> get(const std::string& name);
     };
-} // namespace sge
+} // namespace sgm

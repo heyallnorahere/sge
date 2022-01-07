@@ -65,4 +65,21 @@ namespace sgm {
 
         std::vector<std::vector<ref<texture_2d>>> m_displayed_textures;
     };
+
+    class content_browser_panel : public panel {
+    public:
+        content_browser_panel();
+
+        virtual void render() override;
+
+        virtual std::string get_title() override { return "Content Browser"; }
+        virtual panel_id get_id() override { return panel_id::content_browser; }
+
+    private:
+        void rebuild_breadcrumb_data();
+        std::vector<std::string> m_breadcrumb_data;
+
+        fs::path m_root, m_current;
+        float m_padding, m_icon_size;
+    };
 } // namespace sgm

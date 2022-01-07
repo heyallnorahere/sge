@@ -45,7 +45,8 @@ namespace sge {
 
     struct vk_data {
         uint32_t vulkan_version;
-        std::set<std::string> instance_extensions, instance_layers, device_extensions, device_layers;
+        std::set<std::string> instance_extensions, instance_layers, device_extensions,
+            device_layers;
         VkInstance instance = nullptr;
         VkDebugUtilsMessengerEXT debug_messenger = nullptr;
         std::unique_ptr<vulkan_device> device;
@@ -227,12 +228,12 @@ namespace sge {
     }
 
     void vulkan_context::init(uint32_t version) {
-        this->m_data = new vk_data;
-        this->m_data->vulkan_version = version;
+        m_data = new vk_data;
+        m_data->vulkan_version = version;
 
-        choose_extensions(this->m_data);
-        create_instance(this->m_data);
-        create_debug_messenger(this->m_data);
+        choose_extensions(m_data);
+        create_instance(m_data);
+        create_debug_messenger(m_data);
 
         {
             auto physical_device = choose_physical_device();
@@ -258,7 +259,7 @@ namespace sge {
                          "extensions: {4}\n\tavailable device layers: {5}",
                          properties.deviceName, major, minor, patch, extension_count, layer_count);
 
-            this->m_data->device = std::make_unique<vulkan_device>(physical_device);
+            m_data->device = std::make_unique<vulkan_device>(physical_device);
         }
 
         vulkan_allocator::init();
@@ -267,37 +268,36 @@ namespace sge {
     void vulkan_context::shutdown() {
         vulkan_allocator::shutdown();
 
-        this->m_data->device.reset();
+        m_data->device.reset();
 
-        if (this->m_data->debug_messenger != nullptr) {
+        if (m_data->debug_messenger != nullptr) {
             auto fpDestroyDebugUtilsMessengerEXT =
                 (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-                    this->m_data->instance, "vkDestroyDebugUtilsMessengerEXT");
+                    m_data->instance, "vkDestroyDebugUtilsMessengerEXT");
 
             if (fpDestroyDebugUtilsMessengerEXT != nullptr) {
-                fpDestroyDebugUtilsMessengerEXT(this->m_data->instance,
-                                                this->m_data->debug_messenger, nullptr);
-                this->m_data->debug_messenger = nullptr;
+                fpDestroyDebugUtilsMessengerEXT(m_data->instance, m_data->debug_messenger, nullptr);
+                m_data->debug_messenger = nullptr;
             } else {
                 spdlog::warn("created debug messenger but could not destroy it - "
                              "will result in memory leak");
             }
         }
 
-        vkDestroyInstance(this->m_data->instance, nullptr);
-        this->m_data->instance = nullptr;
+        vkDestroyInstance(m_data->instance, nullptr);
+        m_data->instance = nullptr;
 
-        delete this->m_data;
+        delete m_data;
     }
 
-    uint32_t vulkan_context::get_vulkan_version() { return this->m_data->vulkan_version; }
-    VkInstance vulkan_context::get_instance() { return this->m_data->instance; }
-    vulkan_device& vulkan_context::get_device() { return *this->m_data->device; }
+    uint32_t vulkan_context::get_vulkan_version() { return m_data->vulkan_version; }
+    VkInstance vulkan_context::get_instance() { return m_data->instance; }
+    vulkan_device& vulkan_context::get_device() { return *m_data->device; }
 
     const std::set<std::string>& vulkan_context::get_device_extensions() {
-        return this->m_data->device_extensions;
+        return m_data->device_extensions;
     }
     const std::set<std::string>& vulkan_context::get_device_layers() {
-        return this->m_data->device_layers;
+        return m_data->device_layers;
     }
 } // namespace sge

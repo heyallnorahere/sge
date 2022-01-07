@@ -58,8 +58,11 @@ namespace sge {
 
     bool editor_camera::on_scroll(mouse_scrolled_event& e) {
         m_view_size -= e.get_offset().y;
-        recalculate_projection();
+        if (m_view_size < 0.1f) {
+            m_view_size = 0.1f;
+        }
 
+        recalculate_projection();
         return true;
     }
 

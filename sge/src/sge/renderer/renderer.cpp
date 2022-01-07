@@ -128,7 +128,7 @@ namespace sge {
         renderer_data.camera_buffer = uniform_buffer::create(sizeof(camera_data_t));
 
         {
-            texture_2d_spec spec;
+            texture_spec spec;
             spec.filter = texture_filter::linear;
             spec.wrap = texture_wrap::repeat;
 

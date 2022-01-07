@@ -35,7 +35,7 @@ namespace sge {
         int32_t width, height, channels;
         uint8_t* data = stbi_load(string_path.c_str(), &width, &height, &channels, 0);
         if (data == nullptr) {
-            throw std::runtime_error("could not load image: " + string_path);
+            return std::unique_ptr<image_data>(nullptr);
         }
 
         image_format format;

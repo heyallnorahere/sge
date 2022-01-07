@@ -19,6 +19,7 @@
 #include "editor_layer.h"
 #include "panels/panels.h"
 #include "editor_scene.h"
+#include "icon_directory.h"
 namespace sgm {
     class sgm_app : public application {
     public:
@@ -26,6 +27,7 @@ namespace sgm {
     
     protected:
         virtual void on_init() override {
+            icon_directory::load();
             editor_scene::create();
 
             m_editor_layer = new editor_layer;
@@ -35,6 +37,7 @@ namespace sgm {
             m_editor_layer->add_panel<viewport_panel>();
             m_editor_layer->add_panel<scene_hierarchy_panel>();
             m_editor_layer->add_panel<editor_panel>();
+            m_editor_layer->add_panel<content_browser_panel>();
         }
 
         virtual void on_shutdown() override {
@@ -42,6 +45,7 @@ namespace sgm {
             delete m_editor_layer;
 
             editor_scene::destroy();
+            icon_directory::clear();
         }
 
         editor_layer* m_editor_layer;

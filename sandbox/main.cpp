@@ -78,7 +78,7 @@ namespace sandbox {
             auto image_data = sge::image_data::load("assets/images/tux.png");
             auto img = sge::image_2d::create(image_data, sge::image_usage_texture);
 
-            sge::texture_2d_spec tex_spec;
+            sge::texture_spec tex_spec;
             tex_spec.image = img;
             tex_spec.filter = sge::texture_filter::linear;
             tex_spec.wrap = sge::texture_wrap::repeat;

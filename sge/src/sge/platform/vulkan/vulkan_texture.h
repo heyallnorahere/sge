@@ -20,7 +20,7 @@
 namespace sge {
     class vulkan_texture_2d : public texture_2d {
     public:
-        vulkan_texture_2d(const texture_2d_spec& spec);
+        vulkan_texture_2d(const texture_spec& spec);
         virtual ~vulkan_texture_2d() override;
 
         virtual ref<image_2d> get_image() override { return this->m_image; }
