@@ -37,5 +37,6 @@ namespace sgm {
 
         static ref<scene> get_scene();
         static ref<framebuffer> get_framebuffer();
+        static editor_camera& get_camera();
     };
 } // namespace sgm

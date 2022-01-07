@@ -34,6 +34,7 @@ namespace sgm {
             m_editor_layer->add_panel<renderer_info_panel>();
             m_editor_layer->add_panel<viewport_panel>();
             m_editor_layer->add_panel<scene_hierarchy_panel>();
+            m_editor_layer->add_panel<editor_panel>();
         }
 
         virtual void on_shutdown() override {

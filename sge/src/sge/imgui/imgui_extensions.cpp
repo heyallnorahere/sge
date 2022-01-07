@@ -14,32 +14,18 @@
    limitations under the License.
 */
 
-#pragma once
-// this header is NOT to be included by the core sge library.
-
-// precompiled header
 #include "sgepch.h"
-
-// core
-#include "sge/core/application.h"
-#include "sge/core/window.h"
-#include "sge/core/input.h"
-
-// events
-#include "sge/events/event.h"
-#include "sge/events/window_events.h"
-#include "sge/events/input_events.h"
-
-// imgui extensions
 #include "sge/imgui/imgui_extensions.h"
+namespace ImGui {
+    bool InputPath(const char* label, fs::path* path, ImGuiInputTextFlags flags,
+                   ImGuiInputTextCallback callback, void* user_data) {
+        std::string string_path = path->string();
 
-// scene
-#include "sge/scene/scene.h"
-#include "sge/scene/components.h"
-#include "sge/scene/entity.h"
-#include "sge/scene/editor_camera.h"
+        bool value_changed = InputText(label, &string_path, flags, callback, user_data);
+        if (value_changed) {
+            *path = string_path;
+        }
 
-// main
-#ifdef SGE_INCLUDE_MAIN
-#include "sge/core/main.h"
-#endif
+        return value_changed;
+    }
+} // namespace ImGui

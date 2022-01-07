@@ -15,31 +15,8 @@
 */
 
 #pragma once
-// this header is NOT to be included by the core sge library.
-
-// precompiled header
-#include "sgepch.h"
-
-// core
-#include "sge/core/application.h"
-#include "sge/core/window.h"
-#include "sge/core/input.h"
-
-// events
-#include "sge/events/event.h"
-#include "sge/events/window_events.h"
-#include "sge/events/input_events.h"
-
-// imgui extensions
-#include "sge/imgui/imgui_extensions.h"
-
-// scene
-#include "sge/scene/scene.h"
-#include "sge/scene/components.h"
-#include "sge/scene/entity.h"
-#include "sge/scene/editor_camera.h"
-
-// main
-#ifdef SGE_INCLUDE_MAIN
-#include "sge/core/main.h"
-#endif
+namespace ImGui {
+    bool InputPath(const char* label, fs::path* path,
+                   ImGuiInputTextFlags flags = ImGuiInputTextFlags_None,
+                   ImGuiInputTextCallback callback = nullptr, void* user_data = nullptr);
+} // namespace ImGui

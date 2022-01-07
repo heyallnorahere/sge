@@ -42,9 +42,6 @@ namespace sge {
             style.Colors[ImGuiCol_WindowBg].w = 1.f;
         }
 
-        // todo: further styles
-        // https://github.com/ocornut/imgui/issues/2265#issuecomment-465432091
-
         this->m_platform = imgui_backend::create_platform_backend();
         this->m_renderer = imgui_backend::create_renderer_backend();
     }

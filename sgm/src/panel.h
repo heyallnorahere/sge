@@ -16,7 +16,7 @@
 
 #pragma once
 namespace sge {
-    enum class panel_id { renderer_info, viewport, scene_hierarchy };
+    enum class panel_id { renderer_info, viewport, scene_hierarchy, editor };
 
     class panel {
     public:

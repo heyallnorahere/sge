@@ -34,6 +34,9 @@ namespace sge {
         void enable_panning() { m_panning_enabled = true; }
         void disable_panning() { m_panning_enabled = false; }
 
+        glm::vec2 get_position() { return m_position; }
+        float get_view_size() { return m_view_size; }
+
     private:
         bool on_scroll(mouse_scrolled_event& e);
 
@@ -46,7 +49,7 @@ namespace sge {
         uint32_t m_viewport_width = 0;
         uint32_t m_viewport_height = 0;
 
-        float m_view_size = 0.f;
+        float m_view_size = 10.f;
 
         bool m_panning_enabled = false;
         std::optional<glm::vec2> m_last_mouse_position;

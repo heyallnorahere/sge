@@ -16,7 +16,7 @@
 
 #pragma once
 namespace sge {
-    enum class projection_type { perspective, orthographic };
+    enum class projection_type { orthographic = 0, perspective };
 
     class runtime_camera {
     public:
@@ -61,7 +61,7 @@ namespace sge {
         }
 
         float get_orthographic_far_plane() const { return this->m_orthographic_clips.far; }
-        void get_orthographic_far_plane(float far_plane) {
+        void set_orthographic_far_plane(float far_plane) {
             this->m_orthographic_clips.far = far_plane;
             this->recalculate_projection();
         }

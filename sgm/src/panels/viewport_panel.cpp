@@ -23,10 +23,8 @@ namespace sgm {
         if (m_new_size.has_value()) {
             renderer::wait();
 
-            auto fb = editor_scene::get_framebuffer();
-
             glm::uvec2 size = m_new_size.value();
-            fb->resize(size.x, size.y);
+            editor_scene::set_viewport_size(size.x, size.y);
             invalidate_texture();
 
             m_new_size.reset();

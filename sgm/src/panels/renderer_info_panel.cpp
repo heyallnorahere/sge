@@ -16,6 +16,7 @@
 
 #include "sgmpch.h"
 #include "panels/panels.h"
+#include "editor_scene.h"
 #include <sge/renderer/renderer.h>
 namespace sgm {
     void renderer_info_panel::render() {
@@ -36,6 +37,14 @@ namespace sgm {
 
             ImGui::Text("Device: %s", info.name.c_str());
             ImGui::Text("API: %s", info.graphics_api.c_str());
+        }
+
+        if (ImGui::CollapsingHeader("Camera data")) {
+            editor_camera& camera = editor_scene::get_camera();
+
+            glm::vec2 position = camera.get_position();
+            ImGui::Text("Position: (%f, %f)", position.x, position.y);
+            ImGui::Text("View size: %f", camera.get_view_size());
         }
     }
 } // namespace sgm

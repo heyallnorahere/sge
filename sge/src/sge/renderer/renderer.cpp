@@ -147,10 +147,6 @@ namespace sge {
     }
 
     void renderer::shutdown() {
-        renderer_data.black_texture.reset();
-        renderer_data.white_texture.reset();
-        renderer_data.camera_buffer.reset();
-
         if (!renderer_data.render_passes.empty()) {
             throw std::runtime_error("not all render passes have been popped!");
         }
@@ -191,6 +187,10 @@ namespace sge {
 
         renderer_data.frame_renderer_data.clear();
         renderer_data.shader_dependencies.clear();
+
+        renderer_data.black_texture.reset();
+        renderer_data.white_texture.reset();
+        renderer_data.camera_buffer.reset();
     }
 
     void renderer::add_shader_dependency(ref<shader> _shader, pipeline* _pipeline) {

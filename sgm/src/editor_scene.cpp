@@ -33,6 +33,7 @@ namespace sgm {
         scene_data = std::make_unique<scene_data_t>();
         scene_data->_scene = ref<scene>::create();
         scene_data->_scene->set_viewport_size(initial_size, initial_size);
+        scene_data->camera.update_viewport_size(initial_size, initial_size);
 
         {
             framebuffer_attachment_spec attachment;
@@ -91,4 +92,5 @@ namespace sgm {
 
     ref<scene> editor_scene::get_scene() { return scene_data->_scene; }
     ref<framebuffer> editor_scene::get_framebuffer() { return scene_data->_framebuffer; }
+    editor_camera& editor_scene::get_camera() { return scene_data->camera; }
 } // namespace sgm

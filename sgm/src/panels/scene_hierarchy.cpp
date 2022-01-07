@@ -67,7 +67,7 @@ namespace sgm {
 
         if (ImGui::BeginPopupContextWindow(nullptr, ImGuiMouseButton_Right, false)) {
             if (ImGui::MenuItem("Create New Entity")) {
-                _scene->create_entity("Entity");
+                _scene->create_entity();
             }
 
             ImGui::EndPopup();

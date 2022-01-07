@@ -52,4 +52,17 @@ namespace sgm {
         virtual std::string get_title() override { return "Scene Hierarchy"; }
         virtual panel_id get_id() override { return panel_id::scene_hierarchy; }
     };
+
+    class editor_panel : public panel {
+    public:
+        virtual void render() override;
+
+        virtual std::string get_title() override { return "Editor"; }
+        virtual panel_id get_id() override { return panel_id::editor; }
+
+    private:
+        void add_texture(ref<texture_2d> texture);
+
+        std::vector<std::vector<ref<texture_2d>>> m_displayed_textures;
+    };
 } // namespace sgm
