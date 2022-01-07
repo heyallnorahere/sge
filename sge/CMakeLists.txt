@@ -62,7 +62,7 @@ add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS})
 target_link_libraries(sge PUBLIC ${SGE_LIBS})
 target_include_directories(sge PUBLIC ${SGE_INCLUDES})
 target_compile_definitions(sge PUBLIC ${SGE_DEFINES} $<$<CONFIG:Debug>:SGE_DEBUG>)
-set_target_properties(sge PROPERTIES CXX_STANDARD 17)
+set_target_properties(sge PROPERTIES CXX_STANDARD 17 FOLDER "core")
 
 # setup pch
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)

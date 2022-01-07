@@ -5,7 +5,7 @@ file(GLOB_RECURSE SGM_MANIFEST CONFIGURE_DEPENDS "${SGM_DIR}/*")
 add_executable(sgm ${SGM_MANIFEST})
 target_include_directories(sgm PRIVATE ${SGM_DIR})
 target_link_libraries(sgm PRIVATE sge)
-set_target_properties(sgm PROPERTIES CXX_STANDARD 17)
+set_target_properties(sgm PROPERTIES CXX_STANDARD 17 FOLDER "tools")
 
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
     target_precompile_headers(sgm PRIVATE "${SGM_DIR}/sgmpch.h")
