@@ -59,11 +59,6 @@ namespace sgm {
 
         virtual std::string get_title() override { return "Editor"; }
         virtual panel_id get_id() override { return panel_id::editor; }
-
-    private:
-        void add_texture(ref<texture_2d> texture);
-
-        std::vector<std::vector<ref<texture_2d>>> m_displayed_textures;
     };
 
     class content_browser_panel : public panel {
@@ -76,8 +71,10 @@ namespace sgm {
         virtual panel_id get_id() override { return panel_id::content_browser; }
 
     private:
-        void rebuild_breadcrumb_data();
-        std::vector<std::string> m_breadcrumb_data;
+        ref<texture_2d> get_icon(const fs::path& path);
+
+        std::unordered_set<std::string> m_image_icon_blacklist;
+        std::unordered_map<std::string, ref<texture_2d>> m_file_textures;
 
         fs::path m_root, m_current;
         float m_padding, m_icon_size;

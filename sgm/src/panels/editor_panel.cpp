@@ -17,6 +17,7 @@
 #include "sgmpch.h"
 #include "panels/panels.h"
 #include "editor_scene.h"
+#include "texture_cache.h"
 #include <sge/renderer/renderer.h>
 #include <imgui_internal.h>
 namespace sgm {
@@ -83,15 +84,6 @@ namespace sgm {
     }
 
     void editor_panel::render() {
-        swapchain& swap_chain = application::get().get_swapchain();
-        if (m_displayed_textures.empty()) {
-            size_t image_count = swap_chain.get_image_count();
-            m_displayed_textures.resize(image_count);
-        } else {
-            size_t current_image = swap_chain.get_current_image_index();
-            m_displayed_textures[current_image].clear();
-        }
-
         entity& selection = editor_scene::get_selection();
         if (!selection) {
             ImGui::Text("No entity is selected.");
@@ -178,35 +170,52 @@ namespace sgm {
             }
         });
 
-        draw_component<sprite_renderer_component>("Sprite renderer", selection, [this](sprite_renderer_component& component) {
-            ImGui::ColorEdit4("Color", &component.color.x);
+        draw_component<sprite_renderer_component>(
+            "Sprite renderer", selection, [this](sprite_renderer_component& component) {
+                ImGui::ColorEdit4("Color", &component.color.x);
 
-            auto texture = component.texture;
-            bool can_reset = true;
+                auto texture = component.texture;
+                bool can_reset = true;
 
-            if (!texture) {
-                texture = renderer::get_white_texture();
-                can_reset = false;
-            }
-
-            // todo: texture loading
-
-            add_texture(texture);
-            ImGui::Image(texture->get_imgui_id(), ImVec2(100.f, 100.f));
-
-            if (can_reset) {
-                ImGui::SameLine();
-
-                if (ImGui::Button("X")) {
-                    component.texture.reset();
+                if (!texture) {
+                    texture = renderer::get_white_texture();
+                    can_reset = false;
                 }
-            }
-        });
-    }
 
-    void editor_panel::add_texture(ref<texture_2d> texture) {
-        swapchain& swap_chain = application::get().get_swapchain();
-        size_t current_image = swap_chain.get_current_image_index();
-        m_displayed_textures[current_image].push_back(texture);
+                ImGuiID id = ImGui::GetID("sprite-texture");
+                ImGui::PushID(id);
+
+                texture_cache::add_texture(texture);
+                ImGui::Image(texture->get_imgui_id(), ImVec2(100.f, 100.f));
+
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload =
+                            ImGui::AcceptDragDropPayload("content-browser-file")) {
+                        fs::path path = std::string((const char*)payload->Data,
+                                                    payload->DataSize / sizeof(char) - 1);
+
+                        auto img_data = image_data::load(path);
+                        if (img_data) {
+                            texture_spec spec;
+                            spec.filter = texture_filter::linear;
+                            spec.wrap = texture_wrap::repeat;
+                            spec.image = image_2d::create(img_data, image_usage_none);
+                            component.texture = texture_2d::create(spec);
+                        } else {
+                            spdlog::warn("could not load image: {0}", path.string());
+                        }
+                    }
+
+                    ImGui::EndDragDropTarget();
+                }
+
+                ImGui::PopID();
+
+                if (can_reset) {
+                    if (ImGui::Button("Remove Texture")) {
+                        component.texture.reset();
+                    }
+                }
+            });
     }
 } // namespace sgm

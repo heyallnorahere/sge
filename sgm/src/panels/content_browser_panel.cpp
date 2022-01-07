@@ -17,12 +17,13 @@
 #include "sgmpch.h"
 #include "panels/panels.h"
 #include "icon_directory.h"
+#include "texture_cache.h"
 namespace sgm {
+    static std::unordered_set<std::string> image_extensions = { ".png", ".jpg", ".jpeg" };
+
     content_browser_panel::content_browser_panel() {
         // todo: take from project
-        m_current = m_root = fs::current_path() / "assets";
-        rebuild_breadcrumb_data();
-
+        m_current = m_root = fs::absolute(fs::current_path() / "assets");
         m_padding = 16.f;
         m_icon_size = 128.f;
     }
@@ -31,7 +32,6 @@ namespace sgm {
         if (m_current != m_root) {
             if (ImGui::Button("Back")) {
                 m_current = m_current.parent_path();
-                rebuild_breadcrumb_data();
             }
 
             ImGui::Separator();
@@ -51,12 +51,9 @@ namespace sgm {
 
             std::string filename = path.filename().string();
             ImGui::PushID(filename.c_str());
-
-            // todo: different icons per file type
-            std::string icon_name = entry.is_directory() ? "directory" : "file";
-            auto icon = icon_directory::get(icon_name);
-
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+
+            auto icon = get_icon(path);
             ImGui::ImageButton(icon->get_imgui_id(), ImVec2(m_icon_size, m_icon_size));
 
             if (ImGui::BeginDragDropSource()) {
@@ -74,7 +71,6 @@ namespace sgm {
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                 if (entry.is_directory()) {
                     m_current = path;
-                    rebuild_breadcrumb_data();
                 } else {
                     // maybe some kind of open function?
                 }
@@ -104,17 +100,42 @@ namespace sgm {
         ImGui::Columns(1);
     }
 
-    void content_browser_panel::rebuild_breadcrumb_data() {
-        m_breadcrumb_data.clear();
+    ref<texture_2d> content_browser_panel::get_icon(const fs::path& path) {
+        std::string extension = path.extension().string();
+        if (image_extensions.find(extension) != image_extensions.end()) {
+            std::string string_path = path.string();
+            if (m_image_icon_blacklist.find(string_path) == m_image_icon_blacklist.end()) {
+                ref<texture_2d> icon;
 
-        fs::path current = m_current;
-        while (current.parent_path() != current.root_path()) {
-            if (current.has_filename()) {
-                auto filename = current.filename();
-                m_breadcrumb_data.push_back(filename.string());
+                if (m_file_textures.find(string_path) != m_file_textures.end()) {
+                    icon = m_file_textures[string_path];
+                } else {
+                    // todo: reload when image changes
+                    auto img_data = image_data::load(path);
+                    if (img_data) {
+                        texture_spec spec;
+                        spec.filter = texture_filter::linear;
+                        spec.wrap = texture_wrap::repeat;
+                        spec.image = image_2d::create(img_data, image_usage_none);
+
+                        icon = texture_2d::create(spec);
+                        m_file_textures.insert(std::make_pair(string_path, icon));
+                    } else {
+                        spdlog::warn("could not load image at path {0} - adding to blacklist",
+                                     string_path);
+                        m_image_icon_blacklist.insert(string_path);
+                    }
+                }
+
+                if (icon) {
+                    texture_cache::add_texture(icon);
+                    return icon;
+                }
             }
-
-            current = current.parent_path();
         }
+
+        // todo: different icons per file type
+        std::string icon_name = fs::is_directory(path) ? "directory" : "file";
+        return icon_directory::get(icon_name);
     }
 } // namespace sgm

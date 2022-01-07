@@ -17,6 +17,7 @@
 #include "sgmpch.h"
 #include "editor_layer.h"
 #include "editor_scene.h"
+#include "texture_cache.h"
 namespace sgm {
     void editor_layer::on_update(timestep ts) {
         for (auto& _panel : m_panels) {
@@ -37,6 +38,7 @@ namespace sgm {
             throw std::runtime_error("SGM cannot be run in this environment.");
         }
 
+        texture_cache::new_frame();
         update_dockspace();
 
         for (auto& _panel : m_panels) {

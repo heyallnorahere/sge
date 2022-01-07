@@ -20,6 +20,7 @@
 #include "panels/panels.h"
 #include "editor_scene.h"
 #include "icon_directory.h"
+#include "texture_cache.h"
 namespace sgm {
     class sgm_app : public application {
     public:
@@ -29,6 +30,7 @@ namespace sgm {
         virtual void on_init() override {
             icon_directory::load();
             editor_scene::create();
+            texture_cache::init();
 
             m_editor_layer = new editor_layer;
             push_layer(m_editor_layer);
@@ -44,6 +46,7 @@ namespace sgm {
             pop_layer(m_editor_layer);
             delete m_editor_layer;
 
+            texture_cache::shutdown();
             editor_scene::destroy();
             icon_directory::clear();
         }
