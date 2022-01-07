@@ -29,7 +29,10 @@ namespace sgm {
 
         static void set_viewport_size(uint32_t width, uint32_t height);
 
+        static entity& get_selection();
+        static void reset_selection();
+
         static ref<scene> get_scene();
         static ref<framebuffer> get_framebuffer();
     };
-}
+} // namespace sgm

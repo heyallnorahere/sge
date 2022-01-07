@@ -44,4 +44,12 @@ namespace sgm {
         std::vector<ref<texture_2d>> m_old_textures;
         std::optional<glm::uvec2> m_new_size;
     };
+
+    class scene_hierarchy_panel : public panel {
+    public:
+        virtual void render() override;
+
+        virtual std::string get_title() override { return "Scene Hierarchy"; }
+        virtual panel_id get_id() override { return panel_id::scene_hierarchy; }
+    };
 } // namespace sgm

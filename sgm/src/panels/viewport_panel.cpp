@@ -77,11 +77,11 @@ namespace sgm {
             m_old_textures.resize(image_count);
         }
         m_old_textures[current_image] = m_current_texture;
-        
+
         texture_2d_spec spec;
         spec.image = attachment;
         spec.filter = texture_filter::linear;
         spec.wrap = texture_wrap::repeat;
         m_current_texture = texture_2d::create(spec);
     }
-}
+} // namespace sgm

@@ -21,6 +21,7 @@ namespace sgm {
     struct scene_data_t {
         ref<scene> _scene;
         ref<framebuffer> _framebuffer;
+        entity selection;
     };
     static std::unique_ptr<scene_data_t> scene_data;
 
@@ -69,6 +70,9 @@ namespace sgm {
         scene_data->_scene->set_viewport_size(width, height);
     }
 
+    entity& editor_scene::get_selection() { return scene_data->selection; }
+    void editor_scene::reset_selection() { scene_data->selection = entity(); }
+
     ref<scene> editor_scene::get_scene() { return scene_data->_scene; }
     ref<framebuffer> editor_scene::get_framebuffer() { return scene_data->_framebuffer; }
-}
+} // namespace sgm

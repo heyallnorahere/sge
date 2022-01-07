@@ -69,6 +69,10 @@ namespace sge {
         operator entt::entity() const { return m_handle; }
         operator uint32_t() const { return (uint32_t)m_handle; }
 
+        bool operator==(const entity& other) const {
+            return m_handle == other.m_handle && m_scene == other.m_scene;
+        }
+
     private:
         entt::entity m_handle{ entt::null };
         scene* m_scene = nullptr;

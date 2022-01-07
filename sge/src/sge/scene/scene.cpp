@@ -21,11 +21,11 @@
 #include "sge/scene/entity.h"
 #include "sge/scene/components.h"
 
-#include "box2d/b2_world.h"
-#include "box2d/b2_body.h"
-#include "box2d/b2_fixture.h"
-#include "box2d/b2_polygon_shape.h"
-#include "box2d/b2_circle_shape.h"
+#include <box2d/b2_world.h>
+#include <box2d/b2_body.h>
+#include <box2d/b2_fixture.h>
+#include <box2d/b2_polygon_shape.h>
+#include <box2d/b2_circle_shape.h>
 
 namespace sge {
 
@@ -39,12 +39,12 @@ namespace sge {
             return b2_dynamicBody;
         }
 
-        assert(false && "Unknown body type");
+        throw std::runtime_error("invalid body type");
         return b2_staticBody;
     }
 
     entity scene::create_entity(const std::string& name) {
-        entity e = { this->m_registry.create(), this };
+        entity e(this->m_registry.create(), this);
 
         e.add_component<transform_component>();
         auto& t = e.add_component<tag_component>();
@@ -63,13 +63,15 @@ namespace sge {
 
         m_registry.destroy(e);
     }
-    
+
     void scene::on_start() {
         // Initialize the box2d physics engine
         this->m_physics_world = new b2World({ 0.f, -9.8f });
+
+        // todo: move a lot of this code to on_component_added or on_runtime_update
         auto view = this->m_registry.view<rigid_body_component>();
-        for (auto e_ : view) {
-            entity e = { e_, this };
+        for (auto id : view) {
+            entity e(id, this);
             auto& transform = e.get_component<transform_component>();
             auto& rb = e.get_component<rigid_body_component>();
 
@@ -170,7 +172,7 @@ namespace sge {
         {
             static constexpr float camera_size = 10.f;
             float aspect_ratio = (float)m_viewport_width / (float)m_viewport_height;
-            
+
             float left = -camera_size * aspect_ratio / 2.f;
             float right = camera_size * aspect_ratio / 2.f;
             float bottom = -camera_size / 2.f;
@@ -209,6 +211,13 @@ namespace sge {
             auto& camera = view.get<camera_component>(id);
             camera.camera.set_render_target_size(width, height);
         }
+    }
+
+    void scene::for_each(const std::function<void(entity)>& callback) {
+        m_registry.each([callback, this](entt::entity id) mutable {
+            entity e(id, this);
+            callback(e);
+        });
     }
 
     void scene::render(const glm::mat4& view_projection) {

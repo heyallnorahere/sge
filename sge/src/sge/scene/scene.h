@@ -45,6 +45,17 @@ namespace sge {
 
         void set_viewport_size(uint32_t width, uint32_t height);
 
+        void for_each(const std::function<void(entity)>& callback);
+
+        template <typename... T>
+        void for_each(const std::function<void(entity)>& callback) {
+            auto view = m_registry.view<T...>();
+            for (entt::entity id : view) {
+                entity e(id, this);
+                callback(e);
+            }
+        }
+
     private:
         template <typename T>
         void on_component_added(entity& entity, T& component) {
