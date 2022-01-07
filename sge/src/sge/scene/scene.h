@@ -18,6 +18,7 @@
 
 #include "sge/events/event.h"
 #include "sge/events/window_events.h"
+#include "sge/scene/editor_camera.h"
 #include <entt/entt.hpp>
 
 class b2World;
@@ -40,7 +41,7 @@ namespace sge {
         void on_start();
         void on_stop();
         void on_runtime_update(timestep ts);
-        void on_editor_update(timestep ts); // todo(nora): pass editor camera
+        void on_editor_update(timestep ts, editor_camera& camera);
         void on_event(event& e);
 
         void set_viewport_size(uint32_t width, uint32_t height);

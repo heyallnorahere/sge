@@ -45,8 +45,19 @@ namespace sgm {
         }
         verify_size();
 
+        ImGuiID viewport_id = ImGui::GetID("viewport-image");
+        ImGui::PushID(viewport_id);
+
         ImVec2 content_region = ImGui::GetContentRegionAvail();
         ImGui::Image(m_current_texture->get_imgui_id(), content_region);
+
+        if (ImGui::IsItemHovered()) {
+            editor_scene::enable_panning();
+        } else if (!input::get_mouse_button(mouse_button::right)) {
+            editor_scene::disable_panning();
+        }
+
+        ImGui::PopID();
     }
 
     void viewport_panel::verify_size() {

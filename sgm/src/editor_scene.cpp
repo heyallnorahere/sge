@@ -19,9 +19,11 @@
 #include <sge/renderer/renderer.h>
 namespace sgm {
     struct scene_data_t {
-        ref<scene> _scene;
         ref<framebuffer> _framebuffer;
+
+        ref<scene> _scene;
         entity selection;
+        editor_camera camera;
     };
     static std::unique_ptr<scene_data_t> scene_data;
 
@@ -56,22 +58,36 @@ namespace sgm {
         renderer::push_render_pass(pass, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
 
         // no play button just yet
-        scene_data->_scene->on_editor_update(ts);
+        scene_data->camera.on_update(ts);
+        scene_data->_scene->on_editor_update(ts, scene_data->camera);
 
         if (renderer::pop_render_pass() != pass) {
             throw std::runtime_error("a render pass was pushed but not popped!");
         }
     }
 
-    void editor_scene::on_event(event& e) { scene_data->_scene->on_event(e); }
+    void editor_scene::on_event(event& e) {
+        // todo: check for scene running status
+        if (!e.handled) {
+            scene_data->camera.on_event(e);
+        }
+
+        if (!e.handled) {
+            scene_data->_scene->on_event(e);
+        }
+    }
 
     void editor_scene::set_viewport_size(uint32_t width, uint32_t height) {
         scene_data->_framebuffer->resize(width, height);
+        scene_data->camera.update_viewport_size(width, height);
         scene_data->_scene->set_viewport_size(width, height);
     }
 
     entity& editor_scene::get_selection() { return scene_data->selection; }
     void editor_scene::reset_selection() { scene_data->selection = entity(); }
+
+    void editor_scene::enable_panning() { scene_data->camera.enable_panning(); }
+    void editor_scene::disable_panning() { scene_data->camera.disable_panning(); }
 
     ref<scene> editor_scene::get_scene() { return scene_data->_scene; }
     ref<framebuffer> editor_scene::get_framebuffer() { return scene_data->_framebuffer; }

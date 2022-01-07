@@ -15,26 +15,36 @@
 */
 
 #include "sgmpch.h"
-#include "sgm.h"
+#include <sge/core/main.h>
 #include "editor_layer.h"
 #include "panels/panels.h"
 #include "editor_scene.h"
 namespace sgm {
-    void sgm_app::on_init() {
-        editor_scene::create();
+    class sgm_app : public application {
+    public:
+        sgm_app() : application("SGM") {}
+    
+    protected:
+        virtual void on_init() override {
+            editor_scene::create();
 
-        m_editor_layer = new editor_layer;
-        push_layer(m_editor_layer);
+            m_editor_layer = new editor_layer;
+            push_layer(m_editor_layer);
 
-        m_editor_layer->add_panel<renderer_info_panel>();
-        m_editor_layer->add_panel<viewport_panel>();
-        m_editor_layer->add_panel<scene_hierarchy_panel>();
-    }
+            m_editor_layer->add_panel<renderer_info_panel>();
+            m_editor_layer->add_panel<viewport_panel>();
+            m_editor_layer->add_panel<scene_hierarchy_panel>();
+        }
 
-    void sgm_app::on_shutdown() {
-        pop_layer(m_editor_layer);
-        delete m_editor_layer;
+        virtual void on_shutdown() override {
+            pop_layer(m_editor_layer);
+            delete m_editor_layer;
 
-        editor_scene::destroy();
-    }
+            editor_scene::destroy();
+        }
+
+        editor_layer* m_editor_layer;
+    };
 } // namespace sgm
+
+application* create_app_instance() { return new sgm::sgm_app; }

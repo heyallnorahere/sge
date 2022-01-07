@@ -32,6 +32,9 @@ namespace sgm {
         static entity& get_selection();
         static void reset_selection();
 
+        static void enable_panning();
+        static void disable_panning();
+
         static ref<scene> get_scene();
         static ref<framebuffer> get_framebuffer();
     };

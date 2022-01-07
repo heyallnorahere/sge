@@ -69,7 +69,7 @@ namespace sge {
         this->m_physics_world = new b2World({ 0.f, -9.8f });
 
         // todo: move a lot of this code to on_component_added or on_runtime_update
-        auto view = this->m_registry.view<rigid_body_component>();
+        /*auto view = this->m_registry.view<rigid_body_component>();
         for (auto id : view) {
             entity e(id, this);
             auto& transform = e.get_component<transform_component>();
@@ -98,7 +98,7 @@ namespace sge {
                 auto fixture = body->CreateFixture(&fixture_def);
                 bc.runtime_fixture = fixture;
             }
-        }
+        }*/
     }
 
     void scene::on_stop() {
@@ -125,7 +125,7 @@ namespace sge {
         }
 
         // Physics
-        {
+        /*{
             const int32 velocity_iterations = 6;
             const int32 position_iterations = 2;
             m_physics_world->Step(ts.count(), velocity_iterations, position_iterations);
@@ -141,7 +141,7 @@ namespace sge {
                 transform.translation.y = position.y;
                 transform.rotation = glm::degrees(body->GetAngle());
             }
-        }
+        }*/
 
         // Render
         runtime_camera* main_camera = nullptr;
@@ -166,22 +166,9 @@ namespace sge {
         }
     }
 
-    void scene::on_editor_update(timestep ts) {
-        // todo(nora): get editor camera data
-        glm::mat4 projection;
-        {
-            static constexpr float camera_size = 10.f;
-            float aspect_ratio = (float)m_viewport_width / (float)m_viewport_height;
-
-            float left = -camera_size * aspect_ratio / 2.f;
-            float right = camera_size * aspect_ratio / 2.f;
-            float bottom = -camera_size / 2.f;
-            float top = camera_size / 2.f;
-
-            projection = glm::ortho(left, right, bottom, top, -1.f, 1.f);
-        }
-
-        render(projection);
+    void scene::on_editor_update(timestep ts, editor_camera& camera) {
+        glm::mat4 view_projection = camera.get_view_projection_matrix();
+        render(view_projection);
     }
 
     void scene::on_event(event& e) {
