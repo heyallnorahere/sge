@@ -202,9 +202,13 @@ namespace sge {
 
     void scene::for_each(const std::function<void(entity)>& callback) {
         m_registry.each([callback, this](entt::entity id) mutable {
-            entity e(id, this);
-            callback(e);
+            view_iteration(id, callback);
         });
+    }
+
+    void scene::view_iteration(entt::entity id, const std::function<void(entity)>& callback) {
+        entity e(id, this);
+        callback(e);
     }
 
     void scene::render(const glm::mat4& view_projection) {

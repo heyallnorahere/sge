@@ -31,6 +31,8 @@ namespace sge {
         void end(command_list& cmdlist);
 
     private:
+        void set_style();
+
         std::unique_ptr<imgui_backend> m_platform, m_renderer;
     };
 } // namespace sge

@@ -52,8 +52,7 @@ namespace sge {
         void for_each(const std::function<void(entity)>& callback) {
             auto view = m_registry.view<T...>();
             for (entt::entity id : view) {
-                entity e(id, this);
-                callback(e);
+                view_iteration(id, callback);
             }
         }
 
@@ -68,6 +67,7 @@ namespace sge {
             // no behavior
         }
 
+        void view_iteration(entt::entity id, const std::function<void(entity)>& callback);
         void render(const glm::mat4& view_projection);
 
         entt::registry m_registry;
