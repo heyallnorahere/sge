@@ -15,28 +15,16 @@
 */
 
 #pragma once
+#include "sge/scene/scene.h"
 namespace sge {
-    class guid {
+    class scene_serializer {
     public:
-        guid() { regenerate(); }
+        scene_serializer(ref<scene> _scene);
 
-        guid(uint64_t id) { m_guid = id; }
-        guid& operator=(uint64_t id) {
-            m_guid = id;
-            return *this;
-        }
-
-        guid(const guid& other) { m_guid = other.m_guid; }
-        guid& operator=(const guid& other) {
-            m_guid = other.m_guid;
-            return *this;
-        }
-
-        void regenerate();
-
-        operator uint64_t() const { return m_guid; }
+        void serialize(const fs::path& path);
+        void deserialize(const fs::path& path);
 
     private:
-        uint64_t m_guid;
+        ref<scene> m_scene;
     };
 } // namespace sge

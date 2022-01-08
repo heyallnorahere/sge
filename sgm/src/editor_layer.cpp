@@ -18,6 +18,7 @@
 #include "editor_layer.h"
 #include "editor_scene.h"
 #include "texture_cache.h"
+#include <sge/scene/scene_serializer.h>
 namespace sgm {
     void editor_layer::on_update(timestep ts) {
         for (auto& _panel : m_panels) {
@@ -27,7 +28,15 @@ namespace sgm {
         editor_scene::on_update(ts);
     }
 
-    void editor_layer::on_event(event& e) { editor_scene::on_event(e); }
+    void editor_layer::on_event(event& e) {
+        event_dispatcher dispatcher(e);
+
+        // todo: on_key event for keyboard shortcuts
+
+        if (!e.handled) {
+            editor_scene::on_event(e);
+        }
+    }
 
     void editor_layer::on_imgui_render() {
         static constexpr ImGuiConfigFlags required_flags =

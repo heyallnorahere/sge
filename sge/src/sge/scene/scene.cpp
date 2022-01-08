@@ -66,6 +66,20 @@ namespace sge {
         m_registry.destroy(e);
     }
 
+    void scene::clear() {
+        m_registry.each([this](entt::entity id) {
+            entity e(id, this);
+            if (e.has_all<native_script_component>()) {
+                auto& nsc = e.get_component<native_script_component>();
+                if (nsc.script != nullptr) {
+                    nsc.destroy(&nsc);
+                }
+            }
+        });
+
+        m_registry.clear();
+    }
+
     void scene::on_start() {
         // Initialize the box2d physics engine
         this->m_physics_world = new b2World({ 0.f, -9.8f });

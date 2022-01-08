@@ -32,11 +32,13 @@ namespace sgm {
             auto name = filename.stem().string();
             if (icon_library.find(name) != icon_library.end()) {
                 spdlog::warn("icon {0} already exists - skipping", name);
+                continue;
             }
 
             auto img_data = image_data::load(path);
             if (!img_data) {
                 spdlog::warn("failed to load {0} - skipping", path.string());
+                continue;
             }
 
             texture_spec spec;

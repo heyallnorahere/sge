@@ -4,6 +4,7 @@ add_subdirectory("SPIRV-Cross")
 add_subdirectory("stb")
 add_subdirectory("entt")
 add_subdirectory("box2d")
+add_subdirectory("json")
 
 if(NOT SHADERC_DEPENDENCIES_SYNCED)
     find_package(Python3 REQUIRED)

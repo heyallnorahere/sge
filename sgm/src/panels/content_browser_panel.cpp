@@ -57,12 +57,12 @@ namespace sgm {
             ImGui::ImageButton(icon->get_imgui_id(), ImVec2(m_icon_size, m_icon_size));
 
             if (ImGui::BeginDragDropSource()) {
-                std::string path_data = path.string();
-                const char* c_str = path_data.c_str();
+                std::string payload_path = fs::relative(path).string();
+                const char* c_str = payload_path.c_str();
 
                 ImGui::Text(filename.c_str());
                 ImGui::SetDragDropPayload("content-browser-file", c_str,
-                                          (path_data.length() + 1) * sizeof(char));
+                                          (payload_path.length() + 1) * sizeof(char));
 
                 ImGui::EndDragDropSource();
             }

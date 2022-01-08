@@ -38,6 +38,7 @@ namespace sge {
 
         entity create_entity(const std::string& name = std::string());
         void destroy_entity(entity entity);
+        void clear();
 
         void on_start();
         void on_stop();

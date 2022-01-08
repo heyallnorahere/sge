@@ -28,3 +28,6 @@
 [submodule "vendor/imgui"]
 	path = vendor/imgui
 	url = https://github.com/yodasoda1219/imgui.git
+[submodule "vendor/json"]
+	path = vendor/json
+	url = https://github.com/nlohmann/json.git

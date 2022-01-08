@@ -196,6 +196,8 @@ namespace sgm {
 
                         auto img_data = image_data::load(path);
                         if (img_data) {
+                            component.texture_path = path;
+
                             texture_spec spec;
                             spec.filter = texture_filter::linear;
                             spec.wrap = texture_wrap::repeat;
@@ -214,6 +216,7 @@ namespace sgm {
                 if (can_reset) {
                     if (ImGui::Button("Remove Texture")) {
                         component.texture.reset();
+                        component.texture_path.clear();
                     }
                 }
             });
