@@ -19,7 +19,18 @@
 #include "sge/scene/runtime_camera.h"
 #include "sge/scene/entity_script.h"
 #include "sge/scene/entity.h"
+#include "sge/core/guid.h"
 namespace sge {
+    struct id_component {
+        guid id;
+
+        id_component() = default;
+        id_component(const guid& id) : id(id) {}
+
+        id_component(const id_component&) = default;
+        id_component& operator=(const id_component&) = default;
+    };
+
     struct tag_component {
         std::string tag;
 
@@ -77,8 +88,8 @@ namespace sge {
 
         entity_script* script = nullptr;
 
-        void(*instantiate)(native_script_component* nsc, entity parent) = nullptr;
-        void(*destroy)(native_script_component* nsc) = nullptr;
+        void (*instantiate)(native_script_component* nsc, entity parent) = nullptr;
+        void (*destroy)(native_script_component* nsc) = nullptr;
 
         template <typename T>
         void bind() {

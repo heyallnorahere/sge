@@ -50,9 +50,9 @@ namespace sgm {
         ImGui::Image(m_current_texture->get_imgui_id(), content_region);
 
         if (ImGui::IsItemHovered()) {
-            editor_scene::enable_panning();
+            editor_scene::enable_input();
         } else if (!input::get_mouse_button(mouse_button::right)) {
-            editor_scene::disable_panning();
+            editor_scene::disable_input();
         }
 
         ImGui::PopID();

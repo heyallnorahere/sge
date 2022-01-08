@@ -33,7 +33,7 @@ namespace sge {
     }
 
     void editor_camera::on_update(timestep ts) {
-        if (input::get_mouse_button(mouse_button::right) && m_panning_enabled) {
+        if (input::get_mouse_button(mouse_button::right) && m_input_enabled) {
             glm::vec2 mouse_position = input::get_mouse_position();
             if (!m_last_mouse_position.has_value()) {
                 m_last_mouse_position = mouse_position;
@@ -57,7 +57,11 @@ namespace sge {
     }
 
     bool editor_camera::on_scroll(mouse_scrolled_event& e) {
-        m_view_size -= e.get_offset().y;
+        if (!m_input_enabled) {
+            return false;
+        }
+
+        m_view_size -= e.get_offset().y / 2.f;
         if (m_view_size < 0.1f) {
             m_view_size = 0.1f;
         }

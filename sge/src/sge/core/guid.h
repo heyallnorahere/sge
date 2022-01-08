@@ -15,28 +15,23 @@
 */
 
 #pragma once
-#include <sge/renderer/framebuffer.h>
-namespace sgm {
-    class editor_scene {
+namespace sge {
+    class guid {
     public:
-        editor_scene() = delete;
+        guid() { regenerate(); }
+        guid(uint64_t guid) { m_guid = guid; }
 
-        static void create();
-        static void destroy();
+        guid(const guid& other) { m_guid = other.m_guid; }
+        guid& operator=(const guid& other) {
+            m_guid = other.m_guid;
+            return *this;
+        }
 
-        static void on_update(timestep ts);
-        static void on_event(event& e);
+        void regenerate();
 
-        static void set_viewport_size(uint32_t width, uint32_t height);
+        operator uint64_t() { return m_guid; }
 
-        static entity& get_selection();
-        static void reset_selection();
-
-        static void enable_input();
-        static void disable_input();
-
-        static ref<scene> get_scene();
-        static ref<framebuffer> get_framebuffer();
-        static editor_camera& get_camera();
+    private:
+        uint64_t m_guid;
     };
-} // namespace sgm
+} // namespace sge

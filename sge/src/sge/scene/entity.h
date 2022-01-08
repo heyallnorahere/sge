@@ -65,6 +65,8 @@ namespace sge {
             m_scene->m_registry.remove<T>(m_handle);
         }
 
+        guid get_guid() { return m_scene->get_guid(*this); }
+
         operator bool() const { return m_handle != entt::null; }
         operator entt::entity() const { return m_handle; }
         operator uint32_t() const { return (uint32_t)m_handle; }

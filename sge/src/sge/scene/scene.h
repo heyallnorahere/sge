@@ -19,6 +19,7 @@
 #include "sge/events/event.h"
 #include "sge/events/window_events.h"
 #include "sge/scene/editor_camera.h"
+#include "sge/core/guid.h"
 #include <entt/entt.hpp>
 
 class b2World;
@@ -69,6 +70,8 @@ namespace sge {
 
         void view_iteration(entt::entity id, const std::function<void(entity)>& callback);
         void render(const glm::mat4& view_projection);
+
+        guid get_guid(entity e);
 
         entt::registry m_registry;
         uint32_t m_viewport_width, m_viewport_height;

@@ -87,8 +87,8 @@ namespace sgm {
     entity& editor_scene::get_selection() { return scene_data->selection; }
     void editor_scene::reset_selection() { scene_data->selection = entity(); }
 
-    void editor_scene::enable_panning() { scene_data->camera.enable_panning(); }
-    void editor_scene::disable_panning() { scene_data->camera.disable_panning(); }
+    void editor_scene::enable_input() { scene_data->camera.enable_input(); }
+    void editor_scene::disable_input() { scene_data->camera.disable_input(); }
 
     ref<scene> editor_scene::get_scene() { return scene_data->_scene; }
     ref<framebuffer> editor_scene::get_framebuffer() { return scene_data->_framebuffer; }

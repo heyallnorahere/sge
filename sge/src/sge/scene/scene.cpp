@@ -46,7 +46,9 @@ namespace sge {
     entity scene::create_entity(const std::string& name) {
         entity e(this->m_registry.create(), this);
 
+        e.add_component<id_component>();
         e.add_component<transform_component>();
+
         auto& t = e.add_component<tag_component>();
         t.tag = name.empty() ? "Entity" : name;
 
@@ -201,9 +203,8 @@ namespace sge {
     }
 
     void scene::for_each(const std::function<void(entity)>& callback) {
-        m_registry.each([callback, this](entt::entity id) mutable {
-            view_iteration(id, callback);
-        });
+        m_registry.each(
+            [callback, this](entt::entity id) mutable { view_iteration(id, callback); });
     }
 
     void scene::view_iteration(entt::entity id, const std::function<void(entity)>& callback) {
@@ -230,5 +231,10 @@ namespace sge {
         }
 
         renderer::end_scene();
+    }
+
+    guid scene::get_guid(entity e) {
+        auto& id_data = e.get_component<id_component>();
+        return id_data.id;
     }
 } // namespace sge

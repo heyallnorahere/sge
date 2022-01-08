@@ -31,8 +31,8 @@ namespace sge {
         void on_update(timestep ts);
         void on_event(event& e);
 
-        void enable_panning() { m_panning_enabled = true; }
-        void disable_panning() { m_panning_enabled = false; }
+        void enable_input() { m_input_enabled = true; }
+        void disable_input() { m_input_enabled = false; }
 
         glm::vec2 get_position() { return m_position; }
         float get_view_size() { return m_view_size; }
@@ -51,7 +51,7 @@ namespace sge {
 
         float m_view_size = 10.f;
 
-        bool m_panning_enabled = false;
+        bool m_input_enabled = false;
         std::optional<glm::vec2> m_last_mouse_position;
     };
 } // namespace sge
