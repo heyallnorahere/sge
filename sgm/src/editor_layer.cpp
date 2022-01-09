@@ -92,7 +92,7 @@ namespace sgm {
     }
 
     void editor_layer::update_toolbar() {
-        static constexpr float toolbar_height = 50.f;
+        static constexpr float toolbar_height = 35.f;
         static constexpr float padding = 2.f;
         static constexpr float icon_size = toolbar_height - padding * 2.f;
 
@@ -100,7 +100,7 @@ namespace sgm {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.f, 0.f));
 
         ImGuiID window_id = ImGui::GetID("toolbar");
-        ImGui::BeginChild(window_id, ImVec2(0.f, toolbar_height));
+        ImGui::BeginChild(window_id, ImVec2(0.f, toolbar_height), false, ImGuiWindowFlags_NoScrollbar);
 
         ImGui::PopStyleVar(2);
 

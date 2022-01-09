@@ -230,28 +230,41 @@ namespace sge {
         }
 
         // Render
-        runtime_camera* main_camera = nullptr;
-        glm::mat4 camera_transform;
         {
-            auto view = this->m_registry.view<transform_component, camera_component>();
-            for (entt::entity id : view) {
-                const auto& [camera_data, transform] =
-                    this->m_registry.get<camera_component, transform_component>(id);
+            runtime_camera* main_camera = nullptr;
+            glm::mat4 camera_transform;
+            {
+                auto view = this->m_registry.view<transform_component, camera_component>();
+                for (entt::entity id : view) {
+                    const auto& [camera_data, transform] =
+                        this->m_registry.get<camera_component, transform_component>(id);
 
-                if (camera_data.primary) {
-                    main_camera = &camera_data.camera;
-                    camera_transform = transform.get_transform();
-                    break;
+                    if (camera_data.primary) {
+                        main_camera = &camera_data.camera;
+                        camera_transform = transform.get_transform();
+                        break;
+                    }
                 }
             }
-        }
 
-        if (main_camera != nullptr) {
-            glm::mat4 projection = main_camera->get_projection();
-            renderer::begin_scene(projection * glm::inverse(camera_transform));
+            glm::mat4 view_projection;
+            if (main_camera != nullptr) {
+                glm::mat4 projection = main_camera->get_projection();
+                view_projection = projection * glm::inverse(camera_transform);
+            } else {
+                static constexpr float default_view_size = 10.f;
+                float aspect_ratio = (float)m_viewport_width / (float)m_viewport_height;
 
+                float left = -default_view_size * aspect_ratio / 2.f;
+                float right = default_view_size * aspect_ratio / 2.f;
+                float bottom = -default_view_size / 2.f;
+                float top = default_view_size / 2.f;
+
+                view_projection = glm::ortho(left, right, bottom, top, -1.f, 1.f);
+            }
+
+            renderer::begin_scene(view_projection);
             render();
-
             renderer::end_scene();
         }
     }
