@@ -32,7 +32,7 @@ namespace sge {
     class scene : public ref_counted {
     public:
         scene() = default;
-        ~scene() = default;
+        ~scene();
         scene(const scene&) = delete;
         scene& operator=(const scene&) = delete;
 

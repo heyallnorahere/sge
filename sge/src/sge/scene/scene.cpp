@@ -43,6 +43,12 @@ namespace sge {
         return b2_staticBody;
     }
 
+    scene::~scene() {
+        if (m_physics_world != nullptr) {
+            delete m_physics_world;
+        }
+    }
+
     entity scene::create_entity(const std::string& name) {
         entity e(this->m_registry.create(), this);
 
@@ -82,10 +88,8 @@ namespace sge {
 
     void scene::on_start() {
         // Initialize the box2d physics engine
-        this->m_physics_world = new b2World({ 0.f, -9.8f });
-
-        // todo: move a lot of this code to on_component_added or on_runtime_update
-        auto view = this->m_registry.view<rigid_body_component>();
+        m_physics_world = new b2World({ 0.f, -9.8f });
+        auto view = m_registry.view<rigid_body_component>();
         for (auto id : view) {
             entity e(id, this);
             auto& transform = e.get_component<transform_component>();
@@ -95,7 +99,7 @@ namespace sge {
             body_def.type = rigid_body_type_to_box2d_body(rb.type);
             body_def.position.Set(transform.translation.x, transform.translation.y);
             body_def.angle = glm::radians(transform.rotation);
-            b2Body* body = this->m_physics_world->CreateBody(&body_def);
+            b2Body* body = m_physics_world->CreateBody(&body_def);
             body->SetFixedRotation(rb.fixed_rotation);
             rb.runtime_body = body;
 
@@ -118,7 +122,7 @@ namespace sge {
     }
 
     void scene::on_stop() {
-        delete this->m_physics_world;
+        delete m_physics_world;
         m_physics_world = nullptr;
     }
 
@@ -142,16 +146,30 @@ namespace sge {
 
         // Physics
         {
-            const int32 velocity_iterations = 6;
-            const int32 position_iterations = 2;
+            static constexpr int32_t velocity_iterations = 6;
+            static constexpr int32_t position_iterations = 2;
+
+            auto view = m_registry.view<transform_component, rigid_body_component>();
+            for (entt::entity id : view) {
+                entity e(id, this);
+                const auto& transform = e.get_component<transform_component>();
+                auto& rb = e.get_component<rigid_body_component>();
+
+                b2Body* body = (b2Body*)rb.runtime_body;
+                b2Vec2 position;
+                position.x = transform.translation.x;
+                position.y = transform.translation.y;
+                body->SetTransform(position, glm::radians(transform.rotation));
+            }
+
             m_physics_world->Step(ts.count(), velocity_iterations, position_iterations);
-            auto view = this->m_registry.view<rigid_body_component>();
-            for (auto e_ : view) {
-                entity e = { e_, this };
+
+            for (entt::entity id : view) {
+                entity e(id, this);
                 auto& transform = e.get_component<transform_component>();
                 auto& rb = e.get_component<rigid_body_component>();
 
-                b2Body* body = static_cast<b2Body*>(rb.runtime_body);
+                b2Body* body = (b2Body*)rb.runtime_body;
                 const auto& position = body->GetPosition();
                 transform.translation.x = position.x;
                 transform.translation.y = position.y;

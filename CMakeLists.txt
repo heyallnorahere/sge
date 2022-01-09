@@ -4,7 +4,12 @@ if(NOT ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     message(FATAL_ERROR "SGE must be built as a standalone project!")
 endif()
 
-project(sge)
+set(SGE_LANGUAGES C CXX)
+if(APPLE AND ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
+    list(APPEND SGE_LANGUAGES OBJC OBJCXX)
+endif()
+
+project(sge LANGUAGES ${SGE_LANGUAGES})
 set(SGE_DESKTOP $<PLATFORM_ID:Windows,Linux,Darwin>)
 
 # dependencies
