@@ -410,27 +410,29 @@ namespace sge {
                 switch (spec.blend_mode) {
                 case framebuffer_blend_mode::src_alpha_one_minus_src_alpha:
                     blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-					blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+                    blend_attachment_state.dstColorBlendFactor =
+                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 
-					blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-					blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+                    blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+                    blend_attachment_state.dstAlphaBlendFactor =
+                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 
                     break;
                 case framebuffer_blend_mode::one_zero:
-                	blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-					blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+                    blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+                    blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
 
-					blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-					blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+                    blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+                    blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 
                     break;
                 case framebuffer_blend_mode::zero_src_color:
-                	blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-					blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+                    blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+                    blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
 
-					blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-					blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
-                    
+                    blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+                    blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+
                     break;
                 default:
                     throw std::runtime_error("invalid blend mode!");
@@ -452,10 +454,8 @@ namespace sge {
         viewport_state.scissorCount = 1;
 
         std::vector<VkDynamicState> dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT,
-                                                       VK_DYNAMIC_STATE_SCISSOR };
-        if (this->m_spec.wireframe) {
-            dynamic_states.push_back(VK_DYNAMIC_STATE_LINE_WIDTH);
-        }
+                                                       VK_DYNAMIC_STATE_SCISSOR,
+                                                       VK_DYNAMIC_STATE_LINE_WIDTH };
 
         auto dynamic_state = vk_init<VkPipelineDynamicStateCreateInfo>(
             VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
