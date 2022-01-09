@@ -393,7 +393,7 @@ namespace sge {
 
                 vertex v;
                 v.color = glm::vec4(1.f);
-                v.texture_index = std::numeric_limits<size_t>::max();
+                v.texture_index = -1;
 
                 // top right
                 v.position = glm::vec2(1.f, 1.f);

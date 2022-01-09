@@ -60,7 +60,7 @@ namespace sgm {
                 std::string payload_path = fs::relative(path).string();
                 const char* c_str = payload_path.c_str();
 
-                ImGui::Text(filename.c_str());
+                ImGui::Text("%s", filename.c_str());
                 ImGui::SetDragDropPayload("content-browser-file", c_str,
                                           (payload_path.length() + 1) * sizeof(char));
 
@@ -87,7 +87,7 @@ namespace sgm {
                 ImGui::Indent(indentation);
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (m_icon_size - indentation));
 
-                ImGui::TextWrapped(filename.c_str());
+                ImGui::TextWrapped("%s", filename.c_str());
 
                 ImGui::PopTextWrapPos();
                 ImGui::Unindent(indentation);
