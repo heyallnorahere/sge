@@ -105,14 +105,12 @@ namespace sge {
 
             entt::entity new_entity = entity_map.at(id);
             T& data = src.get<T>(e);
-            dst.emplace<T>(new_entity, data);
+            dst.emplace_or_replace<T>(new_entity, data);
         }
     }
 
     ref<scene> scene::copy() {
         auto new_scene = ref<scene>::create();
-        new_scene->m_viewport_width = m_viewport_width;
-        new_scene->m_viewport_height = m_viewport_height;
 
         entt::registry& dst_registry = new_scene->m_registry;
         std::unordered_map<guid, entt::entity> entity_map;
@@ -136,6 +134,7 @@ namespace sge {
         copy_component<rigid_body_component>(dst_registry, m_registry, entity_map);
         copy_component<box_collider_component>(dst_registry, m_registry, entity_map);
 
+        new_scene->set_viewport_size(m_viewport_width, m_viewport_height);
         return new_scene;
     }
 

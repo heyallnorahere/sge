@@ -38,6 +38,10 @@ namespace sgm {
         static void load(const fs::path& path);
         static void save(const fs::path& path);
 
+        static bool running();
+        static void play();
+        static void stop();
+
         static ref<scene> get_scene();
         static ref<framebuffer> get_framebuffer();
         static editor_camera& get_camera();

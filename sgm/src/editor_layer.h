@@ -35,7 +35,8 @@ namespace sgm {
 
     private:
         void update_dockspace();
-        void menu_bar();
+        void update_toolbar();
+        void update_menu_bar();
 
         std::vector<std::unique_ptr<panel>> m_panels;
     };

@@ -18,6 +18,7 @@
 #include "editor_layer.h"
 #include "editor_scene.h"
 #include "texture_cache.h"
+#include "icon_directory.h"
 #include <sge/scene/scene_serializer.h>
 namespace sgm {
     void editor_layer::on_update(timestep ts) {
@@ -80,43 +81,88 @@ namespace sgm {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
 
-        ImGui::Begin("SGM Dockspace", nullptr, window_flags);
-
+        ImGui::Begin("Main SGM window", nullptr, window_flags);
         ImGui::PopStyleVar(3);
 
+        update_menu_bar();
+        update_toolbar();
+
         ImGui::DockSpace(ImGui::GetID("sgm-dockspace"));
-
-        menu_bar();
-
         ImGui::End();
     }
 
-    void editor_layer::menu_bar() {
+    void editor_layer::update_toolbar() {
+        static constexpr float toolbar_height = 50.f;
+        static constexpr float padding = 2.f;
+        static constexpr float icon_size = toolbar_height - padding * 2.f;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, padding));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.f, 0.f));
+
+        ImGuiID window_id = ImGui::GetID("toolbar");
+        ImGui::BeginChild(window_id, ImVec2(0.f, toolbar_height));
+
+        ImGui::PopStyleVar(2);
+
+        float cursor_pos = (ImGui::GetWindowContentRegionMax().x - icon_size) / 2.f;
+        ImGui::SetCursorPosX(cursor_pos);
+
+        bool running = editor_scene::running();
+        std::string icon_name = running ? "stop" : "play";
+        ref<texture_2d> icon = icon_directory::get(icon_name);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+        ImVec4* colors = ImGui::GetStyle().Colors;
+
+        ImVec4 color = colors[ImGuiCol_ButtonHovered];
+        color.w = 0.5f;
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color);
+
+        color = colors[ImGuiCol_ButtonActive];
+        color.w = 0.5f;
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
+
+        if (ImGui::ImageButton(icon->get_imgui_id(), ImVec2(icon_size, icon_size))) {
+            if (running) {
+                editor_scene::stop();
+            } else {
+                editor_scene::play();
+            }
+        }
+
+        ImGui::PopStyleColor(3);
+        ImGui::EndChild();
+    }
+
+    void editor_layer::update_menu_bar() {
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 auto& app = application::get();
-                if (ImGui::MenuItem("Exit")) {
-                    app.quit();
-                }
-
                 {
                     auto _window = app.get_window();
-                    std::vector<dialog_file_filter> filters = { { "SGE scene (*.sgescene)",
-                                                                  "*.sgescene" } };
+                    static const std::vector<dialog_file_filter> filters = {
+                        { "SGE scene (*.sgescene)", "*.sgescene" }
+                    };
 
-                    if (ImGui::MenuItem("Open...")) {
+                    if (ImGui::MenuItem("Open...", "Ctrl+O")) {
                         auto path = _window->file_dialog(dialog_mode::open, filters);
                         if (path.has_value()) {
                             editor_scene::load(path.value());
                         }
                     }
 
-                    if (ImGui::MenuItem("Save As...")) {
+                    if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
                         auto path = _window->file_dialog(dialog_mode::save, filters);
                         if (path.has_value()) {
                             editor_scene::save(path.value());
                         }
                     }
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Quit", "Ctrl+Q")) {
+                    app.quit();
                 }
 
                 ImGui::EndMenu();

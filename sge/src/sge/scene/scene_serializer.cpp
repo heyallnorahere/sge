@@ -160,6 +160,57 @@ namespace sge {
         }
     }
 
+    void to_json(json& data, const rigid_body_component& rb) {
+        data["fixed_rotation"] = rb.fixed_rotation;
+
+        using body_type = rigid_body_component::body_type;
+        switch (rb.type) {
+        case body_type::static_:
+            data["type"] = "static";
+            break;
+        case body_type::kinematic:
+            data["type"] = "kinematic";
+            break;
+        case body_type::dynamic:
+            data["type"] = "dynamic";
+            break;
+        default:
+            throw std::runtime_error("invalid body type!");
+        }
+    }
+
+    static const std::unordered_map<std::string, rigid_body_component::body_type> body_type_map = {
+        { "static", rigid_body_component::body_type::static_ },
+        { "kinematic", rigid_body_component::body_type::kinematic },
+        { "dynamic", rigid_body_component::body_type::dynamic },
+    };
+
+    void from_json(const json& data, rigid_body_component& rb) {
+        rb.fixed_rotation = data["fixed_rotation"].get<bool>();
+
+        std::string body_type = data["type"].get<std::string>();
+        if (body_type_map.find(body_type) == body_type_map.end()) {
+            throw std::runtime_error("invalid body type!");
+        }
+        rb.type = body_type_map.at(body_type);
+    }
+
+    void to_json(json& data, const box_collider_component& bc) {
+        data["density"] = bc.density;
+        data["friction"] = bc.friction;
+        data["restitution"] = bc.restitution;
+        data["restitution_threashold"] = bc.restitution_threashold;
+        data["size"] = bc.size;
+    }
+
+    void from_json(const json& data, box_collider_component& bc) {
+        bc.density = data["density"].get<float>();
+        bc.friction = data["friction"].get<float>();
+        bc.restitution = data["restitution"].get<float>();
+        bc.restitution_threashold = data["restitution_threashold"].get<float>();
+        bc.size = data["size"].get<glm::vec2>();
+    }
+
     template <typename T>
     static void serialize_component(entity e, const std::string& key, json& data) {
         if (e.has_all<T>()) {
@@ -205,6 +256,8 @@ namespace sge {
             serialize_component<transform_component>(current, "transform", entity_data);
             serialize_component<camera_component>(current, "camera", entity_data);
             serialize_component<sprite_renderer_component>(current, "sprite", entity_data);
+            serialize_component<rigid_body_component>(current, "rigid_body", entity_data);
+            serialize_component<box_collider_component>(current, "box_collider", entity_data);
 
             entities.push_back(entity_data);
         });
@@ -236,6 +289,8 @@ namespace sge {
             deserialize_component<transform_component>(e, "transform", entity_data);
             deserialize_component<camera_component>(e, "camera", entity_data);
             deserialize_component<sprite_renderer_component>(e, "sprite", entity_data);
+            deserialize_component<rigid_body_component>(e, "rigid_body", entity_data);
+            deserialize_component<box_collider_component>(e, "box_collider", entity_data);
         }
     }
 } // namespace sge

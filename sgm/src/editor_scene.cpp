@@ -22,7 +22,7 @@ namespace sgm {
     struct scene_data_t {
         ref<framebuffer> _framebuffer;
 
-        ref<scene> _scene;
+        ref<scene> _scene, runtime_scene;
         entity selection;
         editor_camera camera;
     };
@@ -59,9 +59,12 @@ namespace sgm {
         auto pass = scene_data->_framebuffer->get_render_pass();
         renderer::push_render_pass(pass, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
 
-        // no play button just yet
-        scene_data->camera.on_update(ts);
-        scene_data->_scene->on_editor_update(ts, scene_data->camera);
+        if (scene_data->runtime_scene) {
+            scene_data->runtime_scene->on_runtime_update(ts);
+        } else {
+            scene_data->camera.on_update(ts);
+            scene_data->_scene->on_editor_update(ts, scene_data->camera);
+        }
 
         if (renderer::pop_render_pass() != pass) {
             throw std::runtime_error("a render pass was pushed but not popped!");
@@ -69,20 +72,21 @@ namespace sgm {
     }
 
     void editor_scene::on_event(event& e) {
-        // todo: check for scene running status
-        if (!e.handled) {
+        if (scene_data->runtime_scene) {
+            scene_data->runtime_scene->on_event(e);
+        } else {
             scene_data->camera.on_event(e);
-        }
-
-        if (!e.handled) {
-            scene_data->_scene->on_event(e);
         }
     }
 
     void editor_scene::set_viewport_size(uint32_t width, uint32_t height) {
         scene_data->_framebuffer->resize(width, height);
         scene_data->camera.update_viewport_size(width, height);
+
         scene_data->_scene->set_viewport_size(width, height);
+        if (scene_data->runtime_scene) {
+            scene_data->runtime_scene->set_viewport_size(width, height);
+        }
     }
 
     entity& editor_scene::get_selection() { return scene_data->selection; }
@@ -92,6 +96,10 @@ namespace sgm {
     void editor_scene::disable_input() { scene_data->camera.disable_input(); }
 
     void editor_scene::load(const fs::path& path) {
+        if (scene_data->runtime_scene) {
+            stop();
+        }
+
         reset_selection();
 
         scene_serializer serializer(scene_data->_scene);
@@ -101,6 +109,26 @@ namespace sgm {
     void editor_scene::save(const fs::path& path) {
         scene_serializer serializer(scene_data->_scene);
         serializer.serialize(path);
+    }
+
+    bool editor_scene::running() { return scene_data->runtime_scene; }
+
+    void editor_scene::play() {
+        if (scene_data->runtime_scene) {
+            return;
+        }
+
+        scene_data->runtime_scene = scene_data->_scene->copy();
+        scene_data->runtime_scene->on_start();
+    }
+
+    void editor_scene::stop() {
+        if (!scene_data->runtime_scene) {
+            return;
+        }
+
+        scene_data->runtime_scene->on_stop();
+        scene_data->runtime_scene.reset();
     }
 
     ref<scene> editor_scene::get_scene() { return scene_data->_scene; }

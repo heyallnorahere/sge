@@ -240,6 +240,7 @@ namespace sgm {
                 ImGui::DragFloat("Friction", &component.friction, 0.1f);
                 ImGui::DragFloat("Restitution", &component.restitution, 0.1f);
                 ImGui::DragFloat("Restitution threashold", &component.restitution_threashold, 0.1f);
+                ImGui::DragFloat2("Size", &component.size.x, 0.01f);
             });
     }
 } // namespace sgm
