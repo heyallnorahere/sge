@@ -20,9 +20,8 @@
 #include "sge/events/event.h"
 #include "sge/events/window_events.h"
 #include "sge/renderer/swapchain.h"
-#include "sge/imgui/imgui_layer.h"
-int32_t main(int32_t argc, const char** argv);
 namespace sge {
+    class imgui_layer;
     class application {
     public:
         static void create();

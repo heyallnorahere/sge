@@ -38,6 +38,7 @@ namespace sge {
             if (!m_last_mouse_position.has_value()) {
                 m_last_mouse_position = mouse_position;
             }
+
             glm::vec2 offset =
                 (mouse_position - m_last_mouse_position.value()) * glm::vec2(1.f, -1.f);
             m_last_mouse_position = mouse_position;
@@ -61,12 +62,9 @@ namespace sge {
             return false;
         }
 
-        m_view_size -= e.get_offset().y / 2.f;
-        if (m_view_size < 0.1f) {
-            m_view_size = 0.1f;
-        }
-
+        m_view_size *= glm::pow(2.f, -e.get_offset().y);
         recalculate_projection();
+
         return true;
     }
 

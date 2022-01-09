@@ -18,6 +18,7 @@
 #include "sge/core/application.h"
 #include "sge/renderer/renderer.h"
 #include "sge/core/input.h"
+#include "sge/imgui/imgui_layer.h"
 
 extern sge::application* create_app_instance();
 namespace sge {
