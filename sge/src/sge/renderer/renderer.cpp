@@ -323,19 +323,6 @@ namespace sge {
         begin_batch();
     }
 
-    static glm::vec2 rotate_vertex(glm::vec2 position, float rotation) {
-        glm::vec2 normalized = position * 2.f - 1.f;
-        float angle = glm::degrees(glm::atan(normalized.y, normalized.x));
-
-        angle -= rotation;
-
-        glm::vec2 new_position;
-        new_position.x = glm::cos(glm::radians(angle));
-        new_position.y = glm::sin(glm::radians(angle));
-
-        return (new_position + 1.f) / 2.f;
-    }
-
     void renderer::flush_batch() {
         auto& scene = *renderer_data.current_scene;
         auto& batch = scene.current_batch;
@@ -432,34 +419,44 @@ namespace sge {
             for (const auto& quad : batch->quads) {
                 add_quad_indices();
 
+                auto rot_rad = glm::radians(quad.rotation);
+                auto cos_rot = glm::cos(rot_rad);
+                auto sin_rot = glm::sin(rot_rad);
+
+                glm::vec2 half_size = quad.size / 2.f;
+
                 // top right
-                vertex* v = &vertices.emplace_back();
-                v->position =
-                    quad.position + quad.size * rotate_vertex(glm::vec2(1.f), quad.rotation);
+                auto v = &vertices.emplace_back();
+                v->position.x = half_size.x * cos_rot - half_size.y * sin_rot;
+                v->position.y = half_size.x * sin_rot + half_size.y * cos_rot;
+                v->position = quad.position + v->position;
                 v->color = quad.color;
                 v->uv = glm::vec2(1.f, 0.f);
                 v->texture_index = (int32_t)quad.texture_index;
 
                 // bottom right
                 v = &vertices.emplace_back();
-                v->position =
-                    quad.position + quad.size * rotate_vertex(glm::vec2(1.f, 0.f), quad.rotation);
+                v->position.x = half_size.x * cos_rot - -half_size.y * sin_rot;
+                v->position.y = half_size.x * sin_rot + -half_size.y * cos_rot;
+                v->position = quad.position + v->position;
                 v->color = quad.color;
                 v->uv = glm::vec2(1.f, 1.f);
                 v->texture_index = (int32_t)quad.texture_index;
 
                 // bottom left
                 v = &vertices.emplace_back();
-                v->position =
-                    quad.position + quad.size * rotate_vertex(glm::vec2(0.f), quad.rotation);
+                v->position.x = -half_size.x * cos_rot - -half_size.y * sin_rot;
+                v->position.y = -half_size.x * sin_rot + -half_size.y * cos_rot;
+                v->position = quad.position + v->position;
                 v->color = quad.color;
                 v->uv = glm::vec2(0.f, 1.f);
                 v->texture_index = (int32_t)quad.texture_index;
 
                 // top left
                 v = &vertices.emplace_back();
-                v->position =
-                    quad.position + quad.size * rotate_vertex(glm::vec2(0.f, 1.f), quad.rotation);
+                v->position.x = -half_size.x * cos_rot - half_size.y * sin_rot;
+                v->position.y = -half_size.x * sin_rot + half_size.y * cos_rot;
+                v->position = quad.position + v->position;
                 v->color = quad.color;
                 v->uv = glm::vec2(0.f, 0.f);
                 v->texture_index = (int32_t)quad.texture_index;
