@@ -50,9 +50,16 @@ namespace sge {
     }
 
     entity scene::create_entity(const std::string& name) {
+        // default constructor generates
+        guid id;
+
+        return create_entity(id, name);
+    }
+
+    entity scene::create_entity(guid id, const std::string& name) {
         entity e(this->m_registry.create(), this);
 
-        e.add_component<id_component>();
+        e.add_component<id_component>().id = id;
         e.add_component<transform_component>();
 
         auto& t = e.add_component<tag_component>();
@@ -84,6 +91,52 @@ namespace sge {
         });
 
         m_registry.clear();
+    }
+
+    template <typename T>
+    static void copy_component(entt::registry& dst, entt::registry& src,
+        const std::unordered_map<guid, entt::entity>& entity_map) {
+        auto view = src.view<T>();
+        for (entt::entity e : view) {
+            guid id = src.get<id_component>(e).id;
+            if (entity_map.find(id) == entity_map.end()) {
+                throw std::runtime_error("entity registries do not match!");
+            }
+
+            entt::entity new_entity = entity_map.at(id);
+            T& data = src.get<T>(e);
+            dst.emplace<T>(new_entity, data);
+        }
+    }
+
+    ref<scene> scene::copy() {
+        auto new_scene = ref<scene>::create();
+        new_scene->m_viewport_width = m_viewport_width;
+        new_scene->m_viewport_height = m_viewport_height;
+
+        entt::registry& dst_registry = new_scene->m_registry;
+        std::unordered_map<guid, entt::entity> entity_map;
+
+        {
+            auto view = m_registry.view<id_component>();
+            for (entt::entity id : view) {
+                entity original(id, this);
+                guid entity_id = original.get_component<id_component>().id;
+                const std::string& tag = original.get_component<tag_component>().tag;
+
+                entity new_entity = new_scene->create_entity(entity_id, tag);
+                entity_map.insert(std::make_pair(entity_id, (entt::entity)new_entity));
+            }
+        }
+
+        copy_component<transform_component>(dst_registry, m_registry, entity_map);
+        copy_component<camera_component>(dst_registry, m_registry, entity_map);
+        copy_component<sprite_renderer_component>(dst_registry, m_registry, entity_map);
+        copy_component<native_script_component>(dst_registry, m_registry, entity_map);
+        copy_component<rigid_body_component>(dst_registry, m_registry, entity_map);
+        copy_component<box_collider_component>(dst_registry, m_registry, entity_map);
+
+        return new_scene;
     }
 
     void scene::on_start() {

@@ -37,8 +37,11 @@ namespace sge {
         scene& operator=(const scene&) = delete;
 
         entity create_entity(const std::string& name = std::string());
+        entity create_entity(guid id, const std::string& name = std::string());
         void destroy_entity(entity entity);
         void clear();
+
+        ref<scene> copy();
 
         void on_start();
         void on_stop();

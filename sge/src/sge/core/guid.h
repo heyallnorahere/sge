@@ -40,3 +40,13 @@ namespace sge {
         uint64_t m_guid;
     };
 } // namespace sge
+
+namespace std {
+    template <>
+    struct hash<sge::guid> {
+        size_t operator()(const sge::guid& guid) const {
+            hash<uint64_t> hasher;
+            return hasher(guid);
+        }
+    };
+} // namespace std
