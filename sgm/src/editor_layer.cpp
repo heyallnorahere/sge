@@ -101,7 +101,8 @@ namespace sgm {
 
                 {
                     auto _window = app.get_window();
-                    std::vector<dialog_file_filter> filters = { { "SGE scene", "*.scene" } };
+                    std::vector<dialog_file_filter> filters = { { "SGE scene (*.sgescene)",
+                                                                  "*.sgescene" } };
 
                     if (ImGui::MenuItem("Open...")) {
                         auto path = _window->file_dialog(dialog_mode::open, filters);

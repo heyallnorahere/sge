@@ -167,7 +167,7 @@ namespace sge {
                 fixture_def.density = bc.density;
                 fixture_def.friction = bc.friction;
                 fixture_def.restitution = bc.restitution;
-                fixture_def.restitutionThreshold = bc.restitution_threadhold;
+                fixture_def.restitutionThreshold = bc.restitution_threashold;
                 auto fixture = body->CreateFixture(&fixture_def);
                 bc.runtime_fixture = fixture;
             }

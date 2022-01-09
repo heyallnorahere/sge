@@ -105,7 +105,9 @@ namespace sgm {
             static std::unordered_map<std::string, component_add_callback> options = {
                 component_pair<transform_component>("Transform"),
                 component_pair<camera_component>("Camera"),
-                component_pair<sprite_renderer_component>("Sprite renderer")
+                component_pair<sprite_renderer_component>("Sprite renderer"),
+                component_pair<rigid_body_component>("Rigid body"),
+                component_pair<box_collider_component>("Box collider")
             };
 
             for (const auto& [text, callback] : options) {
@@ -131,7 +133,7 @@ namespace sgm {
         draw_component<camera_component>("Camera", selection, [](camera_component& camera) {
             ImGui::Checkbox("Primary", &camera.primary);
 
-            std::vector<const char*> type_names = { "Orthographic", "Perspective" };
+            static const std::vector<const char*> type_names = { "Orthographic", "Perspective" };
             int32_t camera_type = (int32_t)camera.camera.get_projection_type();
             if (ImGui::Combo("Camera type", &camera_type, type_names.data(), type_names.size())) {
                 camera.camera.set_projection_type((projection_type)camera_type);
@@ -219,6 +221,25 @@ namespace sgm {
                         component.texture_path.clear();
                     }
                 }
+            });
+
+        draw_component<
+            rigid_body_component>("Rigid body", selection, [this](rigid_body_component& component) {
+            static const std::vector<const char*> type_names = { "Static", "Kinematic", "Dynamic" };
+            int32_t type_index = (int32_t)component.type;
+            if (ImGui::Combo("Body type", &type_index, type_names.data(), type_names.size())) {
+                component.type = (rigid_body_component::body_type)type_index;
+            }
+
+            ImGui::Checkbox("Fixed rotation", &component.fixed_rotation);
+        });
+
+        draw_component<box_collider_component>(
+            "Box collider", selection, [this](box_collider_component& component) {
+                ImGui::DragFloat("Density", &component.density, 0.1f);
+                ImGui::DragFloat("Friction", &component.friction, 0.1f);
+                ImGui::DragFloat("Restitution", &component.restitution, 0.1f);
+                ImGui::DragFloat("Restitution threashold", &component.restitution_threashold, 0.1f);
             });
     }
 } // namespace sgm

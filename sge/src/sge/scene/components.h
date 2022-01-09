@@ -144,7 +144,7 @@ namespace sge {
         float density = 1.f;
         float friction = 0.5f;
         float restitution = 0.f;
-        float restitution_threadhold = 0.5f;
+        float restitution_threashold = 0.5f;
 
         // Pointer to the partner Box2D Fixture object
         void* runtime_fixture = nullptr;
