@@ -25,7 +25,7 @@ namespace sge {
         editor_camera(const editor_camera&) = delete;
         editor_camera& operator=(const editor_camera&) = delete;
 
-        glm::mat4 get_view_projection_matrix();
+        glm::mat4 get_view_projection_matrix() const;
         void update_viewport_size(uint32_t width, uint32_t height);
 
         void on_update(timestep ts);
@@ -34,8 +34,9 @@ namespace sge {
         void enable_input() { m_input_enabled = true; }
         void disable_input() { m_input_enabled = false; }
 
-        glm::vec2 get_position() { return m_position; }
-        float get_view_size() { return m_view_size; }
+        glm::vec2 get_position() const { return m_position; }
+        float get_view_size() const { return m_view_size; }
+        float get_aspect_ratio() const { return m_aspect_ratio; }
 
     private:
         bool on_scroll(mouse_scrolled_event& e);

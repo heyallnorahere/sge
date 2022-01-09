@@ -178,13 +178,22 @@ namespace sge {
 
         if (main_camera != nullptr) {
             glm::mat4 projection = main_camera->get_projection();
-            render(projection * glm::inverse(camera_transform));
+            renderer::begin_scene(projection * glm::inverse(camera_transform));
+
+            render();
+
+            renderer::end_scene();
         }
     }
 
-    void scene::on_editor_update(timestep ts, editor_camera& camera) {
+    void scene::on_editor_update(timestep ts, const editor_camera& camera) {
         glm::mat4 view_projection = camera.get_view_projection_matrix();
-        render(view_projection);
+        renderer::begin_scene(view_projection);
+
+        renderer::draw_grid(camera);
+        render();
+
+        renderer::end_scene();
     }
 
     void scene::on_event(event& e) {
@@ -226,9 +235,7 @@ namespace sge {
         callback(e);
     }
 
-    void scene::render(const glm::mat4& view_projection) {
-        renderer::begin_scene(view_projection);
-
+    void scene::render() {
         auto group = m_registry.group<transform_component>(entt::get<sprite_renderer_component>);
         for (auto entity : group) {
             auto [transform, sprite] =
@@ -243,8 +250,6 @@ namespace sge {
                 renderer::draw_rotated_quad(position, rotation, size, sprite.color);
             }
         }
-
-        renderer::end_scene();
     }
 
     guid scene::get_guid(entity e) {

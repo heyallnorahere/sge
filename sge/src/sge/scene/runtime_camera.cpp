@@ -48,8 +48,8 @@ namespace sge {
         } break;
         case projection_type::perspective:
             this->m_projection =
-                glm::perspective(this->m_fov, this->m_aspect_ratio, this->m_perspective_clips.near,
-                                 this->m_orthographic_clips.far);
+                glm::perspective(glm::radians(this->m_fov), this->m_aspect_ratio,
+                                 this->m_perspective_clips.near, this->m_orthographic_clips.far);
             break;
         default:
             throw std::runtime_error("invalid projection type!");

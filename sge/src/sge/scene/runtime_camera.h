@@ -83,7 +83,7 @@ namespace sge {
 
         projection_type m_type = projection_type::orthographic;
 
-        float m_fov = glm::radians(45.f);
+        float m_fov = 45.f;
         clips m_perspective_clips = { 0.01f, 1000.f };
 
         float m_orthographic_size = 10.f;

@@ -123,9 +123,9 @@ namespace sgm {
 
         draw_component<transform_component>(
             "Transform", selection, [](transform_component& transform) {
-                ImGui::DragFloat2("Translation", &transform.translation.x);
+                ImGui::DragFloat2("Translation", &transform.translation.x, 0.25f);
                 ImGui::DragFloat("Rotation", &transform.rotation);
-                ImGui::DragFloat2("Scale", &transform.scale.x);
+                ImGui::DragFloat2("Scale", &transform.scale.x, 0.5f);
             });
 
         draw_component<camera_component>("Camera", selection, [](camera_component& camera) {
@@ -144,17 +144,17 @@ namespace sgm {
                 }
 
                 float near_clip = camera.camera.get_orthographic_near_plane();
-                if (ImGui::DragFloat("Near clip", &near_clip)) {
+                if (ImGui::DragFloat("Near clip", &near_clip, 0.01f)) {
                     camera.camera.set_orthographic_near_plane(near_clip);
                 }
 
                 float far_clip = camera.camera.get_orthographic_far_plane();
-                if (ImGui::DragFloat("Far clip", &far_clip)) {
+                if (ImGui::DragFloat("Far clip", &far_clip, 0.01f)) {
                     camera.camera.set_orthographic_far_plane(far_clip);
                 }
             } else {
                 float fov = camera.camera.get_vertical_fov();
-                if (ImGui::DragFloat("Vertical field of view", &fov)) {
+                if (ImGui::SliderFloat("Vertical field of view", &fov, 1.f, 89.f)) {
                     camera.camera.set_vertical_fov(fov);
                 }
 

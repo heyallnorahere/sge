@@ -19,9 +19,24 @@
 #include "editor_scene.h"
 #include <sge/renderer/renderer.h>
 namespace sgm {
+    void renderer_info_panel::update(timestep ts) {
+        if (m_reload_shaders) {
+            renderer::wait();
+
+            auto& library = renderer::get_shader_library();
+            library.reload_all();
+
+            m_reload_shaders = false;
+        }
+    }
+
     void renderer_info_panel::render() {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Text("%f FPS", io.Framerate);
+
+        if (ImGui::Button("Reload shaders")) {
+            m_reload_shaders = true;
+        }
 
         if (ImGui::CollapsingHeader("Renderer stats")) {
             renderer::stats stats = renderer::get_stats();

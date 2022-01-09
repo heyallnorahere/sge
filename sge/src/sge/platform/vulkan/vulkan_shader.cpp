@@ -118,6 +118,43 @@ namespace sge {
 
             this->m_pipeline_info.push_back(stage_info);
         }
+
+        { 
+            size_t ubo_count = 0;
+            size_t ssbo_count = 0;
+            size_t image_count = 0;
+            size_t sampler_count = 0;
+            size_t combined_image_sampler_count = 0;
+
+            for (const auto& [name, data] : m_reflection_data.resources) {
+                switch (data.type) {
+                case resource_type::uniform_buffer:
+                    ubo_count++;
+                    break;
+                case resource_type::storage_buffer:
+                    ssbo_count++;
+                    break;
+                case resource_type::image:
+                    image_count++;
+                    break;
+                case resource_type::sampler:
+                    sampler_count++;
+                    break;
+                case resource_type::sampled_image:
+                    combined_image_sampler_count++;
+                    break;
+                default:
+                    throw std::runtime_error("invalid resource type!");
+                }
+            }
+
+            spdlog::info("{0} reflection results:", m_path.string());
+            spdlog::info("{0} uniform buffer(s)", ubo_count);
+            spdlog::info("{0} storage buffer(s)", ssbo_count);
+            spdlog::info("{0} separate image set(s)", image_count);
+            spdlog::info("{0} separate sampler set(s)", sampler_count);
+            spdlog::info("{0} combined image sampler set(s)", combined_image_sampler_count);
+        }
     }
 
     void vulkan_shader::destroy() {
@@ -137,6 +174,10 @@ namespace sge {
                                std::vector<uint32_t>& spirv) {
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
+
+        // maybe change for dist builds
+        options.SetOptimizationLevel(shaderc_optimization_level_zero);
+        options.SetGenerateDebugInfo();
 
         shaderc_source_language source_language;
         switch (language) {

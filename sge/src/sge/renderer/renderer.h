@@ -23,6 +23,7 @@
 #include "sge/renderer/index_buffer.h"
 #include "sge/renderer/texture.h"
 #include "sge/renderer/render_pass.h"
+#include "sge/scene/editor_camera.h"
 namespace sge {
     struct draw_data {
         command_list* cmdlist;
@@ -85,6 +86,8 @@ namespace sge {
         static void begin_render_pass();
 
         static size_t push_texture(ref<texture_2d> texture);
+
+        static void draw_grid(const editor_camera& camera);
 
         static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color);
         static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color,

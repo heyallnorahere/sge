@@ -43,7 +43,7 @@ namespace sge {
         void on_start();
         void on_stop();
         void on_runtime_update(timestep ts);
-        void on_editor_update(timestep ts, editor_camera& camera);
+        void on_editor_update(timestep ts, const editor_camera& camera);
         void on_event(event& e);
 
         void set_viewport_size(uint32_t width, uint32_t height);
@@ -70,7 +70,7 @@ namespace sge {
         }
 
         void view_iteration(entt::entity id, const std::function<void(entity)>& callback);
-        void render(const glm::mat4& view_projection);
+        void render();
 
         guid get_guid(entity e);
 

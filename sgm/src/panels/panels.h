@@ -20,10 +20,15 @@
 namespace sgm {
     class renderer_info_panel : public panel {
     public:
+        virtual void update(timestep ts) override;
+
         virtual void render() override;
 
         virtual std::string get_title() override { return "Renderer Info"; }
         virtual panel_id get_id() override { return panel_id::renderer_info; }
+
+    private:
+        bool m_reload_shaders = false;
     };
 
     class viewport_panel : public panel {

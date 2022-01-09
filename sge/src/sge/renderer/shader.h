@@ -42,6 +42,8 @@ namespace sge {
         shader_library(const shader_library&) = delete;
         shader_library& operator=(const shader_library&) = delete;
 
+        void reload_all();
+
         bool add(const std::string& name, ref<shader> _shader);
         ref<shader> add(const std::string& name, const fs::path& path);
         ref<shader> add(const std::string& name, const fs::path& path, shader_language language);

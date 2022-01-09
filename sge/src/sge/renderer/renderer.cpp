@@ -39,6 +39,7 @@ namespace sge {
     struct batch_t {
         ref<shader> _shader;
         std::vector<quad_t> quads;
+        const editor_camera* grid_camera = nullptr;
         std::vector<ref<texture_2d>> textures;
     };
 
@@ -61,6 +62,11 @@ namespace sge {
 
     struct camera_data_t {
         glm::mat4 view_projection;
+    };
+
+    struct grid_data_t {
+        float view_size, aspect_ratio;
+        glm::vec2 camera_position;
     };
 
     struct used_pipeline_data_t {
@@ -95,7 +101,7 @@ namespace sge {
         std::stack<render_pass_data_t> render_passes;
         command_list* cmdlist = nullptr;
 
-        ref<uniform_buffer> camera_buffer;
+        ref<uniform_buffer> camera_buffer, grid_buffer;
         ref<texture_2d> white_texture, black_texture;
 
         renderer::stats stats;
@@ -105,6 +111,7 @@ namespace sge {
         shader_library& library = *renderer_data._shader_library;
 
         library.add("default", "assets/shaders/default.hlsl");
+        library.add("grid", "assets/shaders/grid.hlsl");
     }
 
     void renderer::init() {
@@ -126,6 +133,7 @@ namespace sge {
         load_shaders();
 
         renderer_data.camera_buffer = uniform_buffer::create(sizeof(camera_data_t));
+        renderer_data.grid_buffer = uniform_buffer::create(sizeof(grid_data_t));
 
         {
             texture_spec spec;
@@ -190,6 +198,7 @@ namespace sge {
 
         renderer_data.black_texture.reset();
         renderer_data.white_texture.reset();
+        renderer_data.grid_buffer.reset();
         renderer_data.camera_buffer.reset();
     }
 
@@ -337,55 +346,9 @@ namespace sge {
         begin_render_pass();
         auto pass = renderer_data.render_passes.top().pass;
 
-        if (!batch->quads.empty()) {
+        if (!batch->quads.empty() || batch->grid_camera != nullptr) {
             if (renderer_data.cmdlist == nullptr) {
                 throw std::runtime_error("cannot add commands to an empty command list!");
-            }
-
-            std::vector<vertex> vertices;
-            std::vector<uint32_t> indices;
-            for (const auto& quad : batch->quads) {
-                std::vector<uint32_t> quad_indices = { 0, 1, 3, 1, 2, 3 };
-                for (uint32_t& index : quad_indices) {
-                    index += (uint32_t)vertices.size();
-                }
-                indices.insert(indices.end(), quad_indices.begin(), quad_indices.end());
-
-                std::vector<vertex> quad_vertices(4);
-
-                // top right
-                vertex* v = &quad_vertices[0];
-                v->position =
-                    quad.position + quad.size * rotate_vertex(glm::vec2(1.f), quad.rotation);
-                v->color = quad.color;
-                v->uv = glm::vec2(1.f, 0.f);
-                v->texture_index = (int32_t)quad.texture_index;
-
-                // bottom right
-                v = &quad_vertices[1];
-                v->position =
-                    quad.position + quad.size * rotate_vertex(glm::vec2(1.f, 0.f), quad.rotation);
-                v->color = quad.color;
-                v->uv = glm::vec2(1.f, 1.f);
-                v->texture_index = (int32_t)quad.texture_index;
-
-                // bottom left
-                v = &quad_vertices[2];
-                v->position =
-                    quad.position + quad.size * rotate_vertex(glm::vec2(0.f), quad.rotation);
-                v->color = quad.color;
-                v->uv = glm::vec2(0.f, 1.f);
-                v->texture_index = (int32_t)quad.texture_index;
-
-                // top left
-                v = &quad_vertices[3];
-                v->position =
-                    quad.position + quad.size * rotate_vertex(glm::vec2(0.f, 1.f), quad.rotation);
-                v->color = quad.color;
-                v->uv = glm::vec2(0.f, 0.f);
-                v->texture_index = (int32_t)quad.texture_index;
-
-                vertices.insert(vertices.end(), quad_vertices.begin(), quad_vertices.end());
             }
 
             ref<pipeline> _pipeline;
@@ -417,6 +380,89 @@ namespace sge {
 
                 _pipeline = pipeline::create(spec);
                 _pipeline->set_uniform_buffer(renderer_data.camera_buffer, 0);
+            }
+
+            std::vector<vertex> vertices;
+            std::vector<uint32_t> indices;
+
+            auto add_quad_indices = [&]() {
+                std::vector<uint32_t> quad_indices = { 0, 1, 3, 1, 2, 3 };
+                for (uint32_t& index : quad_indices) {
+                    index += (uint32_t)vertices.size();
+                }
+                indices.insert(indices.end(), quad_indices.begin(), quad_indices.end());
+            };
+
+            if (batch->grid_camera != nullptr) {
+                grid_data_t grid_data;
+                grid_data.view_size = batch->grid_camera->get_view_size();
+                grid_data.aspect_ratio = batch->grid_camera->get_aspect_ratio();
+                grid_data.camera_position = batch->grid_camera->get_position();
+
+                renderer_data.grid_buffer->set_data(grid_data);
+                _pipeline->set_uniform_buffer(renderer_data.grid_buffer, 0);
+
+                add_quad_indices();
+
+                vertex v;
+                v.color = glm::vec4(1.f);
+                v.texture_index = std::numeric_limits<size_t>::max();
+
+                // top right
+                v.position = glm::vec2(1.f, 1.f);
+                v.uv = glm::vec2(1.f, 0.f);
+                vertices.push_back(v);
+
+                // bottom right
+                v.position = glm::vec2(1.f, -1.f);
+                v.uv = glm::vec2(1.f, 1.f);
+                vertices.push_back(v);
+
+                // bottom left
+                v.position = glm::vec2(-1.f, -1.f);
+                v.uv = glm::vec2(0.f, 1.f);
+                vertices.push_back(v);
+
+                // top left
+                v.position = glm::vec2(-1.f, 1.f);
+                v.uv = glm::vec2(0.f, 0.f);
+                vertices.push_back(v);
+            }
+
+            for (const auto& quad : batch->quads) {
+                add_quad_indices();
+
+                // top right
+                vertex* v = &vertices.emplace_back();
+                v->position =
+                    quad.position + quad.size * rotate_vertex(glm::vec2(1.f), quad.rotation);
+                v->color = quad.color;
+                v->uv = glm::vec2(1.f, 0.f);
+                v->texture_index = (int32_t)quad.texture_index;
+
+                // bottom right
+                v = &vertices.emplace_back();
+                v->position =
+                    quad.position + quad.size * rotate_vertex(glm::vec2(1.f, 0.f), quad.rotation);
+                v->color = quad.color;
+                v->uv = glm::vec2(1.f, 1.f);
+                v->texture_index = (int32_t)quad.texture_index;
+
+                // bottom left
+                v = &vertices.emplace_back();
+                v->position =
+                    quad.position + quad.size * rotate_vertex(glm::vec2(0.f), quad.rotation);
+                v->color = quad.color;
+                v->uv = glm::vec2(0.f, 1.f);
+                v->texture_index = (int32_t)quad.texture_index;
+
+                // top left
+                v = &vertices.emplace_back();
+                v->position =
+                    quad.position + quad.size * rotate_vertex(glm::vec2(0.f, 1.f), quad.rotation);
+                v->color = quad.color;
+                v->uv = glm::vec2(0.f, 0.f);
+                v->texture_index = (int32_t)quad.texture_index;
             }
 
             for (size_t i = 0; i < batch->textures.size(); i++) {
@@ -502,6 +548,16 @@ namespace sge {
             batch.textures.push_back(texture);
             return index;
         }
+    }
+
+    void renderer::draw_grid(const editor_camera& camera) {
+        auto _shader = renderer_data._shader_library->get("grid");
+        set_shader(_shader);
+
+        auto& batch = *renderer_data.current_scene->current_batch;
+        batch.grid_camera = &camera;
+
+        next_batch();
     }
 
     void renderer::draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color) {

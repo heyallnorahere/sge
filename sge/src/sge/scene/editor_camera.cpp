@@ -18,7 +18,7 @@
 #include "sge/scene/editor_camera.h"
 #include "sge/core/input.h"
 namespace sge {
-    glm::mat4 editor_camera::get_view_projection_matrix() {
+    glm::mat4 editor_camera::get_view_projection_matrix() const {
         glm::mat4 transformation(1.f);
         transformation = glm::translate(transformation, glm::vec3(m_position, 0.f));
         return m_projection * glm::inverse(transformation);

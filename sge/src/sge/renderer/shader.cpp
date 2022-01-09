@@ -89,6 +89,12 @@ namespace sge {
         return create(path, language);
     }
 
+    void shader_library::reload_all() {
+        for (const auto& [name, _shader] : m_library) {
+            _shader->reload();
+        }
+    }
+
     bool shader_library::add(const std::string& name, ref<shader> _shader) {
         if (this->m_library.find(name) != this->m_library.end()) {
             return false;
