@@ -31,7 +31,7 @@ namespace sge {
         ref<index_buffer> indices;
         ref<pipeline> _pipeline;
     };
-    
+
     struct device_info {
         std::string name;
         std::string graphics_api;
@@ -89,6 +89,8 @@ namespace sge {
 
         static void draw_grid(const editor_camera& camera);
 
+        // Draw a quad centered on position and of size size.  If texture is specified then that
+        // texture is used for the quad.
         static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color);
         static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color,
                               ref<texture_2d> texture);

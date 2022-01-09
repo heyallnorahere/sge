@@ -96,6 +96,7 @@ namespace sandbox {
                 this->m_entity = this->m_scene->create_entity("Penguin");
                 auto& transform = this->m_entity.get_component<sge::transform_component>();
                 transform.scale = glm::vec2(5.f);
+                transform.rotation = 10.f;
                 auto& sprite = this->m_entity.add_component<sge::sprite_renderer_component>();
                 sprite.texture = this->m_tux;
                 auto& rb = this->m_entity.add_component<sge::rigid_body_component>();
@@ -108,8 +109,8 @@ namespace sandbox {
             {
                 this->m_ground = this->m_scene->create_entity("Ground");
                 auto& transform = this->m_ground.get_component<sge::transform_component>();
-                transform.scale = glm::vec2(10.f, 1.f);
-                transform.translation = glm::vec2(0, -10.f);
+                transform.scale = glm::vec2(100.f, 1.f);
+                transform.translation = glm::vec2(0.f, -10.f);
                 auto& sprite = this->m_ground.add_component<sge::sprite_renderer_component>();
                 sprite.color = glm::vec4(0.04f, 0.45f, 0.19f, 1.f);
                 auto& rb = this->m_ground.add_component<sge::rigid_body_component>();
@@ -120,9 +121,13 @@ namespace sandbox {
             // Camera
             {
                 this->m_camera = this->m_scene->create_entity("Camera");
-                this->m_camera.add_component<sge::camera_component>();
+                auto& cc = this->m_camera.add_component<sge::camera_component>();
+                cc.camera.set_orthographic_size(15.f);
                 this->m_camera.add_component<sge::native_script_component>()
                     .bind<camera_controller>();
+
+                auto& transform = this->m_camera.get_component<sge::transform_component>();
+                transform.translation = glm::vec2(0.f, -5.f);
             }
 
             this->m_scene->on_start();

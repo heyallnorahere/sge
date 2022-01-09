@@ -85,7 +85,7 @@ namespace sge {
         this->m_physics_world = new b2World({ 0.f, -9.8f });
 
         // todo: move a lot of this code to on_component_added or on_runtime_update
-        /*auto view = this->m_registry.view<rigid_body_component>();
+        auto view = this->m_registry.view<rigid_body_component>();
         for (auto id : view) {
             entity e(id, this);
             auto& transform = e.get_component<transform_component>();
@@ -114,7 +114,7 @@ namespace sge {
                 auto fixture = body->CreateFixture(&fixture_def);
                 bc.runtime_fixture = fixture;
             }
-        }*/
+        }
     }
 
     void scene::on_stop() {
@@ -141,7 +141,7 @@ namespace sge {
         }
 
         // Physics
-        /*{
+        {
             const int32 velocity_iterations = 6;
             const int32 position_iterations = 2;
             m_physics_world->Step(ts.count(), velocity_iterations, position_iterations);
@@ -157,7 +157,7 @@ namespace sge {
                 transform.translation.y = position.y;
                 transform.rotation = glm::degrees(body->GetAngle());
             }
-        }*/
+        }
 
         // Render
         runtime_camera* main_camera = nullptr;
@@ -241,13 +241,12 @@ namespace sge {
             auto [transform, sprite] =
                 group.get<transform_component, sprite_renderer_component>(entity);
 
-            glm::vec2 position = transform.translation - transform.scale / 2.f;
-            float rotation = transform.rotation;
-            glm::vec2 size = transform.scale;
             if (sprite.texture) {
-                renderer::draw_rotated_quad(position, rotation, size, sprite.color, sprite.texture);
+                renderer::draw_rotated_quad(transform.translation, transform.rotation,
+                                            transform.scale, sprite.color, sprite.texture);
             } else {
-                renderer::draw_rotated_quad(position, rotation, size, sprite.color);
+                renderer::draw_rotated_quad(transform.translation, transform.rotation,
+                                            transform.scale, sprite.color);
             }
         }
     }
