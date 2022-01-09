@@ -49,6 +49,18 @@ namespace sgm {
         ImVec2 content_region = ImGui::GetContentRegionAvail();
         ImGui::Image(m_current_texture->get_imgui_id(), content_region);
 
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload =
+                    ImGui::AcceptDragDropPayload("content-browser-file")) {
+                fs::path path =
+                    std::string((const char*)payload->Data, payload->DataSize / sizeof(char) - 1);
+                
+                editor_scene::load(path);
+            }
+
+            ImGui::EndDragDropTarget();
+        }
+
         if (ImGui::IsItemHovered()) {
             editor_scene::enable_input();
         } else if (!input::get_mouse_button(mouse_button::right)) {

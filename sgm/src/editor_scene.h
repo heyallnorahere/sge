@@ -35,6 +35,9 @@ namespace sgm {
         static void enable_input();
         static void disable_input();
 
+        static void load(const fs::path& path);
+        static void save(const fs::path& path);
+
         static ref<scene> get_scene();
         static ref<framebuffer> get_framebuffer();
         static editor_camera& get_camera();

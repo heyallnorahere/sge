@@ -17,6 +17,12 @@
 #pragma once
 #include "sge/events/event.h"
 namespace sge {
+    enum class dialog_mode { open, save };
+
+    struct dialog_file_filter {
+        std::string name, filter;
+    };
+
     class window : public ref_counted {
     public:
         static ref<window> create(const std::string& title, uint32_t width, uint32_t height);
@@ -35,5 +41,8 @@ namespace sge {
         virtual void* get_native_window() = 0;
         virtual void* create_render_surface(void* params) = 0;
         virtual void get_vulkan_extensions(std::set<std::string>& extensions) = 0;
+
+        virtual std::optional<fs::path> file_dialog(dialog_mode mode,
+                                                    const std::vector<dialog_file_filter>& filters) = 0;
     };
 }; // namespace sge

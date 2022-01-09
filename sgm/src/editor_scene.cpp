@@ -17,6 +17,7 @@
 #include "sgmpch.h"
 #include "editor_scene.h"
 #include <sge/renderer/renderer.h>
+#include <sge/scene/scene_serializer.h>
 namespace sgm {
     struct scene_data_t {
         ref<framebuffer> _framebuffer;
@@ -89,6 +90,18 @@ namespace sgm {
 
     void editor_scene::enable_input() { scene_data->camera.enable_input(); }
     void editor_scene::disable_input() { scene_data->camera.disable_input(); }
+
+    void editor_scene::load(const fs::path& path) {
+        reset_selection();
+
+        scene_serializer serializer(scene_data->_scene);
+        serializer.deserialize(path);
+    }
+
+    void editor_scene::save(const fs::path& path) {
+        scene_serializer serializer(scene_data->_scene);
+        serializer.serialize(path);
+    }
 
     ref<scene> editor_scene::get_scene() { return scene_data->_scene; }
     ref<framebuffer> editor_scene::get_framebuffer() { return scene_data->_framebuffer; }

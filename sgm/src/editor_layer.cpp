@@ -94,9 +94,28 @@ namespace sgm {
     void editor_layer::menu_bar() {
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
+                auto& app = application::get();
                 if (ImGui::MenuItem("Exit")) {
-                    auto& app = application::get();
                     app.quit();
+                }
+
+                {
+                    auto _window = app.get_window();
+                    std::vector<dialog_file_filter> filters = { { "SGE scene", "*.scene" } };
+
+                    if (ImGui::MenuItem("Open...")) {
+                        auto path = _window->file_dialog(dialog_mode::open, filters);
+                        if (path.has_value()) {
+                            editor_scene::load(path.value());
+                        }
+                    }
+
+                    if (ImGui::MenuItem("Save As...")) {
+                        auto path = _window->file_dialog(dialog_mode::save, filters);
+                        if (path.has_value()) {
+                            editor_scene::save(path.value());
+                        }
+                    }
                 }
 
                 ImGui::EndMenu();

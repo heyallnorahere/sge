@@ -26,17 +26,26 @@ namespace sge {
 
         virtual void on_update() override;
 
-        virtual uint32_t get_width() override { return this->m_data.width; }
-        virtual uint32_t get_height() override { return this->m_data.height; }
+        virtual uint32_t get_width() override { return m_data.width; }
+        virtual uint32_t get_height() override { return m_data.height; }
 
         virtual void set_event_callback(event_callback_t callback) override;
 
-        virtual void* get_native_window() override { return this->m_window; }
+        virtual void* get_native_window() override { return m_window; }
         virtual void* create_render_surface(void* params) override;
         virtual void get_vulkan_extensions(std::set<std::string>& extensions) override;
 
+        virtual std::optional<fs::path> file_dialog(
+            dialog_mode mode, const std::vector<dialog_file_filter>& filters) override {
+            return native_file_dialog(mode, filters);
+        }
+
     private:
         void setup_event_callbacks();
+
+        // defined in sge/platform/<platform>/<platform>_file_dialogs.<extension>
+        std::optional<fs::path> native_file_dialog(dialog_mode mode,
+                                                   const std::vector<dialog_file_filter>& filters);
 
         GLFWwindow* m_window;
 
