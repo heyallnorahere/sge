@@ -85,7 +85,14 @@ namespace sge {
 
         std::vector<char> filter;
         for (const auto& filter_data : filters) {
-            filter.insert(filter.end(), filter_data.name.begin(), filter_data.name.end());
+            std::string filter_name;
+            if (filter_data.name.empty()) {
+                filter_name = filter_data.filter;
+            } else {
+                filter_name = filter_data.name;
+            }
+
+            filter.insert(filter.end(), filter_name.begin(), filter_name.end());
             filter.push_back('\0');
 
             filter.insert(filter.end(), filter_data.filter.begin(), filter_data.filter.end());
