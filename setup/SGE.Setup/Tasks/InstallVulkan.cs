@@ -52,6 +52,22 @@ namespace SGE.Setup.Tasks
             }
         }
         private const string SDKVersion = "1.2.182.0";
+        private static int ExecuteProcess(string fileName, string arguments, bool shell = false)
+        {
+            var process = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    UseShellExecute = shell
+                }
+            };
+
+            process.Start();
+            process.WaitForExit();
+            return process.ExitCode;
+        }
         private static bool InstallWindows(bool setActionsEnvVariable)
         {
             string installerUrl = $"https://sdk.lunarg.com/sdk/download/{SDKVersion}/windows/VulkanSDK-{SDKVersion}-Installer.exe";
@@ -61,19 +77,7 @@ namespace SGE.Setup.Tasks
                 return false;
             }
 
-            var process = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = installerPath,
-                    Arguments = "/S",
-                    UseShellExecute = true
-                }
-            };
-
-            process.Start();
-            process.WaitForExit();
-            if (process.ExitCode != 0)
+            if (ExecuteProcess(installerPath, "/S", true) != 0)
             {
                 return false;
             }
@@ -86,6 +90,28 @@ namespace SGE.Setup.Tasks
         }
         private static bool InstallOSX(bool setActionsEnvVariable)
         {
+            string diskImageName = $"vulkansdk-macos-{SDKVersion}";
+            string installerUrl = $"https://sdk.lunarg.com/sdk/download/{SDKVersion}/mac/{diskImageName}.dmg";
+            string? diskImagePath = RetrieveInstaller(installerUrl, $"{diskImageName}.dmg");
+            if (diskImagePath == null)
+            {
+                return false;
+            }
+
+            if (ExecuteProcess("sudo", $"hdiutil attach {diskImagePath}") != 0)
+            {
+                return false;
+            }
+            if (ExecuteProcess("sudo", $"/Volumes/{diskImageName}/InstallVulkan.app/Contents/MacOS/InstallVulkan in --al -c") != 0)
+            {
+                return false;
+            }
+
+            if (setActionsEnvVariable)
+            {
+                string? homeDir = Environment.GetEnvironmentVariable("HOME");
+                Console.WriteLine($"::set-env name=VULKAN_SDK::{homeDir}/VulkanSDK/{SDKVersion}/macOS");
+            }
             return true;
         }
         private static string? RetrieveInstaller(string installerUrl, string outputName)
