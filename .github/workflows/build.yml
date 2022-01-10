@@ -17,7 +17,7 @@ jobs:
           python-version: 3.9.x
       - name: setup dotnet
         uses: actions/setup-dotnet@v1
-        width:
+        with:
           dotnet-version: 6.0.x
       - name: install dependencies (ubuntu)
         if: ${{ matrix.os-name == 'ubuntu' }}
