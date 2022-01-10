@@ -2,3 +2,7 @@ imgui.ini
 build/
 .vscode/
 .vs/
+obj/
+bin/
+*.exe
+*.dmg

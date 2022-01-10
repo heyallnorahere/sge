@@ -15,6 +15,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.9.x
+      - name: setup dotnet
+        uses: actions/setup-dotnet@v1
+        width:
+          dotnet-version: 6.0.x
       - name: install dependencies (ubuntu)
         if: ${{ matrix.os-name == 'ubuntu' }}
         shell: bash
@@ -32,8 +36,9 @@ jobs:
         env:
           ACTIONS_ALLOW_UNSECURE_COMMANDS: true
         run: |
-          python -m pip install requests
-          python scripts/install_vulkan_sdk.py --gh-actions
+          dotnet restore "setup/Setup.sln"
+          dotnet build -c Release "setup/Setup.sln"
+          dotnet "setup/SGE.Setup/bin/Release/net6.0/SGE.Setup.dll" -t install-vulkan --ci
       - name: build
         shell: bash
         run: |
