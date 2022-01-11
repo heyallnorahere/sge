@@ -19,7 +19,7 @@ namespace SGE.Setup
             Console.Write("\nPlease enter a task name with arguments: ");
 
             string? argumentString = Console.ReadLine();
-            if (argumentString == null || argumentString.Length == 0)
+            if (string.IsNullOrWhiteSpace(argumentString))
             {
                 Console.WriteLine("No task was selected. Please try again.\n");
                 return null;
@@ -77,6 +77,7 @@ namespace SGE.Setup
 
         public static int Main(string[] args)
         {
+            // todo: add sub commands
             var rootCommand = new RootCommand
             {
                 new Option<string>(

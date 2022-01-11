@@ -1,7 +1,6 @@
 ﻿using System;
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -39,7 +38,16 @@ namespace SGE.Setup.Tasks
             }
             else
             {
-                Console.WriteLine("The Vulkan SDK can be installed via package manager on this platform - skipping");
+                if (ci)
+                {
+                    Console.WriteLine("Installing Vulkan for Debian-based systems...");
+                    Utilities.RunCommand("sudo apt-get update");
+                    Utilities.RunCommand("sudo apt-get install -y libvulkan-dev");
+                }
+                else
+                {
+                    Console.WriteLine("The Vulkan SDK can be installed via package manager on this platform - skipping");
+                }
             }
 
             if (success)
@@ -52,35 +60,16 @@ namespace SGE.Setup.Tasks
             }
         }
         private const string SDKVersion = "1.2.182.0";
-        private static int ExecuteProcess(string fileName, string arguments, bool shell = false)
-        {
-            var process = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = fileName,
-                    Arguments = arguments,
-                    UseShellExecute = shell
-                }
-            };
-
-            process.Start();
-            process.WaitForExit();
-            return process.ExitCode;
-        }
         private static bool InstallWindows(bool setActionsEnvVariable)
         {
             string installerUrl = $"https://sdk.lunarg.com/sdk/download/{SDKVersion}/windows/VulkanSDK-{SDKVersion}-Installer.exe";
-            string? installerPath = RetrieveInstaller(installerUrl, "vulkan-installer.exe");
+            string? installerPath = Utilities.RetrieveFile(installerUrl, "vulkan-installer.exe");
             if (installerPath == null)
             {
                 return false;
             }
 
-            if (ExecuteProcess(installerPath, "/S", true) != 0)
-            {
-                return false;
-            }
+            Utilities.RunCommand($"{installerPath} /S");
 
             if (setActionsEnvVariable)
             {
@@ -92,20 +81,14 @@ namespace SGE.Setup.Tasks
         {
             string diskImageName = $"vulkansdk-macos-{SDKVersion}";
             string installerUrl = $"https://sdk.lunarg.com/sdk/download/{SDKVersion}/mac/{diskImageName}.dmg";
-            string? diskImagePath = RetrieveInstaller(installerUrl, $"{diskImageName}.dmg");
+            string? diskImagePath = Utilities.RetrieveFile(installerUrl, $"{diskImageName}.dmg");
             if (diskImagePath == null)
             {
                 return false;
             }
 
-            if (ExecuteProcess("sudo", $"hdiutil attach {diskImagePath}") != 0)
-            {
-                return false;
-            }
-            if (ExecuteProcess("sudo", $"/Volumes/{diskImageName}/InstallVulkan.app/Contents/MacOS/InstallVulkan in --al -c") != 0)
-            {
-                return false;
-            }
+            Utilities.RunCommand($"sudo hdiutil attach {diskImagePath}");
+            Utilities.RunCommand($"sudo /Volumes/{diskImageName}/InstallVulkan.app/Contents/MacOS/InstallVulkan in --al -c");
 
             if (setActionsEnvVariable)
             {
@@ -113,33 +96,6 @@ namespace SGE.Setup.Tasks
                 Console.WriteLine($"::set-env name=VULKAN_SDK::{homeDir}/VulkanSDK/{SDKVersion}/macOS");
             }
             return true;
-        }
-        private static string? RetrieveInstaller(string installerUrl, string outputName)
-        {
-            try
-            {
-                var client = new HttpClient();
-                var responseTask = client.GetAsync(installerUrl);
-                responseTask.Wait();
-
-                var response = responseTask.Result;
-                response.EnsureSuccessStatusCode();
-
-                var bodyTask = response.Content.ReadAsByteArrayAsync();
-                bodyTask.Wait();
-                var body = bodyTask.Result;
-
-                string outputPath = Path.Join(Directory.GetCurrentDirectory(), outputName);
-                var stream = new FileStream(outputPath, FileMode.OpenOrCreate, FileAccess.Write);
-                stream.Write(body);
-                stream.Close();
-
-                return outputPath;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
     }
 }

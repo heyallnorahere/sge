@@ -24,21 +24,20 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y mesa-common-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev cmake libvulkan-dev
+          sudo apt-get install -y mesa-common-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev cmake
       - name: install dependencies (macos)
         if: ${{ matrix.os-name == 'macos' }}
         shell: bash
         run: |
           brew install cmake
-      - name: install vulkan (windows and macos)
-        if: ${{ matrix.os-name == 'windows' || matrix.os-name == 'macos' }}
+      - name: install global dependencies
         shell: bash
         env:
           ACTIONS_ALLOW_UNSECURE_COMMANDS: true
         run: |
           dotnet restore "setup/Setup.sln"
           dotnet build -c Release "setup/Setup.sln"
-          dotnet "setup/SGE.Setup/bin/Release/net6.0/SGE.Setup.dll" -t install-vulkan --ci
+          dotnet "setup/SGE.Setup/bin/Release/net6.0/SGE.Setup.dll" -t setup-ci
       - name: build
         shell: bash
         run: |

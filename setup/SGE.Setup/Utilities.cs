@@ -1,10 +1,102 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net.Http;
+using System.Reflection;
 
 namespace SGE.Setup
 {
+    struct ProcessResult
+    {
+        public int ExitCode;
+        public string StandardOutput;
+        public string StandardError;
+    };
+
     internal static class Utilities
     {
+        public static string? RetrieveFile(string url, string outputName)
+        {
+            try
+            {
+                var client = new HttpClient();
+                var responseTask = client.GetAsync(url);
+                responseTask.Wait();
+
+                var response = responseTask.Result;
+                response.EnsureSuccessStatusCode();
+
+                var bodyTask = response.Content.ReadAsByteArrayAsync();
+                bodyTask.Wait();
+                var body = bodyTask.Result;
+
+                var assembly = Assembly.GetExecutingAssembly();
+                var assemblyPath = assembly.Location;
+                var assemblyDirectory = Path.GetDirectoryName(assemblyPath);
+
+                string outputPath = Path.Join(assemblyDirectory, outputName);
+                var stream = new FileStream(outputPath, FileMode.OpenOrCreate, FileAccess.Write);
+                stream.Write(body);
+                stream.Close();
+
+                return outputPath;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+        public static ProcessResult ExecuteProcess(string fileName, string arguments, bool shell = false)
+        {
+            var process = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    UseShellExecute = shell,
+                    RedirectStandardOutput = !shell,
+                    RedirectStandardError = !shell
+                }
+            };
+
+            process.Start();
+            process.WaitForExit();
+
+            string standardOutput = string.Empty;
+            string standardError = string.Empty;
+            if (!shell)
+            {
+                standardOutput = process.StandardOutput.ReadToEnd();
+                standardError = process.StandardError.ReadToEnd();
+            }
+
+            return new ProcessResult
+            {
+                ExitCode = process.ExitCode,
+                StandardOutput = standardOutput,
+                StandardError = standardError
+            };
+        }
+        public static void RunCommand(string command)
+        {
+            string filename = command;
+            string arguments = string.Empty;
+
+            int firstSpace = command.IndexOf(' ');
+            if (firstSpace >= 0)
+            {
+                filename = command.Substring(0, firstSpace);
+                arguments = command.Substring(firstSpace + 1);
+            }
+
+            int exitCode = ExecuteProcess(filename, arguments, true).ExitCode;
+            if (exitCode != 0)
+            {
+                throw new Exception($"Command \"{command}\" exited with code {exitCode}.");
+            }
+        }
         public static bool Extends(this Type derived, Type baseType)
         {
             Type? currentBaseType = derived.BaseType;
