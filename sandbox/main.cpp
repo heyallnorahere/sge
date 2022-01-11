@@ -110,7 +110,7 @@ namespace sandbox {
                 transform.rotation = 10.f;
 
                 auto& sprite = tux.add_component<sprite_renderer_component>();
-                sprite.texture = this->m_tux;
+                sprite.texture = m_tux;
 
                 auto& nsc = tux.add_component<native_script_component>();
                 nsc.bind<collision_listener_script>();

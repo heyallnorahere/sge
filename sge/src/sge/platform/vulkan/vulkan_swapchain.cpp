@@ -20,15 +20,43 @@
 #include "sge/platform/vulkan/vulkan_context.h"
 #include "sge/platform/vulkan/vulkan_render_pass.h"
 namespace sge {
-    vulkan_swapchain::vulkan_swapchain(ref<window> _window) {
-        VkInstance instance = vulkan_context::get().get_instance();
-        this->m_window = _window;
-        this->m_surface = (VkSurfaceKHR)this->m_window->create_render_surface(instance);
-        this->m_current_frame = 0;
+    static PFN_vkDestroySurfaceKHR fpDestroySurfaceKHR = nullptr;
+    static PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR = nullptr;
+    static PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR = nullptr;
+    static PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR = nullptr;
+    static PFN_vkQueuePresentKHR fpQueuePresentKHR = nullptr;
+    static PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR = nullptr;
 
-        this->create(true);
-        this->allocate_command_buffers();
-        this->create_sync_objects();
+    static void load_swapchain_functions() {
+        auto& context = vulkan_context::get();
+        VkInstance instance = context.get_instance();
+        VkDevice device = context.get_device().get();
+
+#define LOAD_INSTANCE(name) fp##name = (PFN_vk##name)vkGetInstanceProcAddr(instance, "vk" #name)
+#define LOAD_DEVICE(name) fp##name = (PFN_vk##name)vkGetDeviceProcAddr(device, "vk" #name)
+
+        LOAD_INSTANCE(DestroySurfaceKHR);
+        LOAD_DEVICE(CreateSwapchainKHR);
+        LOAD_DEVICE(DestroySwapchainKHR);
+        LOAD_DEVICE(AcquireNextImageKHR);
+        LOAD_DEVICE(QueuePresentKHR);
+        LOAD_DEVICE(GetSwapchainImagesKHR);
+
+#undef LOAD_INSTANCE
+#undef LOAD_DEVICE
+    }
+
+    vulkan_swapchain::vulkan_swapchain(ref<window> _window) {
+        load_swapchain_functions();
+
+        VkInstance instance = vulkan_context::get().get_instance();
+        m_window = _window;
+        m_surface = (VkSurfaceKHR)m_window->create_render_surface(instance);
+        m_current_frame = 0;
+
+        create(true);
+        allocate_command_buffers();
+        create_sync_objects();
     }
 
     vulkan_swapchain::~vulkan_swapchain() {
@@ -43,45 +71,44 @@ namespace sge {
         VkQueue queue = device.get_queue(indices.graphics.value());
         vkQueueWaitIdle(queue);
 
-        queue = device.get_queue(this->m_present_queue);
+        queue = device.get_queue(m_present_queue);
         vkQueueWaitIdle(queue);
 
-        for (const auto& sync_objects_ : this->m_sync_objects) {
+        for (const auto& sync_objects_ : m_sync_objects) {
             vkDestroySemaphore(vk_device, sync_objects_.image_available, nullptr);
             vkDestroySemaphore(vk_device, sync_objects_.render_finished, nullptr);
             vkDestroyFence(vk_device, sync_objects_.fence, nullptr);
         }
 
-        this->m_command_buffers.clear();
-        vkDestroyCommandPool(vk_device, this->m_command_pool, nullptr);
+        m_command_buffers.clear();
+        vkDestroyCommandPool(vk_device, m_command_pool, nullptr);
 
-        this->destroy();
-        vkDestroySurfaceKHR(instance, this->m_surface, nullptr);
+        destroy();
+        fpDestroySurfaceKHR(instance, m_surface, nullptr);
     }
 
     void vulkan_swapchain::on_resize(uint32_t new_width, uint32_t new_height) {
-        this->m_new_size = glm::uvec2(new_width, new_height);
+        m_new_size = glm::uvec2(new_width, new_height);
     }
 
     void vulkan_swapchain::new_frame() {
         VkDevice device = vulkan_context::get().get_device().get();
-        VkFence fence = this->m_sync_objects[this->m_current_frame].fence;
+        VkFence fence = m_sync_objects[m_current_frame].fence;
         static constexpr size_t uint64_max = std::numeric_limits<uint64_t>::max();
         vkWaitForFences(device, 1, &fence, true, uint64_max);
 
-        while (this->acquire_next_image()) {
-            this->resize();
+        while (acquire_next_image()) {
+            resize();
         }
 
-        if (this->m_image_fences[this->m_current_image_index] != nullptr) {
-            vkWaitForFences(device, 1, &this->m_image_fences[this->m_current_image_index], true,
-                            uint64_max);
+        if (m_image_fences[m_current_image_index] != nullptr) {
+            vkWaitForFences(device, 1, &m_image_fences[m_current_image_index], true, uint64_max);
         }
-        this->m_image_fences[this->m_current_image_index] = fence;
+        m_image_fences[m_current_image_index] = fence;
 
         vkResetFences(device, 1, &fence);
 
-        auto& cmdlist = *this->m_command_buffers[this->m_current_image_index];
+        auto& cmdlist = *m_command_buffers[m_current_image_index];
         cmdlist.reset();
     }
 
@@ -93,11 +120,11 @@ namespace sge {
         physical_device.query_queue_families(VK_QUEUE_GRAPHICS_BIT, families);
 
         VkQueue graphics_queue = device.get_queue(families.graphics.value());
-        VkQueue present_queue = device.get_queue(this->m_present_queue);
-        const auto& sync_objects_ = this->m_sync_objects[this->m_current_frame];
+        VkQueue present_queue = device.get_queue(m_present_queue);
+        const auto& sync_objects_ = m_sync_objects[m_current_frame];
 
         {
-            auto& cmdlist = *this->m_command_buffers[this->m_current_image_index];
+            auto& cmdlist = *m_command_buffers[m_current_image_index];
             VkCommandBuffer cmdbuffer = cmdlist.get();
 
             static VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -122,27 +149,27 @@ namespace sge {
         present_info.pWaitSemaphores = &sync_objects_.render_finished;
 
         present_info.swapchainCount = 1;
-        present_info.pSwapchains = &this->m_swapchain;
-        present_info.pImageIndices = &this->m_current_image_index;
+        present_info.pSwapchains = &m_swapchain;
+        present_info.pImageIndices = &m_current_image_index;
 
-        VkResult result = vkQueuePresentKHR(present_queue, &present_info);
-        if (this->m_new_size.has_value() || result == VK_ERROR_OUT_OF_DATE_KHR ||
+        VkResult result = fpQueuePresentKHR(present_queue, &present_info);
+        if (m_new_size.has_value() || result == VK_ERROR_OUT_OF_DATE_KHR ||
             result == VK_SUBOPTIMAL_KHR) {
-            this->resize();
+            resize();
         } else {
             check_vk_result(result);
         }
 
-        this->m_current_frame++;
-        this->m_current_frame %= max_frames_in_flight;
+        m_current_frame++;
+        m_current_frame %= max_frames_in_flight;
     }
 
     bool vulkan_swapchain::acquire_next_image() {
         VkDevice device = vulkan_context::get().get_device().get();
-        VkSemaphore semaphore = this->m_sync_objects[this->m_current_frame].image_available;
+        VkSemaphore semaphore = m_sync_objects[m_current_frame].image_available;
         VkResult result =
-            vkAcquireNextImageKHR(device, this->m_swapchain, std::numeric_limits<uint64_t>::max(),
-                                  semaphore, nullptr, &this->m_current_image_index);
+            fpAcquireNextImageKHR(device, m_swapchain, std::numeric_limits<uint64_t>::max(),
+                                  semaphore, nullptr, &m_current_image_index);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             return true;
@@ -159,12 +186,12 @@ namespace sge {
         create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
         VkDevice device = vulkan_context::get().get_device().get();
-        VkResult result = vkCreateCommandPool(device, &create_info, nullptr, &this->m_command_pool);
+        VkResult result = vkCreateCommandPool(device, &create_info, nullptr, &m_command_pool);
         check_vk_result(result);
 
-        for (size_t i = 0; i < this->m_swapchain_images.size(); i++) {
-            auto cmdlist = std::make_unique<vulkan_command_list>(this->m_command_pool);
-            this->m_command_buffers.push_back(std::move(cmdlist));
+        for (size_t i = 0; i < m_swapchain_images.size(); i++) {
+            auto cmdlist = std::make_unique<vulkan_command_list>(m_command_pool);
+            m_command_buffers.push_back(std::move(cmdlist));
         }
     }
 
@@ -178,7 +205,7 @@ namespace sge {
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (size_t i = 0; i < max_frames_in_flight; i++) {
-            auto& data = this->m_sync_objects[i];
+            auto& data = m_sync_objects[i];
 
             VkResult result =
                 vkCreateSemaphore(device, &semaphore_info, nullptr, &data.image_available);
@@ -201,33 +228,33 @@ namespace sge {
         VkQueue queue = device.get_queue(indices.graphics.value());
         vkQueueWaitIdle(queue);
 
-        for (const auto& cmdlist : this->m_command_buffers) {
+        for (const auto& cmdlist : m_command_buffers) {
             cmdlist->reset();
         }
 
-        this->destroy();
-        this->create(false);
+        destroy();
+        create(false);
     }
 
     void vulkan_swapchain::create(bool render_pass) {
-        this->create_swapchain();
+        create_swapchain();
         if (render_pass) {
-            this->m_render_pass = ref<vulkan_render_pass>::create(this);
+            m_render_pass = ref<vulkan_render_pass>::create(this);
         }
-        this->acquire_images();
+        acquire_images();
 
-        this->m_current_image_index = 0;
+        m_current_image_index = 0;
     }
 
     void vulkan_swapchain::destroy() {
         VkDevice device = vulkan_context::get().get_device().get();
 
-        for (const auto& image : this->m_swapchain_images) {
+        for (const auto& image : m_swapchain_images) {
             vkDestroyFramebuffer(device, image.framebuffer, nullptr);
             vkDestroyImageView(device, image.view, nullptr);
         }
 
-        vkDestroySwapchainKHR(device, this->m_swapchain, nullptr);
+        fpDestroySwapchainKHR(device, m_swapchain, nullptr);
     }
 
     static VkExtent2D choose_extent(uint32_t width, uint32_t height,
@@ -300,7 +327,7 @@ namespace sge {
         physical_device.query_queue_families(VK_QUEUE_GRAPHICS_BIT, indices);
 
         VkSurfaceCapabilitiesKHR capabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_device, this->m_surface, &capabilities);
+        physical_device.get_surface_capabilities(m_surface, capabilities);
 
         uint32_t image_count = capabilities.minImageCount;
         if (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) {
@@ -309,85 +336,52 @@ namespace sge {
 
         VkSurfaceFormatKHR format;
         {
-            uint32_t surface_format_count = 0;
-            vkGetPhysicalDeviceSurfaceFormatsKHR(vk_device, this->m_surface, &surface_format_count,
-                                                 nullptr);
-
             std::vector<VkSurfaceFormatKHR> surface_formats;
-            if (surface_format_count > 0) {
-                surface_formats.resize(surface_format_count);
-                vkGetPhysicalDeviceSurfaceFormatsKHR(vk_device, this->m_surface,
-                                                     &surface_format_count, surface_formats.data());
-            }
-
+            physical_device.get_surface_formats(m_surface, surface_formats);
             format = choose_format(surface_formats);
         }
 
         VkPresentModeKHR present_mode;
         {
-            uint32_t present_mode_count = 0;
-            vkGetPhysicalDeviceSurfacePresentModesKHR(vk_device, this->m_surface,
-                                                      &present_mode_count, nullptr);
-
             std::vector<VkPresentModeKHR> present_modes;
-            if (present_mode_count > 0) {
-                present_modes.resize(present_mode_count);
-                vkGetPhysicalDeviceSurfacePresentModesKHR(
-                    vk_device, this->m_surface, &present_mode_count, present_modes.data());
-            }
-
+            physical_device.get_surface_present_modes(m_surface, present_modes);
             present_mode = choose_present_mode(present_modes);
         }
 
         {
-            std::optional<uint32_t> present_queue;
-
-            uint32_t family_count = 0;
-            vkGetPhysicalDeviceQueueFamilyProperties(vk_device, &family_count, nullptr);
-
-            for (uint32_t i = 0; i < family_count; i++) {
-                VkBool32 presentation_supported = false;
-                vkGetPhysicalDeviceSurfaceSupportKHR(vk_device, i, this->m_surface,
-                                                     &presentation_supported);
-
-                if (presentation_supported) {
-                    present_queue = i;
-                    break;
-                }
-            }
-
+            auto present_queue = physical_device.find_surface_present_queue(m_surface);
             if (present_queue.has_value()) {
-                this->m_present_queue = present_queue.value();
+                m_present_queue = present_queue.value();
             } else {
                 throw std::runtime_error("could not find a suitable presentation queue family");
             }
         }
 
         uint32_t width, height;
-        if (this->m_new_size.has_value()) {
-            width = this->m_new_size->x;
-            height = this->m_new_size->y;
-            this->m_new_size.reset();
+        if (m_new_size.has_value()) {
+            width = m_new_size->x;
+            height = m_new_size->y;
+            m_new_size.reset();
         } else {
-            width = this->m_window->get_width();
-            height = this->m_window->get_height();
+            width = m_window->get_width();
+            height = m_window->get_height();
         }
 
         auto create_info =
             vk_init<VkSwapchainCreateInfoKHR>(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
 
-        create_info.surface = this->m_surface;
+        create_info.surface = m_surface;
         create_info.minImageCount = image_count;
         create_info.presentMode = present_mode;
 
-        this->m_image_format = format.format;
+        m_image_format = format.format;
         create_info.imageFormat = format.format;
         create_info.imageColorSpace = format.colorSpace;
 
         VkExtent2D extent = choose_extent(width, height, capabilities);
         create_info.imageExtent = extent;
-        this->m_width = extent.width;
-        this->m_height = extent.height;
+        m_width = extent.width;
+        m_height = extent.height;
 
         create_info.imageArrayLayers = 1;
         create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -395,10 +389,9 @@ namespace sge {
         create_info.clipped = true;
         create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
-        std::vector<uint32_t> queue_family_indices = { indices.graphics.value(),
-                                                       this->m_present_queue };
+        std::vector<uint32_t> queue_family_indices = { indices.graphics.value(), m_present_queue };
 
-        if (indices.graphics != this->m_present_queue) {
+        if (indices.graphics != m_present_queue) {
             create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             create_info.queueFamilyIndexCount = queue_family_indices.size();
             create_info.pQueueFamilyIndices = queue_family_indices.data();
@@ -406,24 +399,23 @@ namespace sge {
             create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         }
 
-        VkResult result =
-            vkCreateSwapchainKHR(device.get(), &create_info, nullptr, &this->m_swapchain);
+        VkResult result = fpCreateSwapchainKHR(device.get(), &create_info, nullptr, &m_swapchain);
         check_vk_result(result);
     }
 
     void vulkan_swapchain::acquire_images() {
-        auto vk_render_pass = this->m_render_pass.as<vulkan_render_pass>();
+        auto vk_render_pass = m_render_pass.as<vulkan_render_pass>();
         VkDevice device = vulkan_context::get().get_device().get();
 
         uint32_t image_count = 0;
-        vkGetSwapchainImagesKHR(device, this->m_swapchain, &image_count, nullptr);
+        fpGetSwapchainImagesKHR(device, m_swapchain, &image_count, nullptr);
         std::vector<VkImage> images(image_count);
-        vkGetSwapchainImagesKHR(device, this->m_swapchain, &image_count, images.data());
+        fpGetSwapchainImagesKHR(device, m_swapchain, &image_count, images.data());
 
-        this->m_swapchain_images.resize(image_count);
-        this->m_image_fences.resize(image_count, nullptr);
+        m_swapchain_images.resize(image_count);
+        m_image_fences.resize(image_count, nullptr);
         for (uint32_t i = 0; i < image_count; i++) {
-            swapchain_image& data = this->m_swapchain_images[i];
+            swapchain_image& data = m_swapchain_images[i];
             data.image = images[i];
 
             {
@@ -432,7 +424,7 @@ namespace sge {
 
                 create_info.image = data.image;
                 create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-                create_info.format = this->m_image_format;
+                create_info.format = m_image_format;
 
                 create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
                 create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -456,8 +448,8 @@ namespace sge {
                 create_info.attachmentCount = 1;
                 create_info.pAttachments = &data.view;
                 create_info.renderPass = vk_render_pass->get();
-                create_info.width = this->m_width;
-                create_info.height = this->m_height;
+                create_info.width = m_width;
+                create_info.height = m_height;
                 create_info.layers = 1;
 
                 VkResult result =

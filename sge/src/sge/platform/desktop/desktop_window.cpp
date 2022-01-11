@@ -26,10 +26,10 @@ namespace sge {
     static uint32_t glfw_window_count = 0;
 
     desktop_window::desktop_window(const std::string& title, uint32_t width, uint32_t height) {
-        this->m_data.title = title;
-        this->m_data.width = width;
-        this->m_data.height = height;
-        this->m_data.event_callback = nullptr;
+        m_data.title = title;
+        m_data.width = width;
+        m_data.height = height;
+        m_data.event_callback = nullptr;
         spdlog::info("creating window:\n\ttitle: {0}\n\tsize: ({1}, {2})", title, width, height);
 
         if (glfw_window_count == 0) {
@@ -44,17 +44,17 @@ namespace sge {
         // we are not going to support OpenGL
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        this->m_window = glfwCreateWindow(this->m_data.width, this->m_data.height,
-                                          this->m_data.title.c_str(), nullptr, nullptr);
-        if (this->m_window == nullptr) {
+        m_window = glfwCreateWindow(m_data.width, m_data.height,
+                                          m_data.title.c_str(), nullptr, nullptr);
+        if (m_window == nullptr) {
             throw std::runtime_error("could not create glfw window!");
         }
 
-        this->setup_event_callbacks();
+        setup_event_callbacks();
     }
 
     desktop_window::~desktop_window() {
-        glfwDestroyWindow(this->m_window);
+        glfwDestroyWindow(m_window);
         glfw_window_count--;
 
         if (glfw_window_count == 0) {
@@ -65,7 +65,7 @@ namespace sge {
     void desktop_window::on_update() { glfwPollEvents(); }
 
     void desktop_window::set_event_callback(event_callback_t callback) {
-        this->m_data.event_callback = callback;
+        m_data.event_callback = callback;
     }
 
     void* desktop_window::create_render_surface(void* params) {
@@ -74,7 +74,7 @@ namespace sge {
             auto instance = (VkInstance)params;
 
             VkSurfaceKHR surface;
-            VkResult result = glfwCreateWindowSurface(instance, this->m_window, nullptr, &surface);
+            VkResult result = glfwCreateWindowSurface(instance, m_window, nullptr, &surface);
             check_vk_result(result);
 
             return surface;
@@ -96,10 +96,10 @@ namespace sge {
     }
 
     void desktop_window::setup_event_callbacks() {
-        glfwSetWindowUserPointer(this->m_window, &this->m_data);
+        glfwSetWindowUserPointer(m_window, &m_data);
 
         glfwSetWindowSizeCallback(
-            this->m_window, [](GLFWwindow* window, int32_t width, int32_t height) {
+            m_window, [](GLFWwindow* window, int32_t width, int32_t height) {
                 window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
                 wd->width = (uint32_t)width;
                 wd->height = (uint32_t)height;
@@ -110,7 +110,7 @@ namespace sge {
                 }
             });
 
-        glfwSetWindowCloseCallback(this->m_window, [](GLFWwindow* window) {
+        glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
 
             if (wd->event_callback != nullptr) {
@@ -120,7 +120,7 @@ namespace sge {
         });
 
         glfwSetMouseButtonCallback(
-            this->m_window, [](GLFWwindow* window, int32_t button, int32_t action, int32_t mods) {
+            m_window, [](GLFWwindow* window, int32_t button, int32_t action, int32_t mods) {
                 window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
 
                 if (wd->event_callback != nullptr) {
@@ -145,7 +145,7 @@ namespace sge {
                 }
             });
 
-        glfwSetKeyCallback(this->m_window, [](GLFWwindow* window, int32_t key, int32_t scancode,
+        glfwSetKeyCallback(m_window, [](GLFWwindow* window, int32_t key, int32_t scancode,
                                               int32_t action, int32_t mods) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
 
@@ -289,7 +289,7 @@ namespace sge {
             }
         });
 
-        glfwSetScrollCallback(this->m_window, [](GLFWwindow* window, double x, double y) {
+        glfwSetScrollCallback(m_window, [](GLFWwindow* window, double x, double y) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
 
             if (wd->event_callback != nullptr) {
@@ -298,7 +298,7 @@ namespace sge {
             }
         });
 
-        glfwSetCursorPosCallback(this->m_window, [](GLFWwindow* window, double x, double y) {
+        glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double x, double y) {
             auto position = glm::vec2((float)x, (float)y);
             if (glm::length(input::get_mouse_position()) < 0.0001f) {
                 input::set_mouse_position(position);

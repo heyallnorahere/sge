@@ -20,35 +20,35 @@
 #include "sge/platform/vulkan/vulkan_context.h"
 namespace sge {
     vulkan_command_list::vulkan_command_list(VkCommandPool command_pool) {
-        this->m_command_pool = command_pool;
+        m_command_pool = command_pool;
 
         auto alloc_info =
             vk_init<VkCommandBufferAllocateInfo>(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
         alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        alloc_info.commandPool = this->m_command_pool;
+        alloc_info.commandPool = m_command_pool;
         alloc_info.commandBufferCount = 1;
 
         VkDevice device = vulkan_context::get().get_device().get();
-        VkResult result = vkAllocateCommandBuffers(device, &alloc_info, &this->m_command_buffer);
+        VkResult result = vkAllocateCommandBuffers(device, &alloc_info, &m_command_buffer);
         check_vk_result(result);
     }
 
     vulkan_command_list::~vulkan_command_list() {
         VkDevice device = vulkan_context::get().get_device().get();
-        vkFreeCommandBuffers(device, this->m_command_pool, 1, &this->m_command_buffer);
+        vkFreeCommandBuffers(device, m_command_pool, 1, &m_command_buffer);
     }
 
-    void vulkan_command_list::reset() { vkResetCommandBuffer(this->m_command_buffer, 0); }
+    void vulkan_command_list::reset() { vkResetCommandBuffer(m_command_buffer, 0); }
 
     void vulkan_command_list::begin() {
         auto begin_info =
             vk_init<VkCommandBufferBeginInfo>(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-        VkResult result = vkBeginCommandBuffer(this->m_command_buffer, &begin_info);
+        VkResult result = vkBeginCommandBuffer(m_command_buffer, &begin_info);
         check_vk_result(result);
     }
 
     void vulkan_command_list::end() {
-        VkResult result = vkEndCommandBuffer(this->m_command_buffer);
+        VkResult result = vkEndCommandBuffer(m_command_buffer);
         check_vk_result(result);
     }
 } // namespace sge

@@ -21,57 +21,57 @@
 #include <backends/imgui_impl_vulkan.h>
 namespace sge {
     vulkan_texture_2d::vulkan_texture_2d(const texture_spec& spec) {
-        this->m_imgui_id = (ImTextureID)nullptr;
-        this->m_wrap = spec.wrap;
-        this->m_filter = spec.filter;
-        this->m_image = spec.image.as<vulkan_image_2d>();
+        m_imgui_id = (ImTextureID)nullptr;
+        m_wrap = spec.wrap;
+        m_filter = spec.filter;
+        m_image = spec.image.as<vulkan_image_2d>();
 
         VkImageLayout optimal_layout;
-        if (this->m_image->get_usage() & ~image_usage_texture) {
+        if (m_image->get_usage() & ~image_usage_texture) {
             optimal_layout = VK_IMAGE_LAYOUT_GENERAL;
         } else {
             optimal_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         }
 
-        if (this->m_image->get_layout() != optimal_layout) {
-            this->m_image->set_layout(optimal_layout);
+        if (m_image->get_layout() != optimal_layout) {
+            m_image->set_layout(optimal_layout);
         }
 
-        this->create_sampler();
+        create_sampler();
 
-        this->m_image->m_dependents.insert(this);
-        this->m_descriptor_info = vk_init<VkDescriptorImageInfo>();
-        this->m_descriptor_info.imageLayout = this->m_image->get_layout();
-        this->m_descriptor_info.imageView = this->m_image->get_view();
-        this->m_descriptor_info.sampler = this->m_sampler;
+        m_image->m_dependents.insert(this);
+        m_descriptor_info = vk_init<VkDescriptorImageInfo>();
+        m_descriptor_info.imageLayout = m_image->get_layout();
+        m_descriptor_info.imageView = m_image->get_view();
+        m_descriptor_info.sampler = m_sampler;
     }
 
     vulkan_texture_2d::~vulkan_texture_2d() {
-        if (this->m_imgui_id != (ImTextureID)nullptr) {
-            ImGui_ImplVulkan_RemoveTexture(this->m_imgui_id);
+        if (m_imgui_id != (ImTextureID)nullptr) {
+            ImGui_ImplVulkan_RemoveTexture(m_imgui_id);
         }
 
-        this->m_image->m_dependents.erase(this);
+        m_image->m_dependents.erase(this);
 
         VkDevice device = vulkan_context::get().get_device().get();
-        vkDestroySampler(device, this->m_sampler, nullptr);
+        vkDestroySampler(device, m_sampler, nullptr);
     }
 
     ImTextureID vulkan_texture_2d::get_imgui_id() {
-        if (this->m_imgui_id == (ImTextureID)nullptr) {
-            VkImageView view = this->m_image->get_view();
-            VkImageLayout layout = this->m_image->get_layout();
-            this->m_imgui_id = ImGui_ImplVulkan_AddTexture(this->m_sampler, view, layout);
+        if (m_imgui_id == (ImTextureID)nullptr) {
+            VkImageView view = m_image->get_view();
+            VkImageLayout layout = m_image->get_layout();
+            m_imgui_id = ImGui_ImplVulkan_AddTexture(m_sampler, view, layout);
         }
 
-        return this->m_imgui_id;
+        return m_imgui_id;
     }
 
     void vulkan_texture_2d::create_sampler() {
         auto create_info = vk_init<VkSamplerCreateInfo>(VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
         
         VkSamplerAddressMode wrap;
-        switch (this->m_wrap) {
+        switch (m_wrap) {
         case texture_wrap::clamp:
             wrap = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
             break;
@@ -87,7 +87,7 @@ namespace sge {
         create_info.addressModeW = wrap;
 
         VkFilter filter;
-        switch (this->m_filter) {
+        switch (m_filter) {
         case texture_filter::linear:
             filter = VK_FILTER_LINEAR;
             break;
@@ -130,17 +130,17 @@ namespace sge {
         create_info.minLod = 0.f;
         create_info.maxLod = 0.f;
 
-        VkResult result = vkCreateSampler(device.get(), &create_info, nullptr, &this->m_sampler);
+        VkResult result = vkCreateSampler(device.get(), &create_info, nullptr, &m_sampler);
         check_vk_result(result);
     }
 
     void vulkan_texture_2d::on_layout_transition() {
-        VkImageLayout layout = this->m_image->get_layout();
-        this->m_descriptor_info.imageLayout = layout;
+        VkImageLayout layout = m_image->get_layout();
+        m_descriptor_info.imageLayout = layout;
 
-        if (this->m_imgui_id != (ImTextureID)nullptr) {
-            VkImageView view = this->m_image->get_view();
-            ImGui_ImplVulkan_UpdateTextureInfo(this->m_imgui_id, this->m_sampler, view, layout);
+        if (m_imgui_id != (ImTextureID)nullptr) {
+            VkImageView view = m_image->get_view();
+            ImGui_ImplVulkan_UpdateTextureInfo(m_imgui_id, m_sampler, view, layout);
         }
     }
 } // namespace sge

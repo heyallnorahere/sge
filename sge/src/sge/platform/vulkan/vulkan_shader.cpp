@@ -90,23 +90,23 @@ namespace sge {
     }
 
     vulkan_shader::vulkan_shader(const fs::path& path, shader_language language) {
-        this->m_path = path;
-        this->m_language = language;
+        m_path = path;
+        m_language = language;
 
-        this->create();
+        create();
     }
 
-    vulkan_shader::~vulkan_shader() { this->destroy(); }
+    vulkan_shader::~vulkan_shader() { destroy(); }
 
     void vulkan_shader::reload() {
-        this->destroy();
-        this->create();
+        destroy();
+        create();
         renderer::on_shader_reloaded(this);
     }
 
     void vulkan_shader::create() {
         std::map<shader_stage, std::string> sources;
-        parse_source(this->m_path, sources);
+        parse_source(m_path, sources);
 
         for (const auto& [stage, source] : sources) {
             auto stage_info = vk_init<VkPipelineShaderStageCreateInfo>(
@@ -114,9 +114,9 @@ namespace sge {
 
             stage_info.pName = "main";
             stage_info.stage = get_shader_stage_flags(stage);
-            stage_info.module = this->compile(stage, source);
+            stage_info.module = compile(stage, source);
 
-            this->m_pipeline_info.push_back(stage_info);
+            m_pipeline_info.push_back(stage_info);
         }
 
         { 
@@ -160,13 +160,13 @@ namespace sge {
     void vulkan_shader::destroy() {
         VkDevice device = vulkan_context::get().get_device().get();
 
-        for (const auto& stage_info : this->m_pipeline_info) {
+        for (const auto& stage_info : m_pipeline_info) {
             vkDestroyShaderModule(device, stage_info.module, nullptr);
         }
-        this->m_pipeline_info.clear();
+        m_pipeline_info.clear();
 
-        this->m_reflection_data.resources.clear();
-        this->m_reflection_data.push_constant_buffer = push_constant_range();
+        m_reflection_data.resources.clear();
+        m_reflection_data.push_constant_buffer = push_constant_range();
     }
 
     static void compile_shader(shader_stage stage, const std::string& source,
@@ -226,8 +226,8 @@ namespace sge {
 
     VkShaderModule vulkan_shader::compile(shader_stage stage, const std::string& source) {
         std::vector<uint32_t> spirv;
-        compile_shader(stage, source, this->m_language, this->m_path, spirv);
-        this->reflect(spirv, stage);
+        compile_shader(stage, source, m_language, m_path, spirv);
+        reflect(spirv, stage);
 
         auto create_info =
             vk_init<VkShaderModuleCreateInfo>(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
@@ -275,24 +275,24 @@ namespace sge {
         spirv_cross::Compiler compiler(std::move(spirv));
         auto resources = compiler.get_shader_resources();
 
-        map_resources(resources.uniform_buffers, this->m_reflection_data, stage,
+        map_resources(resources.uniform_buffers, m_reflection_data, stage,
                       resource_type::uniform_buffer, compiler);
-        map_resources(resources.storage_buffers, this->m_reflection_data, stage,
+        map_resources(resources.storage_buffers, m_reflection_data, stage,
                       resource_type::storage_buffer, compiler);
-        map_resources(resources.sampled_images, this->m_reflection_data, stage,
+        map_resources(resources.sampled_images, m_reflection_data, stage,
                       resource_type::sampled_image, compiler);
-        map_resources(resources.separate_images, this->m_reflection_data, stage,
+        map_resources(resources.separate_images, m_reflection_data, stage,
                       resource_type::image, compiler);
-        map_resources(resources.separate_samplers, this->m_reflection_data, stage,
+        map_resources(resources.separate_samplers, m_reflection_data, stage,
                       resource_type::sampler, compiler);
 
         for (const auto& spirv_resource : resources.push_constant_buffers) {
             const auto& spirv_type = compiler.get_type(spirv_resource.type_id);
             size_t size = compiler.get_declared_struct_size(spirv_type);
-            this->m_reflection_data.push_constant_buffer.size += size;
+            m_reflection_data.push_constant_buffer.size += size;
 
             VkShaderStageFlagBits stage_flags = get_shader_stage_flags(stage);
-            this->m_reflection_data.push_constant_buffer.stage |= stage_flags;
+            m_reflection_data.push_constant_buffer.stage |= stage_flags;
         }
     }
 } // namespace sge

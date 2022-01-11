@@ -52,7 +52,6 @@ namespace sge {
         vulkan_device& device = context.get_device();
         VkDevice vk_device = device.get();
         auto physical_device = device.get_physical_device();
-        VkPhysicalDevice vk_physical_device = physical_device.get();
 
         {
             VkDescriptorPoolSize pool_size;
@@ -76,8 +75,7 @@ namespace sge {
         auto pass = swap_chain.get_render_pass().as<vulkan_render_pass>();
 
         VkSurfaceCapabilitiesKHR surface_capabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device, swap_chain.get_surface(),
-                                                  &surface_capabilities);
+        physical_device.get_surface_capabilities(swap_chain.get_surface(), surface_capabilities);
 
         vulkan_physical_device::queue_family_indices indices;
         physical_device.query_queue_families(VK_QUEUE_GRAPHICS_BIT, indices);
@@ -85,7 +83,7 @@ namespace sge {
         auto init_info = vk_init<ImGui_ImplVulkan_InitInfo>();
         init_info.Instance = context.get_instance();
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-        init_info.PhysicalDevice = vk_physical_device;
+        init_info.PhysicalDevice = physical_device.get();
         init_info.Device = vk_device;
         init_info.MinImageCount = surface_capabilities.minImageCount;
         init_info.ImageCount = swap_chain.get_image_count();

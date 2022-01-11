@@ -41,10 +41,9 @@ namespace sge {
     void vulkan_physical_device::query_queue_families(VkQueueFlags query,
                                                       queue_family_indices& indices) const {
         uint32_t family_count = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(this->m_device, &family_count, nullptr);
+        vkGetPhysicalDeviceQueueFamilyProperties(m_device, &family_count, nullptr);
         std::vector<VkQueueFamilyProperties> queue_families(family_count);
-        vkGetPhysicalDeviceQueueFamilyProperties(this->m_device, &family_count,
-                                                 queue_families.data());
+        vkGetPhysicalDeviceQueueFamilyProperties(m_device, &family_count, queue_families.data());
 
         for (uint32_t i = 0; i < family_count; i++) {
             VkQueueFlags found = 0;
@@ -74,32 +73,116 @@ namespace sge {
     }
 
     void vulkan_physical_device::get_properties(VkPhysicalDeviceProperties& properties) const {
-        vkGetPhysicalDeviceProperties(this->m_device, &properties);
+        vkGetPhysicalDeviceProperties(m_device, &properties);
     }
 
     void vulkan_physical_device::get_features(VkPhysicalDeviceFeatures& features) const {
-        vkGetPhysicalDeviceFeatures(this->m_device, &features);
+        vkGetPhysicalDeviceFeatures(m_device, &features);
+    }
+
+    void vulkan_physical_device::get_surface_capabilities(
+        VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR& capabilities) const {
+        VkInstance instance = vulkan_context::get().get_instance();
+        auto fpGetPhysicalDeviceSurfaceCapabilitiesKHR =
+            (PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR)vkGetInstanceProcAddr(
+                instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
+        if (fpGetPhysicalDeviceSurfaceCapabilitiesKHR == nullptr) {
+            throw std::runtime_error("could not find vkGetPhysicalDeviceSurfaceCapabilitiesKHR!");
+        }
+
+        fpGetPhysicalDeviceSurfaceCapabilitiesKHR(m_device, surface, &capabilities);
+    }
+
+    void vulkan_physical_device::get_surface_formats(
+        VkSurfaceKHR surface, std::vector<VkSurfaceFormatKHR>& formats) const {
+        VkInstance instance = vulkan_context::get().get_instance();
+        auto fpGetPhysicalDeviceSurfaceFormatsKHR =
+            (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)vkGetInstanceProcAddr(
+                instance, "vkGetPhysicalDeviceSurfaceFormatsKHR");
+        if (fpGetPhysicalDeviceSurfaceFormatsKHR == nullptr) {
+            throw std::runtime_error("could not find vkGetPhysicalDeviceSurfaceFormatsKHR!");
+        }
+
+        uint32_t format_count = 0;
+        fpGetPhysicalDeviceSurfaceFormatsKHR(m_device, surface, &format_count, nullptr);
+
+        if (format_count > 0) {
+            formats.resize(format_count);
+            fpGetPhysicalDeviceSurfaceFormatsKHR(m_device, surface, &format_count, formats.data());
+        } else {
+            formats.clear();
+        }
+    }
+
+    void vulkan_physical_device::get_surface_present_modes(
+        VkSurfaceKHR surface, std::vector<VkPresentModeKHR>& present_modes) const {
+        VkInstance instance = vulkan_context::get().get_instance();
+        auto fpGetPhysicalDeviceSurfacePresentModesKHR =
+            (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR)vkGetInstanceProcAddr(
+                instance, "vkGetPhysicalDeviceSurfacePresentModesKHR");
+        if (fpGetPhysicalDeviceSurfacePresentModesKHR == nullptr) {
+            throw std::runtime_error("could not find vkGetPhysicalDeviceSurfacePresentModesKHR!");
+        }
+
+        uint32_t present_mode_count = 0;
+        fpGetPhysicalDeviceSurfacePresentModesKHR(m_device, surface, &present_mode_count, nullptr);
+
+        if (present_mode_count > 0) {
+            present_modes.resize(present_mode_count);
+            fpGetPhysicalDeviceSurfacePresentModesKHR(m_device, surface, &present_mode_count,
+                                                      present_modes.data());
+        } else {
+            present_modes.clear();
+        }
+    }
+
+    std::optional<uint32_t> vulkan_physical_device::find_surface_present_queue(
+        VkSurfaceKHR surface) const {
+        VkInstance instance = vulkan_context::get().get_instance();
+        auto fpGetPhysicalDeviceSurfaceSupportKHR =
+            (PFN_vkGetPhysicalDeviceSurfaceSupportKHR)vkGetInstanceProcAddr(
+                instance, "vkGetPhysicalDeviceSurfaceSupportKHR");
+        if (fpGetPhysicalDeviceSurfaceSupportKHR == nullptr) {
+            throw std::runtime_error("could not find vkGetPhysicalDeviceSurfaceSupportKHR!");
+        }
+
+
+        uint32_t family_count = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(m_device, &family_count, nullptr);
+
+        std::optional<uint32_t> family;
+        for (uint32_t i = 0; i < family_count; i++) {
+            VkBool32 presentation_supported = false;
+            fpGetPhysicalDeviceSurfaceSupportKHR(m_device, i, surface, &presentation_supported);
+
+            if (presentation_supported) {
+                family = i;
+                break;
+            }
+        }
+
+        return family;
     }
 
     vulkan_device::vulkan_device(const vulkan_physical_device& physical_device) {
-        this->m_physical_device = physical_device;
-        this->create();
+        m_physical_device = physical_device;
+        create();
     }
 
     vulkan_device::~vulkan_device() {
-        vkDeviceWaitIdle(this->m_device);
-        vkDestroyDevice(this->m_device, nullptr);
+        vkDeviceWaitIdle(m_device);
+        vkDestroyDevice(m_device, nullptr);
     }
 
     VkQueue vulkan_device::get_queue(uint32_t family) {
         VkQueue queue;
-        vkGetDeviceQueue(this->m_device, family, 0, &queue);
+        vkGetDeviceQueue(m_device, family, 0, &queue);
         return queue;
     }
 
     void vulkan_device::create() {
         auto& context = vulkan_context::get();
-        VkPhysicalDevice physical_device = this->m_physical_device.get();
+        VkPhysicalDevice physical_device = m_physical_device.get();
 
         const auto& selected_extensions = context.get_device_extensions();
         std::vector<const char*> device_extensions;
@@ -187,7 +270,7 @@ namespace sge {
         create_info.queueCreateInfoCount = queue_create_info.size();
 
         VkPhysicalDeviceFeatures features;
-        this->m_physical_device.get_features(features);
+        m_physical_device.get_features(features);
         create_info.pEnabledFeatures = &features;
 
         if (!device_extensions.empty()) {
@@ -200,7 +283,7 @@ namespace sge {
             create_info.enabledLayerCount = device_layers.size();
         }
 
-        VkResult result = vkCreateDevice(physical_device, &create_info, nullptr, &this->m_device);
+        VkResult result = vkCreateDevice(physical_device, &create_info, nullptr, &m_device);
         check_vk_result(result);
     }
 } // namespace sge

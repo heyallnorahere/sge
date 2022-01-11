@@ -23,20 +23,20 @@ namespace sge {
         vulkan_framebuffer(const framebuffer_spec& spec);
         virtual ~vulkan_framebuffer() override;
 
-        virtual const framebuffer_spec& get_spec() override { return this->m_spec; }
+        virtual const framebuffer_spec& get_spec() override { return m_spec; }
 
-        virtual uint32_t get_width() override { return this->m_width; }
-        virtual uint32_t get_height() override { return this->m_height; }
+        virtual uint32_t get_width() override { return m_width; }
+        virtual uint32_t get_height() override { return m_height; }
         virtual void resize(uint32_t new_width, uint32_t new_height) override;
 
-        virtual ref<render_pass> get_render_pass() override { return this->m_render_pass; }
+        virtual ref<render_pass> get_render_pass() override { return m_render_pass; }
 
         void get_attachment_types(std::set<framebuffer_attachment_type>& types);
         virtual size_t get_attachment_count(framebuffer_attachment_type type) override;
         virtual ref<image_2d> get_attachment(framebuffer_attachment_type type,
                                              size_t index) override;
 
-        VkFramebuffer get() { return this->m_framebuffer; }
+        VkFramebuffer get() { return m_framebuffer; }
 
     private:
         void acquire_attachments();

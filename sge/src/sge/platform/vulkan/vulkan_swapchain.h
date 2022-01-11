@@ -29,21 +29,21 @@ namespace sge {
         virtual void new_frame() override;
         virtual void present() override;
 
-        virtual ref<render_pass> get_render_pass() override { return this->m_render_pass; }
+        virtual ref<render_pass> get_render_pass() override { return m_render_pass; }
 
-        virtual size_t get_image_count() override { return this->m_swapchain_images.size(); }
-        virtual uint32_t get_width() override { return this->m_width; }
-        virtual uint32_t get_height() override { return this->m_height; }
+        virtual size_t get_image_count() override { return m_swapchain_images.size(); }
+        virtual uint32_t get_width() override { return m_width; }
+        virtual uint32_t get_height() override { return m_height; }
 
-        virtual size_t get_current_image_index() override { return this->m_current_image_index; }
+        virtual size_t get_current_image_index() override { return m_current_image_index; }
         virtual command_list& get_command_list(size_t index) override {
-            return *this->m_command_buffers[index];
+            return *m_command_buffers[index];
         }
 
-        VkSurfaceKHR get_surface() { return this->m_surface; }
-        VkFormat get_image_format() { return this->m_image_format; }
+        VkSurfaceKHR get_surface() { return m_surface; }
+        VkFormat get_image_format() { return m_image_format; }
         VkFramebuffer get_framebuffer(size_t index) {
-            return this->m_swapchain_images[index].framebuffer;
+            return m_swapchain_images[index].framebuffer;
         }
 
     private:

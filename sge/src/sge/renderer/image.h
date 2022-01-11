@@ -49,12 +49,12 @@ namespace sge {
         image_data(const image_data&) = delete;
         image_data operator=(const image_data&) = delete;
 
-        const void* get_data() const { return this->m_data; }
-        const size_t get_data_size() const { return this->m_size; }
+        const void* get_data() const { return m_data; }
+        const size_t get_data_size() const { return m_size; }
 
-        uint32_t get_width() const { return this->m_width; }
-        uint32_t get_height() const { return this->m_height; }
-        image_format get_format() const { return this->m_format; }
+        uint32_t get_width() const { return m_width; }
+        uint32_t get_height() const { return m_height; }
+        image_format get_format() const { return m_format; }
 
     private:
         image_data() = default;

@@ -24,14 +24,14 @@ namespace sge {
             std::map<VkQueueFlagBits, uint32_t> map() {
                 std::map<VkQueueFlagBits, uint32_t> result;
 
-                if (this->graphics.has_value()) {
-                    result.insert(std::make_pair(VK_QUEUE_GRAPHICS_BIT, this->graphics.value()));
+                if (graphics.has_value()) {
+                    result.insert(std::make_pair(VK_QUEUE_GRAPHICS_BIT, graphics.value()));
                 }
-                if (this->compute.has_value()) {
-                    result.insert(std::make_pair(VK_QUEUE_COMPUTE_BIT, this->compute.value()));
+                if (compute.has_value()) {
+                    result.insert(std::make_pair(VK_QUEUE_COMPUTE_BIT, compute.value()));
                 }
-                if (this->transfer.has_value()) {
-                    result.insert(std::make_pair(VK_QUEUE_TRANSFER_BIT, this->transfer.value()));
+                if (transfer.has_value()) {
+                    result.insert(std::make_pair(VK_QUEUE_TRANSFER_BIT, transfer.value()));
                 }
 
                 return result;
@@ -40,7 +40,7 @@ namespace sge {
 
         static std::vector<vulkan_physical_device> enumerate();
 
-        vulkan_physical_device() { this->m_device = nullptr; }
+        vulkan_physical_device() { m_device = nullptr; }
 
         vulkan_physical_device(const vulkan_physical_device&) = default;
         vulkan_physical_device& operator=(const vulkan_physical_device&) = default;
@@ -49,17 +49,25 @@ namespace sge {
         void get_properties(VkPhysicalDeviceProperties& properties) const;
         void get_features(VkPhysicalDeviceFeatures& features) const;
 
-        VkPhysicalDevice get() const { return this->m_device; }
+        void get_surface_capabilities(VkSurfaceKHR surface,
+                                      VkSurfaceCapabilitiesKHR& capabilities) const;
+        void get_surface_formats(VkSurfaceKHR surface,
+                                 std::vector<VkSurfaceFormatKHR>& formats) const;
+        void get_surface_present_modes(VkSurfaceKHR surface,
+                                       std::vector<VkPresentModeKHR>& present_modes) const;
+        std::optional<uint32_t> find_surface_present_queue(VkSurfaceKHR surface) const;
 
-        operator bool() const { return this->m_device != nullptr; }
+        VkPhysicalDevice get() const { return m_device; }
+
+        operator bool() const { return m_device != nullptr; }
 
         bool operator==(const vulkan_physical_device& other) const {
-            return this->m_device == other.m_device;
+            return m_device == other.m_device;
         }
         bool operator!=(const vulkan_physical_device& other) const { return !(*this == other); }
 
     private:
-        vulkan_physical_device(VkPhysicalDevice device) { this->m_device = device; }
+        vulkan_physical_device(VkPhysicalDevice device) { m_device = device; }
 
         VkPhysicalDevice m_device;
     };
@@ -72,8 +80,8 @@ namespace sge {
         vulkan_device(const vulkan_device&) = delete;
         vulkan_device& operator=(const vulkan_device&) = delete;
 
-        VkDevice get() { return this->m_device; };
-        vulkan_physical_device get_physical_device() { return this->m_physical_device; }
+        VkDevice get() { return m_device; };
+        vulkan_physical_device get_physical_device() { return m_physical_device; }
         VkQueue get_queue(uint32_t family);
 
     private:

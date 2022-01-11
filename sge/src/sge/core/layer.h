@@ -19,7 +19,7 @@
 namespace sge {
     class layer {
     public:
-        layer(const std::string& name = "Layer") { this->m_name = name; }
+        layer(const std::string& name = "Layer") { m_name = name; }
         virtual ~layer() = default;
 
         virtual void on_attach() {}
@@ -29,7 +29,7 @@ namespace sge {
         virtual void on_event(event& e) {}
         virtual void on_imgui_render() {}
 
-        const std::string& get_name() const { return this->m_name; }
+        const std::string& get_name() const { return m_name; }
 
     protected:
         std::string m_name;

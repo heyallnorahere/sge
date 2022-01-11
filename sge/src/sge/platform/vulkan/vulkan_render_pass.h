@@ -30,9 +30,9 @@ namespace sge {
         virtual void begin(command_list& cmdlist, const glm::vec4& clear_color) override;
         virtual void end(command_list& cmdlist) override;
 
-        VkRenderPass get() { return this->m_render_pass; }
-        vulkan_swapchain* get_swapchain_parent() { return this->m_swapchain_parent; }
-        vulkan_framebuffer* get_framebuffer_parent() { return this->m_framebuffer_parent; }
+        VkRenderPass get() { return m_render_pass; }
+        vulkan_swapchain* get_swapchain_parent() { return m_swapchain_parent; }
+        vulkan_framebuffer* get_framebuffer_parent() { return m_framebuffer_parent; }
 
     private:
         vulkan_swapchain* m_swapchain_parent = nullptr;

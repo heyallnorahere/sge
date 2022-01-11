@@ -23,9 +23,9 @@ namespace sge {
         vulkan_index_buffer(const uint32_t* data, size_t count);
         virtual ~vulkan_index_buffer() override = default;
 
-        virtual size_t get_index_count() override { return this->m_count; }
+        virtual size_t get_index_count() override { return m_count; }
 
-        ref<vulkan_buffer> get() { return this->m_buffer; }
+        ref<vulkan_buffer> get() { return m_buffer; }
 
     private:
         size_t m_count;

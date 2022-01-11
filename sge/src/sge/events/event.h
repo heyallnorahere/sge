@@ -48,8 +48,8 @@ namespace sge {
         event_dispatcher(event& e) : m_event(e) {}
 
         template <typename T, typename Func> bool dispatch(const Func& func) {
-            if (this->m_event.get_id() == T::get_static_id()) {
-                this->m_event.handled |= func((T&)this->m_event);
+            if (m_event.get_id() == T::get_static_id()) {
+                m_event.handled |= func((T&)m_event);
                 return true;
             }
             return false;
@@ -61,6 +61,6 @@ namespace sge {
 
 #define SGE_BIND_EVENT_FUNC(func)                                                                  \
     [this](auto&&... args) -> decltype(auto) {                                                     \
-        return this->func(std::forward<decltype(args)>(args)...);                                  \
+        return func(std::forward<decltype(args)>(args)...);                                  \
     }
 } // namespace sge

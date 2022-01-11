@@ -72,7 +72,7 @@ namespace sge {
         return std::move(img_data);
     }
 
-    image_data::~image_data() { free(this->m_data); }
+    image_data::~image_data() { free(m_data); }
 
     ref<image_2d> image_2d::create(const std::unique_ptr<image_data>& data, uint32_t additional_usage) {
         image_spec spec;

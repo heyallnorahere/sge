@@ -23,13 +23,13 @@ namespace sge {
         vulkan_texture_2d(const texture_spec& spec);
         virtual ~vulkan_texture_2d() override;
 
-        virtual ref<image_2d> get_image() override { return this->m_image; }
-        virtual texture_wrap get_wrap() override { return this->m_wrap; }
-        virtual texture_filter get_filter() override { return this->m_filter; }
+        virtual ref<image_2d> get_image() override { return m_image; }
+        virtual texture_wrap get_wrap() override { return m_wrap; }
+        virtual texture_filter get_filter() override { return m_filter; }
 
         virtual ImTextureID get_imgui_id() override;
 
-        const VkDescriptorImageInfo& get_descriptor_info() { return this->m_descriptor_info; }
+        const VkDescriptorImageInfo& get_descriptor_info() { return m_descriptor_info; }
 
     private:
         void create_sampler();

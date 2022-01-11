@@ -23,12 +23,12 @@ namespace sge {
         vulkan_uniform_buffer(size_t size);
         virtual ~vulkan_uniform_buffer() override = default;
 
-        virtual size_t get_size() override { return this->m_buffer->size(); }
+        virtual size_t get_size() override { return m_buffer->size(); }
 
         virtual void set_data(const void* data, size_t size, size_t offset) override;
 
-        ref<vulkan_buffer> get() { return this->m_buffer; }
-        const VkDescriptorBufferInfo& get_descriptor_info() { return this->m_descriptor_info; }
+        ref<vulkan_buffer> get() { return m_buffer; }
+        const VkDescriptorBufferInfo& get_descriptor_info() { return m_descriptor_info; }
 
     private:
         ref<vulkan_buffer> m_buffer;

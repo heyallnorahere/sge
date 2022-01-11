@@ -30,10 +30,10 @@ namespace sge {
 
         void copy_to(ref<vulkan_buffer> dest, const VkBufferCopy& region);
 
-        VkBuffer get() { return this->m_buffer; }
-        size_t size() { return this->m_size; }
-        VkBufferUsageFlags get_buffer_usage() { return this->m_buffer_usage; }
-        VmaMemoryUsage get_memory_usage() { return this->m_memory_usage; }
+        VkBuffer get() { return m_buffer; }
+        size_t size() { return m_size; }
+        VkBufferUsageFlags get_buffer_usage() { return m_buffer_usage; }
+        VmaMemoryUsage get_memory_usage() { return m_memory_usage; }
 
     private:
         void create();

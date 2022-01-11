@@ -30,22 +30,22 @@ namespace sge {
 
         application(const std::string& title);
 
-        void push_layer(layer* _layer) { this->m_layer_stack.push_layer(_layer); }
-        bool pop_layer(layer* _layer) { return this->m_layer_stack.pop_layer(_layer); }
+        void push_layer(layer* _layer) { m_layer_stack.push_layer(_layer); }
+        bool pop_layer(layer* _layer) { return m_layer_stack.pop_layer(_layer); }
 
-        void push_overlay(layer* overlay) { this->m_layer_stack.push_overlay(overlay); }
-        bool pop_overlay(layer* overlay) { return this->m_layer_stack.pop_overlay(overlay); }
+        void push_overlay(layer* overlay) { m_layer_stack.push_overlay(overlay); }
+        bool pop_overlay(layer* overlay) { return m_layer_stack.pop_overlay(overlay); }
 
         void init();
         void shutdown();
         void run();
-        void quit() { this->m_running = false; }
+        void quit() { m_running = false; }
 
         void on_event(event& e);
 
-        const std::string& get_title() { return this->m_title; }
-        ref<window> get_window() { return this->m_window; }
-        swapchain& get_swapchain() { return *this->m_swapchain; }
+        const std::string& get_title() { return m_title; }
+        ref<window> get_window() { return m_window; }
+        swapchain& get_swapchain() { return *m_swapchain; }
 
     protected:
         virtual void on_init() {}

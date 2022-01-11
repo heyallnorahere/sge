@@ -22,7 +22,7 @@
 #include "sge/platform/vulkan/vulkan_image.h"
 namespace sge {
     vulkan_render_pass::vulkan_render_pass(vulkan_swapchain* parent) {
-        this->m_swapchain_parent = parent;
+        m_swapchain_parent = parent;
 
         auto color_attachment = vk_init<VkAttachmentDescription>();
         color_attachment.format = parent->get_image_format();
@@ -67,12 +67,12 @@ namespace sge {
         create_info.pDependencies = &dependency;
 
         VkDevice device = vulkan_context::get().get_device().get();
-        VkResult result = vkCreateRenderPass(device, &create_info, nullptr, &this->m_render_pass);
+        VkResult result = vkCreateRenderPass(device, &create_info, nullptr, &m_render_pass);
         check_vk_result(result);
     }
 
     vulkan_render_pass::vulkan_render_pass(vulkan_framebuffer* parent) {
-        this->m_framebuffer_parent = parent;
+        m_framebuffer_parent = parent;
         const auto& spec = parent->get_spec();
 
         std::vector<VkAttachmentDescription> attachment_descs;
@@ -133,19 +133,19 @@ namespace sge {
         create_info.pAttachments = attachment_descs.data();
 
         VkDevice device = vulkan_context::get().get_device().get();
-        VkResult result = vkCreateRenderPass(device, &create_info, nullptr, &this->m_render_pass);
+        VkResult result = vkCreateRenderPass(device, &create_info, nullptr, &m_render_pass);
         check_vk_result(result);
     }
 
     vulkan_render_pass::~vulkan_render_pass() {
         VkDevice device = vulkan_context::get().get_device().get();
-        vkDestroyRenderPass(device, this->m_render_pass, nullptr);
+        vkDestroyRenderPass(device, m_render_pass, nullptr);
     }
 
     render_pass_parent_type vulkan_render_pass::get_parent_type() {
-        if (this->m_swapchain_parent != nullptr) {
+        if (m_swapchain_parent != nullptr) {
             return render_pass_parent_type::swapchain;
-        } else if (this->m_framebuffer_parent != nullptr) {
+        } else if (m_framebuffer_parent != nullptr) {
             return render_pass_parent_type::framebuffer;
         }
 
@@ -155,16 +155,16 @@ namespace sge {
     void vulkan_render_pass::begin(command_list& cmdlist, const glm::vec4& clear_color) {
         VkExtent2D extent;
         VkFramebuffer fb;
-        if (this->m_swapchain_parent != nullptr) {
-            extent = { this->m_swapchain_parent->get_width(),
-                       this->m_swapchain_parent->get_height() };
+        if (m_swapchain_parent != nullptr) {
+            extent = { m_swapchain_parent->get_width(),
+                       m_swapchain_parent->get_height() };
 
-            size_t current_image = this->m_swapchain_parent->get_current_image_index();
-            fb = this->m_swapchain_parent->get_framebuffer(current_image);
-        } else if (this->m_framebuffer_parent != nullptr) {
-            extent = { this->m_framebuffer_parent->get_width(),
-                       this->m_framebuffer_parent->get_height() };
-            fb = this->m_framebuffer_parent->get();
+            size_t current_image = m_swapchain_parent->get_current_image_index();
+            fb = m_swapchain_parent->get_framebuffer(current_image);
+        } else if (m_framebuffer_parent != nullptr) {
+            extent = { m_framebuffer_parent->get_width(),
+                       m_framebuffer_parent->get_height() };
+            fb = m_framebuffer_parent->get();
         } else {
             throw std::runtime_error("this should not be hit");
         }
@@ -185,7 +185,7 @@ namespace sge {
         begin_info.pClearValues = &clear_value;
 
         begin_info.framebuffer = fb;
-        begin_info.renderPass = this->m_render_pass;
+        begin_info.renderPass = m_render_pass;
 
         vkCmdBeginRenderPass(cmdbuffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 

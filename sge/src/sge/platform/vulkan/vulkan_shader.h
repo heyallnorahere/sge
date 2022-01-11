@@ -47,12 +47,12 @@ namespace sge {
         virtual ~vulkan_shader() override;
 
         virtual void reload() override;
-        virtual const fs::path& get_path() override { return this->m_path; }
+        virtual const fs::path& get_path() override { return m_path; }
 
         const std::vector<VkPipelineShaderStageCreateInfo>& get_pipeline_info() {
-            return this->m_pipeline_info;
+            return m_pipeline_info;
         }
-        const reflection_data& get_reflection_data() { return this->m_reflection_data; }
+        const reflection_data& get_reflection_data() { return m_reflection_data; }
 
     private:
         void create();

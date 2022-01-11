@@ -57,7 +57,7 @@ namespace sge {
     struct shader_dependency_t {
         std::unordered_set<pipeline*> pipelines;
 
-        bool empty() { return this->pipelines.empty(); }
+        bool empty() { return pipelines.empty(); }
     };
 
     struct camera_data_t {

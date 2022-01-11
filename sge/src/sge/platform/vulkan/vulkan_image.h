@@ -28,22 +28,22 @@ namespace sge {
         vulkan_image_2d(const image_spec& spec);
         virtual ~vulkan_image_2d() override;
 
-        virtual uint32_t get_width() override { return this->m_spec.width; }
-        virtual uint32_t get_height() override { return this->m_spec.height; }
+        virtual uint32_t get_width() override { return m_spec.width; }
+        virtual uint32_t get_height() override { return m_spec.height; }
 
-        virtual uint32_t get_mip_level_count() override { return this->m_spec.mip_levels; }
-        virtual uint32_t get_array_layer_count() override { return this->m_spec.array_layers; }
+        virtual uint32_t get_mip_level_count() override { return m_spec.mip_levels; }
+        virtual uint32_t get_array_layer_count() override { return m_spec.array_layers; }
 
-        virtual image_format get_format() override { return this->m_spec.format; }
-        virtual uint32_t get_usage() override { return this->m_spec.image_usage; }
+        virtual image_format get_format() override { return m_spec.format; }
+        virtual uint32_t get_usage() override { return m_spec.image_usage; }
 
         void set_layout(VkImageLayout new_layout, command_list* cmdlist = nullptr);
-        VkImageLayout get_layout() { return this->m_layout; }
+        VkImageLayout get_layout() { return m_layout; }
 
-        VkImageAspectFlags get_image_aspect() { return this->m_aspect; }
-        VkFormat get_vulkan_format() { return this->m_format; }
-        VkImageUsageFlags get_image_usage() { return this->m_usage; }
-        VkImageView get_view() { return this->m_view; }
+        VkImageAspectFlags get_image_aspect() { return m_aspect; }
+        VkFormat get_vulkan_format() { return m_format; }
+        VkImageUsageFlags get_image_usage() { return m_usage; }
+        VkImageView get_view() { return m_view; }
 
     private:
         void create_image();

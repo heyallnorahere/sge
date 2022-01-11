@@ -61,7 +61,7 @@ namespace sge {
                 throw std::runtime_error("entity does not have component!");
             }
 
-            m_scene->on_component_removed(*this, this->get_component<T>());
+            m_scene->on_component_removed(*this, get_component<T>());
             m_scene->m_registry.remove<T>(m_handle);
         }
 

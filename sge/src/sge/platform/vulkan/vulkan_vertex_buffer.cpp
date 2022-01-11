@@ -19,9 +19,9 @@
 #include "sge/platform/vulkan/vulkan_vertex_buffer.h"
 namespace sge {
     vulkan_vertex_buffer::vulkan_vertex_buffer(const void* data, size_t stride, size_t count) {
-        this->m_stride = stride;
-        this->m_count = count;
-        size_t size = this->m_stride * this->m_count;
+        m_stride = stride;
+        m_count = count;
+        size_t size = m_stride * m_count;
 
         auto staging_buffer = ref<vulkan_buffer>::create(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                          VMA_MEMORY_USAGE_CPU_TO_GPU);
@@ -33,9 +33,9 @@ namespace sge {
         region.size = size;
         region.srcOffset = region.dstOffset = 0;
 
-        this->m_buffer = ref<vulkan_buffer>::create(
+        m_buffer = ref<vulkan_buffer>::create(
             size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VMA_MEMORY_USAGE_GPU_ONLY);
-        staging_buffer->copy_to(this->m_buffer, region);
+        staging_buffer->copy_to(m_buffer, region);
     }
 } // namespace sge

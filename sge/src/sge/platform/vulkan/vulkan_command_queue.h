@@ -25,7 +25,7 @@ namespace sge {
         virtual command_list& get() override;
         virtual void submit(command_list& cmdlist, bool wait) override;
 
-        virtual command_list_type get_type() override { return this->m_type; }
+        virtual command_list_type get_type() override { return m_type; }
 
     private:
         struct stored_command_list {

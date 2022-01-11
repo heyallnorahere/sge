@@ -26,14 +26,14 @@ namespace sge {
 
         virtual void invalidate() override;
 
-        virtual pipeline_spec& get_spec() override { return this->m_spec; }
-        virtual const pipeline_spec& get_spec() const override { return this->m_spec; }
+        virtual pipeline_spec& get_spec() override { return m_spec; }
+        virtual const pipeline_spec& get_spec() const override { return m_spec; }
 
         virtual void set_uniform_buffer(ref<uniform_buffer> ubo, uint32_t binding) override;
         virtual void set_texture(ref<texture_2d> tex, uint32_t binding, uint32_t slot) override;
 
-        VkPipeline get_pipeline() { return this->m_pipeline; }
-        VkPipelineLayout get_pipeline_layout() { return this->m_layout; }
+        VkPipeline get_pipeline() { return m_pipeline; }
+        VkPipelineLayout get_pipeline_layout() { return m_layout; }
         void get_descriptor_sets(std::map<uint32_t, std::vector<VkDescriptorSet>>& sets);
 
     private:

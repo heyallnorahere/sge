@@ -18,7 +18,7 @@
 namespace sge {
     class ref_counted {
     protected:
-        ref_counted() { this->m_ref_count = 0; }
+        ref_counted() { m_ref_count = 0; }
 
     private:
         mutable int64_t m_ref_count;
@@ -28,49 +28,49 @@ namespace sge {
     template <typename T>
     class ref {
     public:
-        ref() { this->m_instance = nullptr; }
-        ref(std::nullptr_t) { this->m_instance = nullptr; }
+        ref() { m_instance = nullptr; }
+        ref(std::nullptr_t) { m_instance = nullptr; }
         ref(T* instance) {
             static_assert(std::is_base_of<ref_counted, T>::value,
                           "class is not a derived type of ref_counted");
 
-            this->m_instance = instance;
-            this->inrease_ref_count();
+            m_instance = instance;
+            inrease_ref_count();
         }
 
         template <typename U>
         ref(const ref<U>& other) {
             static_assert(std::is_base_of_v<T, U>, "polymorphism or something");
 
-            this->m_instance = (T*)other.m_instance;
-            this->inrease_ref_count();
+            m_instance = (T*)other.m_instance;
+            inrease_ref_count();
         }
 
         template <typename U>
         ref(ref<U>&& other) {
             static_assert(std::is_base_of_v<T, U>, "polymorphism or something");
 
-            this->m_instance = (T*)other.m_instance;
+            m_instance = (T*)other.m_instance;
             other.m_instance = nullptr;
         }
 
-        ~ref() { this->decrease_ref_count(); }
+        ~ref() { decrease_ref_count(); }
 
         ref(const ref<T>& other) {
-            this->m_instance = other.m_instance;
-            this->inrease_ref_count();
+            m_instance = other.m_instance;
+            inrease_ref_count();
         }
 
         ref& operator=(std::nullptr_t) {
-            this->decrease_ref_count();
-            this->m_instance = nullptr;
+            decrease_ref_count();
+            m_instance = nullptr;
             return *this;
         }
 
         ref& operator=(const ref<T>& other) {
             other.inrease_ref_count();
-            this->decrease_ref_count();
-            this->m_instance = other.m_instance;
+            decrease_ref_count();
+            m_instance = other.m_instance;
             return *this;
         }
 
@@ -79,8 +79,8 @@ namespace sge {
             static_assert(std::is_base_of_v<T, U>, "polymorphism or something");
 
             other.inrease_ref_count();
-            this->decrease_ref_count();
-            this->m_instance = (T*)(void*)other.m_instance;
+            decrease_ref_count();
+            m_instance = (T*)(void*)other.m_instance;
             return *this;
         }
 
@@ -88,29 +88,29 @@ namespace sge {
         ref& operator=(ref<U>&& other) {
             static_assert(std::is_base_of_v<T, U>, "polymorphism or something");
 
-            this->decrease_ref_count();
-            this->m_instance = (T*)(void*)other.m_instance;
+            decrease_ref_count();
+            m_instance = (T*)(void*)other.m_instance;
             other.m_instance = nullptr;
             return *this;
         }
 
-        operator bool() const { return this->m_instance != nullptr; }
+        operator bool() const { return m_instance != nullptr; }
 
-        T* operator->() const { return this->m_instance; }
-        T& operator*() const { return *this->m_instance; }
-        T* raw() const { return this->m_instance; }
+        T* operator->() const { return m_instance; }
+        T& operator*() const { return *m_instance; }
+        T* raw() const { return m_instance; }
 
         void reset(T* instance = nullptr) {
-            this->decrease_ref_count();
-            this->m_instance = instance;
-            if (this->m_instance) {
-                this->inrease_ref_count();
+            decrease_ref_count();
+            m_instance = instance;
+            if (m_instance) {
+                inrease_ref_count();
             }
         }
 
         template <typename U>
         ref<U> as() const {
-            return ref<U>((U*)this->m_instance);
+            return ref<U>((U*)m_instance);
         }
 
         template <typename... Args>
@@ -119,29 +119,29 @@ namespace sge {
             return ref<T>(instance);
         }
 
-        bool operator==(const ref<T>& other) const { return this->m_instance == other.m_instance; }
+        bool operator==(const ref<T>& other) const { return m_instance == other.m_instance; }
         bool operator!=(const ref<T>& other) const { return !(*this == other); }
 
         bool equals_object(const ref<T>& other) {
-            if (!this->m_instance || !other.m_instance) {
+            if (!m_instance || !other.m_instance) {
                 return false;
             }
-            return *this->m_instance == *other.m_instance;
+            return *m_instance == *other.m_instance;
         }
 
     private:
         void inrease_ref_count() const {
-            if (this->m_instance) {
-                this->m_instance->m_ref_count++;
+            if (m_instance) {
+                m_instance->m_ref_count++;
             }
         }
 
         void decrease_ref_count() const {
-            if (this->m_instance) {
-                this->m_instance->m_ref_count--;
-                if (this->m_instance->m_ref_count <= 0) {
-                    delete this->m_instance;
-                    this->m_instance = nullptr;
+            if (m_instance) {
+                m_instance->m_ref_count--;
+                if (m_instance->m_ref_count <= 0) {
+                    delete m_instance;
+                    m_instance = nullptr;
                 }
             }
         }

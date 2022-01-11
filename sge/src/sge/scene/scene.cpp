@@ -103,7 +103,7 @@ namespace sge {
     }
 
     entity scene::create_entity(guid id, const std::string& name) {
-        entity e(this->m_registry.create(), this);
+        entity e(m_registry.create(), this);
 
         e.add_component<id_component>().id = id;
         e.add_component<transform_component>();
@@ -234,7 +234,7 @@ namespace sge {
     void scene::on_runtime_update(timestep ts) {
         // Scripts
         {
-            auto view = this->m_registry.view<native_script_component>();
+            auto view = m_registry.view<native_script_component>();
             for (auto entt_entity : view) {
                 entity entity(entt_entity, this);
                 auto& nsc = entity.get_component<native_script_component>();
@@ -287,10 +287,10 @@ namespace sge {
             runtime_camera* main_camera = nullptr;
             glm::mat4 camera_transform;
             {
-                auto view = this->m_registry.view<transform_component, camera_component>();
+                auto view = m_registry.view<transform_component, camera_component>();
                 for (entt::entity id : view) {
                     const auto& [camera_data, transform] =
-                        this->m_registry.get<camera_component, transform_component>(id);
+                        m_registry.get<camera_component, transform_component>(id);
 
                     if (camera_data.primary) {
                         main_camera = &camera_data.camera;
@@ -335,7 +335,7 @@ namespace sge {
     void scene::on_event(event& e) {
         event_dispatcher dispatcher(e);
 
-        auto view = this->m_registry.view<native_script_component>();
+        auto view = m_registry.view<native_script_component>();
         for (auto entt_entity : view) {
             entity entity(entt_entity, this);
             auto& nsc = entity.get_component<native_script_component>();
@@ -354,7 +354,7 @@ namespace sge {
         m_viewport_width = width;
         m_viewport_height = height;
 
-        auto view = this->m_registry.view<camera_component>();
+        auto view = m_registry.view<camera_component>();
         for (entt::entity id : view) {
             auto& camera = view.get<camera_component>(id);
             camera.camera.set_render_target_size(width, height);

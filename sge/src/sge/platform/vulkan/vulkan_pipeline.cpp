@@ -24,7 +24,7 @@
 #include "sge/renderer/renderer.h"
 namespace sge {
     vulkan_pipeline::vulkan_pipeline(const pipeline_spec& spec) {
-        this->m_spec = spec;
+        m_spec = spec;
 
         {
             static const std::vector<VkDescriptorPoolSize> pool_sizes = {
@@ -44,19 +44,19 @@ namespace sge {
 
             VkDevice device = vulkan_context::get().get_device().get();
             VkResult result = vkCreateDescriptorPool(device, &create_info, nullptr,
-                                                     &this->m_descriptor_sets.pool);
+                                                     &m_descriptor_sets.pool);
             check_vk_result(result);
         }
 
-        if (!this->m_spec._shader) {
+        if (!m_spec._shader) {
             throw std::runtime_error("no shader was provided!");
         }
-        renderer::add_shader_dependency(this->m_spec._shader, this);
+        renderer::add_shader_dependency(m_spec._shader, this);
 
-        this->create();
+        create();
 
         {
-            auto vk_shader = this->m_spec._shader.as<vulkan_shader>();
+            auto vk_shader = m_spec._shader.as<vulkan_shader>();
             const auto& reflection_data = vk_shader->get_reflection_data();
 
             for (const auto& [name, resource] : reflection_data.resources) {
@@ -67,11 +67,11 @@ namespace sge {
                 using resource_type = vulkan_shader::resource_type;
                 if (resource.type == resource_type::image ||
                     resource.type == resource_type::sampled_image) {
-                    this->m_bindings[resource.binding].textures.resize(resource.descriptor_count);
+                    m_bindings[resource.binding].textures.resize(resource.descriptor_count);
 
                     ref<texture_2d> black_texture = renderer::get_black_texture();
                     for (uint32_t i = 0; i < resource.descriptor_count; i++) {
-                        this->set_texture(black_texture, resource.binding, i);
+                        set_texture(black_texture, resource.binding, i);
                     }
                 }
             }
@@ -79,26 +79,26 @@ namespace sge {
     }
 
     vulkan_pipeline::~vulkan_pipeline() {
-        renderer::remove_shader_dependency(this->m_spec._shader, this);
-        this->destroy();
+        renderer::remove_shader_dependency(m_spec._shader, this);
+        destroy();
 
         VkDevice device = vulkan_context::get().get_device().get();
-        vkDestroyDescriptorPool(device, this->m_descriptor_sets.pool, nullptr);
+        vkDestroyDescriptorPool(device, m_descriptor_sets.pool, nullptr);
     }
 
     void vulkan_pipeline::invalidate() {
-        this->destroy();
-        this->create();
+        destroy();
+        create();
 
         {
             std::vector<VkWriteDescriptorSet> writes;
-            for (const auto& [binding, data] : this->m_bindings) {
+            for (const auto& [binding, data] : m_bindings) {
                 if (data.ubo) {
-                    this->write(data.ubo, binding, writes);
+                    write(data.ubo, binding, writes);
                 }
 
                 for (size_t i = 0; i < data.textures.size(); i++) {
-                    this->write(data.textures[i], binding, i, writes);
+                    write(data.textures[i], binding, i, writes);
                 }
             }
 
@@ -114,12 +114,12 @@ namespace sge {
 
         {
             bool invalid_bind = false;
-            if (this->m_bindings.find(binding) != this->m_bindings.end()) {
-                if (!this->m_bindings[binding].textures.empty()) {
+            if (m_bindings.find(binding) != m_bindings.end()) {
+                if (!m_bindings[binding].textures.empty()) {
                     invalid_bind = true;
                 }
             } else {
-                this->m_bindings.insert(std::make_pair(binding, descriptor_set_binding_t()));
+                m_bindings.insert(std::make_pair(binding, descriptor_set_binding_t()));
             }
 
             if (invalid_bind) {
@@ -127,12 +127,12 @@ namespace sge {
                                          std::to_string(binding) + "!");
             }
 
-            this->m_bindings[binding].ubo = vk_uniform_buffer;
+            m_bindings[binding].ubo = vk_uniform_buffer;
         }
 
         {
             std::vector<VkWriteDescriptorSet> writes;
-            this->write(vk_uniform_buffer, binding, writes);
+            write(vk_uniform_buffer, binding, writes);
 
             VkDevice device = vulkan_context::get().get_device().get();
             vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
@@ -144,12 +144,12 @@ namespace sge {
 
         {
             bool invalid_bind = false;
-            if (this->m_bindings.find(binding) != this->m_bindings.end()) {
-                if (this->m_bindings[binding].ubo) {
+            if (m_bindings.find(binding) != m_bindings.end()) {
+                if (m_bindings[binding].ubo) {
                     invalid_bind = true;
                 }
             } else {
-                this->m_bindings.insert(std::make_pair(binding, descriptor_set_binding_t()));
+                m_bindings.insert(std::make_pair(binding, descriptor_set_binding_t()));
             }
 
             if (invalid_bind) {
@@ -157,7 +157,7 @@ namespace sge {
                                          std::to_string(binding) + "!");
             }
 
-            auto& binding_data = this->m_bindings[binding];
+            auto& binding_data = m_bindings[binding];
 
             if (slot >= binding_data.textures.size()) {
                 throw std::runtime_error("invalid texture slot!");
@@ -167,7 +167,7 @@ namespace sge {
 
         {
             std::vector<VkWriteDescriptorSet> writes;
-            this->write(vk_texture, binding, slot, writes);
+            write(vk_texture, binding, slot, writes);
 
             VkDevice device = vulkan_context::get().get_device().get();
             vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
@@ -178,28 +178,28 @@ namespace sge {
         std::map<uint32_t, std::vector<VkDescriptorSet>>& sets) {
         sets.clear();
 
-        for (const auto& [set, data] : this->m_descriptor_sets.sets) {
+        for (const auto& [set, data] : m_descriptor_sets.sets) {
             sets.insert(std::make_pair(set, data.sets));
         }
     }
 
     void vulkan_pipeline::create() {
-        this->create_descriptor_sets();
-        this->create_pipeline();
+        create_descriptor_sets();
+        create_pipeline();
     }
 
     void vulkan_pipeline::destroy() {
         VkDevice device = vulkan_context::get().get_device().get();
 
-        vkDestroyPipeline(device, this->m_pipeline, nullptr);
-        vkDestroyPipelineLayout(device, this->m_layout, nullptr);
+        vkDestroyPipeline(device, m_pipeline, nullptr);
+        vkDestroyPipelineLayout(device, m_layout, nullptr);
 
-        for (const auto& [index, set] : this->m_descriptor_sets.sets) {
-            vkFreeDescriptorSets(device, this->m_descriptor_sets.pool, set.sets.size(),
+        for (const auto& [index, set] : m_descriptor_sets.sets) {
+            vkFreeDescriptorSets(device, m_descriptor_sets.pool, set.sets.size(),
                                  set.sets.data());
             vkDestroyDescriptorSetLayout(device, set.layout, nullptr);
         }
-        this->m_descriptor_sets.sets.clear();
+        m_descriptor_sets.sets.clear();
     }
 
     struct set_binding_data {
@@ -208,7 +208,7 @@ namespace sge {
     };
 
     void vulkan_pipeline::create_descriptor_sets() {
-        auto vk_shader = this->m_spec._shader.as<vulkan_shader>();
+        auto vk_shader = m_spec._shader.as<vulkan_shader>();
         const auto& reflection_data = vk_shader->get_reflection_data();
 
         std::map<uint32_t, set_binding_data> bindings;
@@ -304,24 +304,24 @@ namespace sge {
 
             auto alloc_info = vk_init<VkDescriptorSetAllocateInfo>(
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-            alloc_info.descriptorPool = this->m_descriptor_sets.pool;
+            alloc_info.descriptorPool = m_descriptor_sets.pool;
             alloc_info.descriptorSetCount = image_count;
             alloc_info.pSetLayouts = layouts.data();
             result = vkAllocateDescriptorSets(device, &alloc_info, set_data.sets.data());
             check_vk_result(result);
 
-            this->m_descriptor_sets.sets.insert(std::make_pair(set, set_data));
+            m_descriptor_sets.sets.insert(std::make_pair(set, set_data));
         }
     }
 
     void vulkan_pipeline::create_pipeline() {
         VkDevice device = vulkan_context::get().get_device().get();
-        auto vk_shader = this->m_spec._shader.as<vulkan_shader>();
+        auto vk_shader = m_spec._shader.as<vulkan_shader>();
 
-        if (!this->m_spec.renderpass) {
+        if (!m_spec.renderpass) {
             throw std::runtime_error("no render pass was provided!");
         }
-        auto vk_render_pass = this->m_spec.renderpass.as<vulkan_render_pass>();
+        auto vk_render_pass = m_spec.renderpass.as<vulkan_render_pass>();
 
         const auto& push_constant_range = vk_shader->get_reflection_data().push_constant_buffer;
         VkPushConstantRange range;
@@ -338,7 +338,7 @@ namespace sge {
         }
 
         std::vector<VkDescriptorSetLayout> set_layouts;
-        for (const auto& [set, data] : this->m_descriptor_sets.sets) {
+        for (const auto& [set, data] : m_descriptor_sets.sets) {
             for (size_t i = 0; i < (size_t)set - set_layouts.size(); i++) {
                 set_layouts.push_back(nullptr);
             }
@@ -349,12 +349,12 @@ namespace sge {
             layout_info.pSetLayouts = set_layouts.data();
         }
 
-        VkResult result = vkCreatePipelineLayout(device, &layout_info, nullptr, &this->m_layout);
+        VkResult result = vkCreatePipelineLayout(device, &layout_info, nullptr, &m_layout);
         check_vk_result(result);
 
         auto pipeline_info =
             vk_init<VkGraphicsPipelineCreateInfo>(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
-        pipeline_info.layout = this->m_layout;
+        pipeline_info.layout = m_layout;
         pipeline_info.renderPass = vk_render_pass->get();
 
         auto input_assembly = vk_init<VkPipelineInputAssemblyStateCreateInfo>(
@@ -364,9 +364,9 @@ namespace sge {
         auto rasterizer = vk_init<VkPipelineRasterizationStateCreateInfo>(
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
         rasterizer.polygonMode =
-            (this->m_spec.wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL);
+            (m_spec.wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL);
         rasterizer.cullMode =
-            (this->m_spec.enable_culling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE);
+            (m_spec.enable_culling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE);
         rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
         rasterizer.depthClampEnable = false;
         rasterizer.rasterizerDiscardEnable = false;
@@ -374,7 +374,7 @@ namespace sge {
         rasterizer.lineWidth = 1.f;
 
         std::vector<VkPipelineColorBlendAttachmentState> blend_attachment_states;
-        switch (this->m_spec.renderpass->get_parent_type()) {
+        switch (m_spec.renderpass->get_parent_type()) {
         case render_pass_parent_type::swapchain:
             blend_attachment_states.resize(1);
             blend_attachment_states[0] = vk_init<VkPipelineColorBlendAttachmentState>();
@@ -468,7 +468,7 @@ namespace sge {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
         multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-        const auto& input_layout = this->m_spec.input_layout;
+        const auto& input_layout = m_spec.input_layout;
 
         VkVertexInputBindingDescription input_binding;
         input_binding.binding = 0;
@@ -557,7 +557,7 @@ namespace sge {
         pipeline_info.pDynamicState = &dynamic_state;
 
         result = vkCreateGraphicsPipelines(device, nullptr, 1, &pipeline_info, nullptr,
-                                           &this->m_pipeline);
+                                           &m_pipeline);
         check_vk_result(result);
     }
 
@@ -566,12 +566,12 @@ namespace sge {
 
     void vulkan_pipeline::write(ref<vulkan_uniform_buffer> ubo, uint32_t binding,
                                 std::vector<VkWriteDescriptorSet>& writes) {
-        if (this->m_descriptor_sets.sets.find(written_set) == this->m_descriptor_sets.sets.end()) {
+        if (m_descriptor_sets.sets.find(written_set) == m_descriptor_sets.sets.end()) {
             throw std::runtime_error("descriptor set " + std::to_string(written_set) +
                                      " does not exist!");
         }
 
-        for (VkDescriptorSet desc_set : this->m_descriptor_sets.sets[written_set].sets) {
+        for (VkDescriptorSet desc_set : m_descriptor_sets.sets[written_set].sets) {
             auto write = vk_init<VkWriteDescriptorSet>(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
 
             write.pBufferInfo = &ubo->get_descriptor_info();
@@ -587,12 +587,12 @@ namespace sge {
 
     void vulkan_pipeline::write(ref<vulkan_texture_2d> tex, uint32_t binding, uint32_t slot,
                                 std::vector<VkWriteDescriptorSet>& writes) {
-        if (this->m_descriptor_sets.sets.find(written_set) == this->m_descriptor_sets.sets.end()) {
+        if (m_descriptor_sets.sets.find(written_set) == m_descriptor_sets.sets.end()) {
             throw std::runtime_error("descriptor set " + std::to_string(written_set) +
                                      " does not exist!");
         }
 
-        for (VkDescriptorSet desc_set : this->m_descriptor_sets.sets[written_set].sets) {
+        for (VkDescriptorSet desc_set : m_descriptor_sets.sets[written_set].sets) {
             auto write = vk_init<VkWriteDescriptorSet>(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
 
             write.pImageInfo = &tex->get_descriptor_info();

@@ -21,10 +21,10 @@
 #include "sge/platform/vulkan/vulkan_command_list.h"
 namespace sge {
     vulkan_command_queue::vulkan_command_queue(command_list_type type) {
-        this->m_type = type;
+        m_type = type;
 
         VkQueueFlagBits query;
-        switch (this->m_type) {
+        switch (m_type) {
         case command_list_type::graphics:
             query = VK_QUEUE_GRAPHICS_BIT;
             break;
@@ -46,7 +46,7 @@ namespace sge {
         auto map = indices.map();
         uint32_t queue_family = map[query];
 
-        this->m_queue = device.get_queue(queue_family);
+        m_queue = device.get_queue(queue_family);
 
         {
             auto create_info =
@@ -54,24 +54,24 @@ namespace sge {
             create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
             VkResult result =
-                vkCreateCommandPool(device.get(), &create_info, nullptr, &this->m_command_pool);
+                vkCreateCommandPool(device.get(), &create_info, nullptr, &m_command_pool);
             check_vk_result(result);
         }
     }
 
     vulkan_command_queue::~vulkan_command_queue() {
-        vkQueueWaitIdle(this->m_queue);
+        vkQueueWaitIdle(m_queue);
 
         VkDevice device = vulkan_context::get().get_device().get();
-        while (!this->m_command_lists.empty()) {
-            auto& front = this->m_command_lists.front();
+        while (!m_command_lists.empty()) {
+            auto& front = m_command_lists.front();
             vkDestroyFence(device, front.fence, nullptr);
             front.cmdlist.reset();
 
-            this->m_command_lists.pop();
+            m_command_lists.pop();
         }
 
-        vkDestroyCommandPool(device, this->m_command_pool, nullptr);
+        vkDestroyCommandPool(device, m_command_pool, nullptr);
     }
 
     static bool is_fence_complete(VkDevice device, VkFence fence) {
@@ -83,16 +83,16 @@ namespace sge {
         VkDevice device = vulkan_context::get().get_device().get();
 
         command_list* cmdlist;
-        if (!this->m_command_lists.empty() &&
-            is_fence_complete(device, this->m_command_lists.front().fence)) {
-            auto& front = this->m_command_lists.front();
+        if (!m_command_lists.empty() &&
+            is_fence_complete(device, m_command_lists.front().fence)) {
+            auto& front = m_command_lists.front();
             cmdlist = front.cmdlist.release();
             cmdlist->reset();
             vkDestroyFence(device, front.fence, nullptr);
 
-            this->m_command_lists.pop();
+            m_command_lists.pop();
         } else {
-            cmdlist = new vulkan_command_list(this->m_command_pool);
+            cmdlist = new vulkan_command_list(m_command_pool);
         }
 
         return *cmdlist;
@@ -112,7 +112,7 @@ namespace sge {
         VkResult result = vkCreateFence(device, &fence_info, nullptr, &fence);
         check_vk_result(result);
 
-        result = vkQueueSubmit(this->m_queue, 1, &submit_info, fence);
+        result = vkQueueSubmit(m_queue, 1, &submit_info, fence);
         check_vk_result(result);
 
         if (wait) {
@@ -120,6 +120,6 @@ namespace sge {
         }
 
         auto unique_ptr = std::unique_ptr<command_list>(&cmdlist);
-        this->m_command_lists.push({ std::move(unique_ptr), fence });
+        m_command_lists.push({ std::move(unique_ptr), fence });
     }
 } // namespace sge

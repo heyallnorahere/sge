@@ -22,7 +22,7 @@ namespace sge {
         using container_t = std::vector<std::unique_ptr<layer>>;
 
         layer_stack() = default;
-        ~layer_stack() { this->clear(); }
+        ~layer_stack() { clear(); }
 
         layer_stack(const layer_stack&) = delete;
         layer_stack& operator=(const layer_stack&) = delete;
@@ -35,20 +35,20 @@ namespace sge {
         bool pop_overlay(layer* overlay);
         void clear();
 
-        size_t size() const { return this->m_layers.size(); }
-        size_t layer_count() const { return this->m_layer_insert_index; }
+        size_t size() const { return m_layers.size(); }
+        size_t layer_count() const { return m_layer_insert_index; }
 
-        container_t::iterator begin() { return this->m_layers.begin(); }
-        container_t::const_iterator begin() const { return this->m_layers.end(); }
+        container_t::iterator begin() { return m_layers.begin(); }
+        container_t::const_iterator begin() const { return m_layers.end(); }
 
-        container_t::iterator end() { return this->m_layers.end(); }
-        container_t::const_iterator end() const { return this->m_layers.end(); }
+        container_t::iterator end() { return m_layers.end(); }
+        container_t::const_iterator end() const { return m_layers.end(); }
 
-        container_t::reverse_iterator rbegin() { return this->m_layers.rbegin(); }
-        container_t::const_reverse_iterator rbegin() const { return this->m_layers.rbegin(); }
+        container_t::reverse_iterator rbegin() { return m_layers.rbegin(); }
+        container_t::const_reverse_iterator rbegin() const { return m_layers.rbegin(); }
 
-        container_t::reverse_iterator rend() { return this->m_layers.rend(); }
-        container_t::const_reverse_iterator rend() const { return this->m_layers.rend(); }
+        container_t::reverse_iterator rend() { return m_layers.rend(); }
+        container_t::const_reverse_iterator rend() const { return m_layers.rend(); }
 
     private:
         container_t m_layers;

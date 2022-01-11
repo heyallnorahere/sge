@@ -60,23 +60,23 @@ namespace sge {
     }
 
     vulkan_image_2d::vulkan_image_2d(const image_spec& spec) {
-        this->m_spec = spec;
-        this->m_format = get_vulkan_image_format(this->m_spec.format);
-        this->m_usage = get_vulkan_image_usage(this->m_spec.image_usage);
+        m_spec = spec;
+        m_format = get_vulkan_image_format(m_spec.format);
+        m_usage = get_vulkan_image_usage(m_spec.image_usage);
 
         // todo(nora): change if/when depth?
-        this->m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-        this->m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+        m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-        this->create_image();
-        this->create_view();
+        create_image();
+        create_view();
     }
 
     vulkan_image_2d::~vulkan_image_2d() {
         VkDevice device = vulkan_context::get().get_device().get();
-        vkDestroyImageView(device, this->m_view, nullptr);
+        vkDestroyImageView(device, m_view, nullptr);
 
-        vulkan_allocator::free(this->m_image, this->m_allocation);
+        vulkan_allocator::free(m_image, m_allocation);
     }
 
     // shamelessly stolen from my other project
@@ -120,22 +120,22 @@ namespace sge {
 
     void vulkan_image_2d::set_layout(VkImageLayout new_layout, command_list* cmdlist) {
         auto barrier = vk_init<VkImageMemoryBarrier>(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-        barrier.image = this->m_image;
-        barrier.oldLayout = this->m_layout;
+        barrier.image = m_image;
+        barrier.oldLayout = m_layout;
         barrier.newLayout = new_layout;
 
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
-        barrier.subresourceRange.aspectMask = this->m_aspect;
+        barrier.subresourceRange.aspectMask = m_aspect;
 
         barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = this->m_spec.mip_levels;
+        barrier.subresourceRange.levelCount = m_spec.mip_levels;
         barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = this->m_spec.array_layers;
+        barrier.subresourceRange.layerCount = m_spec.array_layers;
 
         VkPipelineStageFlags source_stage, destination_stage;
-        get_stage_and_mask(this->m_layout, source_stage, barrier.srcAccessMask);
+        get_stage_and_mask(m_layout, source_stage, barrier.srcAccessMask);
         get_stage_and_mask(new_layout, destination_stage, barrier.dstAccessMask);
 
         vulkan_command_list* vk_cmdlist;
@@ -160,8 +160,8 @@ namespace sge {
             transfer_queue->submit(*vk_cmdlist, true);
         }
 
-        this->m_layout = new_layout;
-        for (auto tex : this->m_dependents) {
+        m_layout = new_layout;
+        for (auto tex : m_dependents) {
             tex->on_layout_transition();
         }
     }
@@ -170,18 +170,18 @@ namespace sge {
         auto create_info = vk_init<VkImageCreateInfo>(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
         create_info.imageType = VK_IMAGE_TYPE_2D;
 
-        create_info.extent.width = this->m_spec.width;
-        create_info.extent.height = this->m_spec.height;
+        create_info.extent.width = m_spec.width;
+        create_info.extent.height = m_spec.height;
         create_info.extent.depth = 1;
 
-        create_info.mipLevels = this->m_spec.mip_levels;
-        create_info.arrayLayers = this->m_spec.array_layers;
+        create_info.mipLevels = m_spec.mip_levels;
+        create_info.arrayLayers = m_spec.array_layers;
 
-        create_info.format = this->m_format;
+        create_info.format = m_format;
         create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 
-        create_info.initialLayout = this->m_layout;
-        create_info.usage = this->m_usage;
+        create_info.initialLayout = m_layout;
+        create_info.usage = m_usage;
         create_info.samples = VK_SAMPLE_COUNT_1_BIT;
 
         vulkan_device& device = vulkan_context::get().get_device();
@@ -206,23 +206,23 @@ namespace sge {
         auto alloc_info = vk_init<VmaAllocationCreateInfo>();
         alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-        vulkan_allocator::alloc(create_info, alloc_info, this->m_image, this->m_allocation);
+        vulkan_allocator::alloc(create_info, alloc_info, m_image, m_allocation);
     }
 
     void vulkan_image_2d::create_view() {
         auto create_info = vk_init<VkImageViewCreateInfo>(VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-        create_info.image = this->m_image;
+        create_info.image = m_image;
         create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        create_info.format = this->m_format;
+        create_info.format = m_format;
 
-        create_info.subresourceRange.aspectMask = this->m_aspect;
+        create_info.subresourceRange.aspectMask = m_aspect;
         create_info.subresourceRange.baseArrayLayer = 0;
-        create_info.subresourceRange.layerCount = this->m_spec.array_layers;
+        create_info.subresourceRange.layerCount = m_spec.array_layers;
         create_info.subresourceRange.baseMipLevel = 0;
-        create_info.subresourceRange.levelCount = this->m_spec.mip_levels;
+        create_info.subresourceRange.levelCount = m_spec.mip_levels;
 
         VkDevice device = vulkan_context::get().get_device().get();
-        VkResult result = vkCreateImageView(device, &create_info, nullptr, &this->m_view);
+        VkResult result = vkCreateImageView(device, &create_info, nullptr, &m_view);
         check_vk_result(result);
     }
 
@@ -233,7 +233,7 @@ namespace sge {
         memcpy(staging_buffer->mapped, data, size);
         staging_buffer->unmap();
 
-        this->copy_from(staging_buffer);
+        copy_from(staging_buffer);
     }
 
     void vulkan_image_2d::copy_from(ref<vulkan_buffer> source) {
@@ -241,33 +241,33 @@ namespace sge {
         auto& cmdlist = (vulkan_command_list&)transfer_queue->get();
         cmdlist.begin();
 
-        if (this->m_layout == VK_IMAGE_LAYOUT_UNDEFINED) {
-            this->set_layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &cmdlist);
+        if (m_layout == VK_IMAGE_LAYOUT_UNDEFINED) {
+            set_layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &cmdlist);
         }
 
-        VkImageLayout original_layout = this->m_layout;
-        this->set_layout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &cmdlist);
+        VkImageLayout original_layout = m_layout;
+        set_layout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &cmdlist);
 
         VkCommandBuffer cmdbuffer = cmdlist.get();
-        if (this->m_spec.mip_levels == 1) {
+        if (m_spec.mip_levels == 1) {
             auto region = vk_init<VkBufferImageCopy>();
 
-            region.imageSubresource.aspectMask = this->m_aspect;
+            region.imageSubresource.aspectMask = m_aspect;
             region.imageSubresource.mipLevel = 0;
             region.imageSubresource.baseArrayLayer = 0;
-            region.imageSubresource.layerCount = this->m_spec.array_layers;
+            region.imageSubresource.layerCount = m_spec.array_layers;
 
-            region.imageExtent.width = this->m_spec.width;
-            region.imageExtent.height = this->m_spec.height;
+            region.imageExtent.width = m_spec.width;
+            region.imageExtent.height = m_spec.height;
             region.imageExtent.depth = 1;
 
-            vkCmdCopyBufferToImage(cmdbuffer, source->get(), this->m_image, this->m_layout, 1,
+            vkCmdCopyBufferToImage(cmdbuffer, source->get(), m_image, m_layout, 1,
                                    &region);
         } else {
             throw std::runtime_error("can't copy more than one mip level yet");
         }
 
-        this->set_layout(original_layout, &cmdlist);
+        set_layout(original_layout, &cmdlist);
 
         cmdlist.end();
         transfer_queue->submit(cmdlist, true);

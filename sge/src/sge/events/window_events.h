@@ -26,12 +26,12 @@ namespace sge {
     class window_resize_event : public event {
     public:
         window_resize_event(uint32_t width, uint32_t height) {
-            this->m_width = width;
-            this->m_height = height;
+            m_width = width;
+            m_height = height;
         }
 
-        uint32_t get_width() { return this->m_width; }
-        uint32_t get_height() { return this->m_height; }
+        uint32_t get_width() { return m_width; }
+        uint32_t get_height() { return m_height; }
 
         EVENT_ID_DECL(window_resize)
 

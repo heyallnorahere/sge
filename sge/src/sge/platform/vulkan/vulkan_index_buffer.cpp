@@ -19,8 +19,8 @@
 #include "sge/platform/vulkan/vulkan_index_buffer.h"
 namespace sge {
     vulkan_index_buffer::vulkan_index_buffer(const uint32_t* data, size_t count) {
-        this->m_count = count;
-        size_t size = this->m_count * sizeof(uint32_t);
+        m_count = count;
+        size_t size = m_count * sizeof(uint32_t);
 
         auto staging_buffer = ref<vulkan_buffer>::create(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                          VMA_MEMORY_USAGE_CPU_TO_GPU);
@@ -32,9 +32,9 @@ namespace sge {
         region.size = size;
         region.srcOffset = region.dstOffset = 0;
 
-        this->m_buffer = ref<vulkan_buffer>::create(
+        m_buffer = ref<vulkan_buffer>::create(
             size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VMA_MEMORY_USAGE_GPU_ONLY);
-        staging_buffer->copy_to(this->m_buffer, region);
+        staging_buffer->copy_to(m_buffer, region);
     }
 } // namespace sge

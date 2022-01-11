@@ -21,12 +21,12 @@ namespace sge {
     class key_pressed_event : public event {
     public:
         key_pressed_event(key_code key, uint32_t repeat_count) {
-            this->m_key = key;
-            this->m_repeat_count = repeat_count;
+            m_key = key;
+            m_repeat_count = repeat_count;
         }
 
-        key_code get_key() { return this->m_key; }
-        uint32_t get_repeat_count() { return this->m_repeat_count; }
+        key_code get_key() { return m_key; }
+        uint32_t get_repeat_count() { return m_repeat_count; }
 
         EVENT_ID_DECL(key_pressed)
 
@@ -37,9 +37,9 @@ namespace sge {
 
     class key_released_event : public event {
     public:
-        key_released_event(key_code key) { this->m_key = key; }
+        key_released_event(key_code key) { m_key = key; }
 
-        key_code get_key() { return this->m_key; }
+        key_code get_key() { return m_key; }
 
         EVENT_ID_DECL(key_released)
 
@@ -49,9 +49,9 @@ namespace sge {
 
     class key_typed_event : public event {
     public:
-        key_typed_event(key_code key) { this->m_key = key; }
+        key_typed_event(key_code key) { m_key = key; }
 
-        key_code get_key() { return this->m_key; }
+        key_code get_key() { return m_key; }
 
         EVENT_ID_DECL(key_typed)
 
@@ -61,9 +61,9 @@ namespace sge {
 
     class mouse_moved_event : public event {
     public:
-        mouse_moved_event(glm::vec2 position) { this->m_position = position; }
+        mouse_moved_event(glm::vec2 position) { m_position = position; }
 
-        glm::vec2 get_position() { return this->m_position; }
+        glm::vec2 get_position() { return m_position; }
 
         EVENT_ID_DECL(mouse_moved)
 
@@ -73,9 +73,9 @@ namespace sge {
 
     class mouse_scrolled_event : public event {
     public:
-        mouse_scrolled_event(glm::vec2 offset) { this->m_offset = offset; }
+        mouse_scrolled_event(glm::vec2 offset) { m_offset = offset; }
 
-        glm::vec2 get_offset() { return this->m_offset; }
+        glm::vec2 get_offset() { return m_offset; }
 
         EVENT_ID_DECL(mouse_scrolled)
 
@@ -86,12 +86,12 @@ namespace sge {
     class mouse_button_event : public event {
     public:
         mouse_button_event(mouse_button button, bool released) {
-            this->m_button = button;
-            this->m_released = released;
+            m_button = button;
+            m_released = released;
         }
 
-        mouse_button get_button() { return this->m_button; }
-        bool get_released() { return this->m_released; }
+        mouse_button get_button() { return m_button; }
+        bool get_released() { return m_released; }
 
         EVENT_ID_DECL(mouse_button);
 

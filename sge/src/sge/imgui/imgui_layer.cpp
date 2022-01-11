@@ -42,25 +42,25 @@ namespace sge {
             style.Colors[ImGuiCol_WindowBg].w = 1.f;
         }
 
-        this->m_platform = imgui_backend::create_platform_backend();
-        this->m_renderer = imgui_backend::create_renderer_backend();
+        m_platform = imgui_backend::create_platform_backend();
+        m_renderer = imgui_backend::create_renderer_backend();
     }
 
     void imgui_layer::on_detach() {
-        this->m_renderer.reset();
-        this->m_platform.reset();
+        m_renderer.reset();
+        m_platform.reset();
         ImGui::DestroyContext();
     }
 
     void imgui_layer::begin() {
-        this->m_renderer->begin();
-        this->m_platform->begin();
+        m_renderer->begin();
+        m_platform->begin();
         ImGui::NewFrame();
     }
 
     void imgui_layer::end(command_list& cmdlist) {
         ImGui::Render();
-        this->m_renderer->render(cmdlist);
+        m_renderer->render(cmdlist);
 
         ImGuiIO& io = ImGui::GetIO();
         if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != ImGuiConfigFlags_None) {

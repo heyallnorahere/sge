@@ -26,7 +26,7 @@ namespace sge {
         virtual void begin() override;
         virtual void end() override;
 
-        VkCommandBuffer get() { return this->m_command_buffer; }
+        VkCommandBuffer get() { return m_command_buffer; }
 
     private:
         VkCommandPool m_command_pool;

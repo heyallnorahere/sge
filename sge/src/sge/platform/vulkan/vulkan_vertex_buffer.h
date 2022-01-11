@@ -23,10 +23,10 @@ namespace sge {
         vulkan_vertex_buffer(const void* data, size_t stride, size_t count);
         virtual ~vulkan_vertex_buffer() override = default;
 
-        virtual size_t get_vertex_stride() override { return this->m_stride; }
-        virtual size_t get_vertex_count() override { return this->m_count; }
+        virtual size_t get_vertex_stride() override { return m_stride; }
+        virtual size_t get_vertex_count() override { return m_count; }
 
-        ref<vulkan_buffer> get() { return this->m_buffer; }
+        ref<vulkan_buffer> get() { return m_buffer; }
 
     private:
         size_t m_stride, m_count;

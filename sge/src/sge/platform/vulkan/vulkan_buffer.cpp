@@ -24,30 +24,30 @@
 namespace sge {
     vulkan_buffer::vulkan_buffer(size_t size, VkBufferUsageFlags buffer_usage,
                                  VmaMemoryUsage memory_usage) {
-        this->m_size = size;
-        this->m_buffer_usage = buffer_usage;
-        this->m_memory_usage = memory_usage;
+        m_size = size;
+        m_buffer_usage = buffer_usage;
+        m_memory_usage = memory_usage;
 
-        this->create();
+        create();
     }
 
-    vulkan_buffer::~vulkan_buffer() { vulkan_allocator::free(this->m_buffer, this->m_allocation); }
+    vulkan_buffer::~vulkan_buffer() { vulkan_allocator::free(m_buffer, m_allocation); }
 
     void vulkan_buffer::map() {
-        if (this->mapped != nullptr) {
+        if (mapped != nullptr) {
             return;
         }
 
-        this->mapped = vulkan_allocator::map(this->m_allocation);
+        mapped = vulkan_allocator::map(m_allocation);
     }
 
     void vulkan_buffer::unmap() {
-        if (this->mapped == nullptr) {
+        if (mapped == nullptr) {
             return;
         }
 
-        vulkan_allocator::unmap(this->m_allocation);
-        this->mapped = nullptr;
+        vulkan_allocator::unmap(m_allocation);
+        mapped = nullptr;
     }
 
     void vulkan_buffer::copy_to(ref<vulkan_buffer> dest, const VkBufferCopy& region) {
@@ -56,7 +56,7 @@ namespace sge {
         cmdlist.begin();
 
         VkCommandBuffer cmdbuffer = cmdlist.get();
-        vkCmdCopyBuffer(cmdbuffer, this->m_buffer, dest->m_buffer, 1, &region);
+        vkCmdCopyBuffer(cmdbuffer, m_buffer, dest->m_buffer, 1, &region);
 
         cmdlist.end();
         queue->submit(cmdlist, true);
@@ -64,8 +64,8 @@ namespace sge {
 
     void vulkan_buffer::create() {
         auto create_info = vk_init<VkBufferCreateInfo>(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-        create_info.size = this->m_size;
-        create_info.usage = this->m_buffer_usage;
+        create_info.size = m_size;
+        create_info.usage = m_buffer_usage;
 
         auto physical_device = vulkan_context::get().get_device().get_physical_device();
         vulkan_physical_device::queue_family_indices indices;
@@ -85,8 +85,8 @@ namespace sge {
         }
 
         auto alloc_info = vk_init<VmaAllocationCreateInfo>();
-        alloc_info.usage = this->m_memory_usage;
+        alloc_info.usage = m_memory_usage;
 
-        vulkan_allocator::alloc(create_info, alloc_info, this->m_buffer, this->m_allocation);
+        vulkan_allocator::alloc(create_info, alloc_info, m_buffer, m_allocation);
     }
 } // namespace sge

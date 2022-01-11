@@ -35,9 +35,9 @@ namespace sge {
     application& application::get() { return *app_instance; }
 
     application::application(const std::string& title) {
-        this->m_title = title;
-        this->m_running = false;
-        this->m_minimized = false;
+        m_title = title;
+        m_running = false;
+        m_minimized = false;
     }
 
     void application::on_event(event& e) {
@@ -49,7 +49,7 @@ namespace sge {
 
         input::on_event(e);
 
-        for (auto& _layer : this->m_layer_stack) {
+        for (auto& _layer : m_layer_stack) {
             if (e.handled) {
                 break;
             }
@@ -58,56 +58,56 @@ namespace sge {
     }
 
     void application::init() {
-        spdlog::info("initializing application: {0}...", this->m_title);
+        spdlog::info("initializing application: {0}...", m_title);
 
         input::init();
-        this->m_window = window::create(this->m_title, 1600, 900);
-        this->m_window->set_event_callback(SGE_BIND_EVENT_FUNC(application::on_event));
+        m_window = window::create(m_title, 1600, 900);
+        m_window->set_event_callback(SGE_BIND_EVENT_FUNC(application::on_event));
 
         renderer::init();
-        this->m_swapchain = swapchain::create(this->m_window);
+        m_swapchain = swapchain::create(m_window);
 
-        this->m_imgui_layer = new imgui_layer;
-        this->push_overlay(this->m_imgui_layer);
+        m_imgui_layer = new imgui_layer;
+        push_overlay(m_imgui_layer);
 
-        this->on_init();
+        on_init();
     }
 
     void application::shutdown() {
-        spdlog::info("shutting down application: {0}...", this->m_title);
+        spdlog::info("shutting down application: {0}...", m_title);
 
         renderer::clear_render_data();
 
-        this->on_shutdown();
+        on_shutdown();
 
-        this->pop_overlay(this->m_imgui_layer);
-        delete this->m_imgui_layer;
-        this->m_imgui_layer = nullptr;
+        pop_overlay(m_imgui_layer);
+        delete m_imgui_layer;
+        m_imgui_layer = nullptr;
 
-        this->m_swapchain.reset();
+        m_swapchain.reset();
         renderer::shutdown();
 
-        this->m_window.reset();
+        m_window.reset();
         input::shutdown();
     }
 
     void application::run() {
-        if (this->m_running) {
+        if (m_running) {
             throw std::runtime_error("cannot recursively call run()");
         }
-        this->m_running = true;
+        m_running = true;
 
-        while (this->m_running) {
-            if (!this->m_minimized) {
-                this->m_swapchain->new_frame();
+        while (m_running) {
+            if (!m_minimized) {
+                m_swapchain->new_frame();
                 renderer::new_frame();
 
-                size_t current_image = this->m_swapchain->get_current_image_index();
-                auto& cmdlist = this->m_swapchain->get_command_list(current_image);
+                size_t current_image = m_swapchain->get_current_image_index();
+                auto& cmdlist = m_swapchain->get_command_list(current_image);
                 cmdlist.begin();
                 renderer::set_command_list(cmdlist);
 
-                auto pass = this->m_swapchain->get_render_pass();
+                auto pass = m_swapchain->get_render_pass();
                 renderer::push_render_pass(pass, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
 
                 timestep ts;
@@ -122,32 +122,32 @@ namespace sge {
                     t0 = t1;
                 }
 
-                for (auto it = this->m_layer_stack.rbegin(); it != this->m_layer_stack.rend();
+                for (auto it = m_layer_stack.rbegin(); it != m_layer_stack.rend();
                      it++) {
                     (*it)->on_update(ts);
                 }
 
                 renderer::begin_render_pass();
-                this->m_imgui_layer->begin();
-                for (auto& layer : this->m_layer_stack) {
+                m_imgui_layer->begin();
+                for (auto& layer : m_layer_stack) {
                     layer->on_imgui_render();
                 }
-                this->m_imgui_layer->end(cmdlist);
+                m_imgui_layer->end(cmdlist);
 
                 if (renderer::pop_render_pass() != pass) {
                     throw std::runtime_error("a render pass was pushed, but not popped!");
                 }
                 cmdlist.end();
 
-                this->m_swapchain->present();
+                m_swapchain->present();
             }
 
-            this->m_window->on_update();
+            m_window->on_update();
         }
     }
 
     bool application::on_window_close(window_close_event& e) {
-        this->m_running = false;
+        m_running = false;
         return true;
     }
 
@@ -155,9 +155,9 @@ namespace sge {
         uint32_t width = e.get_width();
         uint32_t height = e.get_height();
 
-        this->m_minimized = (width == 0 || height == 0);
-        if (!this->m_minimized) {
-            this->m_swapchain->on_resize(width, height);
+        m_minimized = (width == 0 || height == 0);
+        if (!m_minimized) {
+            m_swapchain->on_resize(width, height);
         }
 
         return false;

@@ -27,6 +27,6 @@ namespace sge {
 
         virtual size_t get_vertex_stride() = 0;
         virtual size_t get_vertex_count() = 0;
-        size_t get_total_size() { return this->get_vertex_count() * this->get_vertex_stride(); }
+        size_t get_total_size() { return get_vertex_count() * get_vertex_stride(); }
     };
 } // namespace sge

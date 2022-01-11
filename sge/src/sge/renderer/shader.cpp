@@ -96,16 +96,16 @@ namespace sge {
     }
 
     bool shader_library::add(const std::string& name, ref<shader> _shader) {
-        if (this->m_library.find(name) != this->m_library.end()) {
+        if (m_library.find(name) != m_library.end()) {
             return false;
         }
 
-        this->m_library.insert(std::make_pair(name, _shader));
+        m_library.insert(std::make_pair(name, _shader));
         return true;
     }
 
     ref<shader> shader_library::add(const std::string& name, const fs::path& path) {
-        if (this->m_library.find(name) != this->m_library.end() || !fs::exists(path)) {
+        if (m_library.find(name) != m_library.end() || !fs::exists(path)) {
             return nullptr;
         }
 
@@ -116,7 +116,7 @@ namespace sge {
 
     ref<shader> shader_library::add(const std::string& name, const fs::path& path,
                                     shader_language language) {
-        if (this->m_library.find(name) != this->m_library.end() || !fs::exists(path)) {
+        if (m_library.find(name) != m_library.end() || !fs::exists(path)) {
             return nullptr;
         }
 
@@ -127,8 +127,8 @@ namespace sge {
 
     ref<shader> shader_library::get(const std::string& name) {
         ref<shader> _shader;
-        if (this->m_library.find(name) != this->m_library.end()) {
-            _shader = this->m_library[name];
+        if (m_library.find(name) != m_library.end()) {
+            _shader = m_library[name];
         }
         return _shader;
     }
