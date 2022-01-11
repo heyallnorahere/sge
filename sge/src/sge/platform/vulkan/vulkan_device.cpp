@@ -51,12 +51,13 @@ namespace sge {
 
             auto query_family = [&](std::optional<uint32_t>& index, VkQueueFlagBits queue) {
                 if (query & queue) {
-                    if ((!index || (queue_families[*index].queueFlags & queue) == 0) &&
+                    if ((!index.has_value() ||
+                         (queue_families[index.value()].queueFlags & queue) == 0) &&
                         (queue_family.queueFlags & queue)) {
                         index = i;
                     }
 
-                    if (index) {
+                    if (index.has_value()) {
                         found |= queue;
                     }
                 }
@@ -145,7 +146,6 @@ namespace sge {
         if (fpGetPhysicalDeviceSurfaceSupportKHR == nullptr) {
             throw std::runtime_error("could not find vkGetPhysicalDeviceSurfaceSupportKHR!");
         }
-
 
         uint32_t family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(m_device, &family_count, nullptr);

@@ -19,6 +19,7 @@
 #include "sge/renderer/renderer.h"
 #include "sge/core/input.h"
 #include "sge/imgui/imgui_layer.h"
+#include "sge/script/script_engine.h"
 
 extern sge::application* create_app_instance();
 namespace sge {
@@ -67,6 +68,8 @@ namespace sge {
         renderer::init();
         m_swapchain = swapchain::create(m_window);
 
+        script_engine::init();
+
         m_imgui_layer = new imgui_layer;
         push_overlay(m_imgui_layer);
 
@@ -83,6 +86,8 @@ namespace sge {
         pop_overlay(m_imgui_layer);
         delete m_imgui_layer;
         m_imgui_layer = nullptr;
+
+        script_engine::shutdown();
 
         m_swapchain.reset();
         renderer::shutdown();
