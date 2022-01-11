@@ -12,8 +12,11 @@ endif()
 project(sge LANGUAGES ${SGE_LANGUAGES})
 set(SGE_DESKTOP $<PLATFORM_ID:Windows,Linux,Darwin>)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 # dependencies
 find_package(Vulkan)
+find_package(Mono REQUIRED)
 add_subdirectory("vendor")
 
 # sge targets
@@ -38,7 +41,7 @@ macro(get_targets DIRECTORY TARGETS)
     list(APPEND ${TARGETS} ${DIRECTORY_TARGETS})
 endmacro()
 
-get_targets("vendor" DEPENDENCIES)
+get_targets("${CMAKE_SOURCE_DIR}/vendor" DEPENDENCIES)
 foreach(DEPENDENCY ${DEPENDENCIES})
     set(FOLDER_NAME "dependencies")
 
@@ -48,4 +51,13 @@ foreach(DEPENDENCY ${DEPENDENCIES})
     endif()
 
     set_target_properties(${DEPENDENCY} PROPERTIES FOLDER ${FOLDER_NAME})
+endforeach()
+
+get_targets(${CMAKE_SOURCE_DIR} MAIN_TARGETS)
+list(REMOVE_ITEM MAIN_TARGETS ${DEPENDENCIES})
+foreach(MAIN_TARGET ${MAIN_TARGETS})
+    if(WIN32)
+        add_custom_command(TARGET ${MAIN_TARGET} POST_BUILD COMMAND
+            ${CMAKE_COMMAND} -E copy_if_different ${Mono_DLL} $<TARGET_FILE_DIR:${MAIN_TARGET}>)
+    endif()
 endforeach()

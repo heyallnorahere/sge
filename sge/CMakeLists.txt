@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.10)
 set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor")
 set(ASSET_DIR "${CMAKE_SOURCE_DIR}/assets")
 set(SGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/glm")
-set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json)
+set(SGE_INCLUDES ${SGE_DIR} ${Mono_INCLUDE_DIR} "${VENDOR_DIR}/glm")
+set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${Mono_LIBRARY})
 
 # platform detection
 if(SGE_DESKTOP)
