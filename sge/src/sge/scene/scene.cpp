@@ -26,8 +26,53 @@
 #include <box2d/b2_fixture.h>
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_circle_shape.h>
+#include <box2d/b2_contact.h>
 
 namespace sge {
+
+    struct scene_physics_data {
+        b2World* world;
+        std::unique_ptr<b2ContactListener> listener;
+    };
+
+    class scene_contact_listener : public b2ContactListener {
+    public:
+        static std::unique_ptr<b2ContactListener> create(ref<scene> _scene) {
+            auto instance = new scene_contact_listener(_scene.raw());
+            return std::unique_ptr<b2ContactListener>(instance);
+        }
+
+        virtual void BeginContact(b2Contact* contact) override {
+            b2Fixture* fixture = contact->GetFixtureA();
+            uintptr_t user_data = fixture->GetUserData().pointer;
+            entity entity_a((entt::entity)(uint32_t)user_data, m_scene);
+
+            fixture = contact->GetFixtureB();
+            user_data = fixture->GetUserData().pointer;
+            entity entity_b((entt::entity)(uint32_t)user_data, m_scene);
+
+            if (entity_a.has_all<native_script_component>()) {
+                auto& nsc = entity_a.get_component<native_script_component>();
+                if (nsc.script != nullptr) {
+                    nsc.script->on_collision(entity_b);
+                }
+            }
+
+            if (entity_b.has_all<native_script_component>()) {
+                auto& nsc = entity_b.get_component<native_script_component>();
+                if (nsc.script != nullptr) {
+                    nsc.script->on_collision(entity_a);
+                }
+            }
+        }
+
+    private:
+        scene_contact_listener(scene* _scene) {
+            m_scene = _scene;
+        }
+
+        scene* m_scene;
+    };
 
     static b2BodyType rigid_body_type_to_box2d_body(rigid_body_component::body_type bt) {
         switch (bt) {
@@ -44,8 +89,9 @@ namespace sge {
     }
 
     scene::~scene() {
-        if (m_physics_world != nullptr) {
-            delete m_physics_world;
+        if (m_physics_data != nullptr) {
+            delete m_physics_data->world;
+            delete m_physics_data;
         }
     }
 
@@ -140,7 +186,11 @@ namespace sge {
 
     void scene::on_start() {
         // Initialize the box2d physics engine
-        m_physics_world = new b2World({ 0.f, -9.8f });
+        m_physics_data = new scene_physics_data;
+        m_physics_data->world = new b2World(b2Vec2(0.f, -9.8f));
+        m_physics_data->listener = scene_contact_listener::create(this);
+        m_physics_data->world->SetContactListener(m_physics_data->listener.get());
+
         auto view = m_registry.view<rigid_body_component>();
         for (auto id : view) {
             entity e(id, this);
@@ -151,7 +201,7 @@ namespace sge {
             body_def.type = rigid_body_type_to_box2d_body(rb.type);
             body_def.position.Set(transform.translation.x, transform.translation.y);
             body_def.angle = glm::radians(transform.rotation);
-            b2Body* body = m_physics_world->CreateBody(&body_def);
+            b2Body* body = m_physics_data->world->CreateBody(&body_def);
             body->SetFixedRotation(rb.fixed_rotation);
             rb.runtime_body = body;
 
@@ -167,6 +217,8 @@ namespace sge {
                 fixture_def.friction = bc.friction;
                 fixture_def.restitution = bc.restitution;
                 fixture_def.restitutionThreshold = bc.restitution_threashold;
+                fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
+
                 auto fixture = body->CreateFixture(&fixture_def);
                 bc.runtime_fixture = fixture;
             }
@@ -174,8 +226,9 @@ namespace sge {
     }
 
     void scene::on_stop() {
-        delete m_physics_world;
-        m_physics_world = nullptr;
+        delete m_physics_data->world;
+        delete m_physics_data;
+        m_physics_data = nullptr;
     }
 
     void scene::on_runtime_update(timestep ts) {
@@ -214,7 +267,7 @@ namespace sge {
                 body->SetTransform(position, glm::radians(transform.rotation));
             }
 
-            m_physics_world->Step(ts.count(), velocity_iterations, position_iterations);
+            m_physics_data->world->Step(ts.count(), velocity_iterations, position_iterations);
 
             for (entt::entity id : view) {
                 entity e(id, this);

@@ -22,11 +22,11 @@
 #include "sge/core/guid.h"
 #include <entt/entt.hpp>
 
-class b2World;
-
 namespace sge {
 
     class entity;
+    class scene_contact_listener;
+    struct scene_physics_data;
 
     // A Scene is a set of entities and components.
     class scene : public ref_counted {
@@ -79,8 +79,9 @@ namespace sge {
 
         entt::registry m_registry;
         uint32_t m_viewport_width, m_viewport_height;
-        b2World* m_physics_world = nullptr;
+        scene_physics_data* m_physics_data = nullptr;
 
         friend class entity;
+        friend class scene_contact_listener;
     };
 } // namespace sge

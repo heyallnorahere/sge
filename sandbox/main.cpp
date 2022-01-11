@@ -70,6 +70,14 @@ namespace sandbox {
         std::optional<glm::vec2> m_last_mouse_position;
     };
 
+    class penguin_script : public sge::entity_script {
+    public:
+        virtual void on_collision(sge::entity other) override {
+            auto& tag = other.get_component<sge::tag_component>();
+            spdlog::info("tux: collided with {0}", tag.tag);
+        }
+    };
+
     class sandbox_layer : public sge::layer {
     public:
         sandbox_layer() : layer("Sandbox Layer") {}
@@ -94,13 +102,20 @@ namespace sandbox {
             // Tux
             {
                 this->m_entity = this->m_scene->create_entity("Penguin");
+                
                 auto& transform = this->m_entity.get_component<sge::transform_component>();
                 transform.scale = glm::vec2(5.f);
                 transform.rotation = 10.f;
+
                 auto& sprite = this->m_entity.add_component<sge::sprite_renderer_component>();
                 sprite.texture = this->m_tux;
+
+                auto& nsc = this->m_entity.add_component<sge::native_script_component>();
+                nsc.bind<penguin_script>();
+
                 auto& rb = this->m_entity.add_component<sge::rigid_body_component>();
                 rb.type = sge::rigid_body_component::body_type::dynamic;
+
                 auto& bc = this->m_entity.add_component<sge::box_collider_component>();
                 bc.restitution = 0.8f;
             }

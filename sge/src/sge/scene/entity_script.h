@@ -29,6 +29,8 @@ namespace sge {
         virtual void on_update(timestep ts) {}
         virtual void on_event(event& e) {}
 
+        virtual void on_collision(entity other) {}
+
     protected:
         template <typename T, typename... Args>
         T& add_component(Args&&... args) {
