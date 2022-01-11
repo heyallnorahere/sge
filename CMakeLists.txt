@@ -19,6 +19,14 @@ find_package(Vulkan)
 find_package(Mono REQUIRED)
 add_subdirectory("vendor")
 
+# mono DLL macro
+macro(copy_required_dlls target_name)
+    if(WIN32)
+        add_custom_command(TARGET ${target_name} POST_BUILD COMMAND
+            ${CMAKE_COMMAND} -E copy_if_different ${Mono_DLL} $<TARGET_FILE_DIR:${target_name}>)
+    endif()
+endmacro()
+
 # sge targets
 add_subdirectory("sge")
 add_subdirectory("sgm")
@@ -51,13 +59,4 @@ foreach(DEPENDENCY ${DEPENDENCIES})
     endif()
 
     set_target_properties(${DEPENDENCY} PROPERTIES FOLDER ${FOLDER_NAME})
-endforeach()
-
-get_targets(${CMAKE_SOURCE_DIR} MAIN_TARGETS)
-list(REMOVE_ITEM MAIN_TARGETS ${DEPENDENCIES})
-foreach(MAIN_TARGET ${MAIN_TARGETS})
-    if(WIN32)
-        add_custom_command(TARGET ${MAIN_TARGET} POST_BUILD COMMAND
-            ${CMAKE_COMMAND} -E copy_if_different ${Mono_DLL} $<TARGET_FILE_DIR:${MAIN_TARGET}>)
-    endif()
 endforeach()
