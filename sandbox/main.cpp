@@ -16,8 +16,6 @@
 
 #define SGE_INCLUDE_MAIN
 #include <sge.h>
-#include <sge/renderer/renderer.h>
-#include <sge/renderer/framebuffer.h>
 using namespace sge;
 namespace sandbox {
     class camera_controller : public entity_script {
@@ -201,8 +199,6 @@ namespace sandbox {
             return false;
         }
 
-        using seconds_t = std::chrono::duration<double>;
-        seconds_t m_time_record = seconds_t(0);
         ref<scene> m_scene;
         ref<texture_2d> m_tux;
     };
@@ -213,6 +209,19 @@ namespace sandbox {
 
     protected:
         virtual void on_init() override {
+            {
+                void* test_class = script_engine::get_class(0, "SGE.TestClass");
+                void* test_method = script_engine::get_method(test_class, "TestMethod(int)");
+
+                void* instance = script_engine::alloc_object(test_class);
+                void* constructor = script_engine::get_method(test_class, ".ctor(int)");
+                int32_t x = 42;
+                int32_t y = 7;
+
+                script_engine::call_method(instance, constructor, &x);
+                script_engine::call_method(instance, test_method, &y);
+            }
+
             m_layer = new sandbox_layer;
             push_layer(m_layer);
         }
