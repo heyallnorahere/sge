@@ -27,7 +27,7 @@
                 "BOX2D_BUILD_DOCS": "OFF",
                 "BOX2D_BUILD_UNIT_TESTS": "OFF",
                 "BOX2D_BUILD_TESTBED": "OFF",
-                "CMAKE_OSX_ARCHITECTURES": "x86_64;arm64"
+                "CMAKE_OSX_ARCHITECTURES": "x86_64"
             },
             "warnings": {
                 "dev": false
@@ -35,7 +35,7 @@
         },
         {
             "name": "debug",
-            "displayName": "debug",
+            "displayName": "Debug configuration",
             "inherits": "default",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
