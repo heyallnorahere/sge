@@ -6,7 +6,6 @@ set(ASSET_DIR "${CMAKE_SOURCE_DIR}/assets")
 set(SGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(SGE_INCLUDES ${SGE_DIR} ${Mono_INCLUDE_DIR} "${VENDOR_DIR}/glm")
 set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${Mono_LIBRARY})
-set(SGE_DEFINES "MONO_ASSEMBLY_DIRECTORY=\"${Mono_ASSEMBLIES}\"")
 
 # platform detection
 if(SGE_DESKTOP)
@@ -63,6 +62,7 @@ add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS})
 target_link_libraries(sge PUBLIC ${SGE_LIBS})
 target_include_directories(sge PUBLIC ${SGE_INCLUDES})
 target_compile_definitions(sge PUBLIC ${SGE_DEFINES} $<$<CONFIG:Debug>:SGE_DEBUG>)
+add_dependencies(sge scriptcore)
 set_target_properties(sge PROPERTIES CXX_STANDARD 17 FOLDER "core")
 
 # setup pch

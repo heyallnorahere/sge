@@ -4,3 +4,4 @@ build/
 .vs/
 obj/
 bin/
+assemblies/

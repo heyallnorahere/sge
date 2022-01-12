@@ -28,6 +28,7 @@ macro(copy_required_dlls target_name)
 endmacro()
 
 # sge targets
+add_subdirectory("scriptcore")
 add_subdirectory("sge")
 add_subdirectory("sgm")
 add_subdirectory("sandbox")

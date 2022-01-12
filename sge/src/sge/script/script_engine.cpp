@@ -31,11 +31,11 @@ namespace sge {
         script_engine_data = std::make_unique<script_engine_data_t>();
 
         mono_config_parse(nullptr);
-        mono_set_assemblies_path(MONO_ASSEMBLY_DIRECTORY);
+        mono_set_rootdir();
 
         script_engine_data->root_domain = mono_jit_init("SGE");
 
-        // todo: load core SGE assembly
+        load_assembly(fs::current_path() / "assemblies" / "SGE.dll");
     }
 
     void script_engine::shutdown() {
@@ -43,9 +43,7 @@ namespace sge {
             throw std::runtime_error("the script engine is not initialized!");
         }
 
-        for (auto assembly : script_engine_data->assemblies) {
-            mono_assembly_close(assembly);
-        }
+        // todo: close?
 
         mono_jit_cleanup(script_engine_data->root_domain);
         script_engine_data.reset();
@@ -102,9 +100,8 @@ namespace sge {
             throw std::runtime_error("index 0 is reserved!");
         }
 
-        MonoAssembly* assembly = script_engine_data->assemblies[index];
-        script_engine_data->assemblies[index] = nullptr;
+        // todo: close?
 
-        mono_assembly_close(assembly);
+        script_engine_data->assemblies[index] = nullptr;
     }
 } // namespace sge
