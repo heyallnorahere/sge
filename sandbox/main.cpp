@@ -235,4 +235,4 @@ namespace sandbox {
     };
 } // namespace sandbox
 
-application* create_app_instance() { return new sandbox::sandbox_app; };
+application* create_app_instance() { return new sandbox::sandbox_app; }

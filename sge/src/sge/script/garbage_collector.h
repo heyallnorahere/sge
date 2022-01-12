@@ -15,9 +15,19 @@
 */
 
 #pragma once
+namespace sge {
+    class garbage_collector {
+    public:
+        using handle = void*;
 
-#include <mono/jit/jit.h>
-#include <mono/metadata/assembly.h>
-#include <mono/metadata/attrdefs.h>
-#include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/environment.h>
+        garbage_collector() = delete;
+
+        static void init();
+        static void shutdown();
+        static void collect(bool wait = false);
+
+        static handle create_ref(void* object, bool weak = false);
+        static void destroy_ref(handle gc_handle);
+        static void* get_ref_data(handle gc_handle);
+    };
+} // namespace sge

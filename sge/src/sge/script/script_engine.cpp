@@ -17,6 +17,7 @@
 #include "sgepch.h"
 #include "sge/script/script_engine.h"
 #include "sge/script/mono_include.h"
+#include "sge/script/garbage_collector.h"
 #include <mono/metadata/mono-config.h>
 namespace sge {
     struct assembly_t {
@@ -40,6 +41,7 @@ namespace sge {
         mono_set_rootdir();
 
         script_engine_data->root_domain = mono_jit_init("SGE");
+        garbage_collector::init();
 
         load_assembly(fs::current_path() / "assemblies" / "SGE.dll");
     }
@@ -48,6 +50,8 @@ namespace sge {
         if (!script_engine_data) {
             throw std::runtime_error("the script engine is not initialized!");
         }
+
+        garbage_collector::shutdown();
 
         // todo: close?
 

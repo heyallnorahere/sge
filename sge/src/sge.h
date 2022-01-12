@@ -35,12 +35,14 @@
 
 // scene
 #include "sge/scene/scene.h"
+#include "sge/scene/scene_serializer.h"
 #include "sge/scene/components.h"
 #include "sge/scene/entity.h"
 #include "sge/scene/editor_camera.h"
 
 // script engine
 #include "sge/script/script_engine.h"
+#include "sge/script/garbage_collector.h"
 
 // main
 #ifdef SGE_INCLUDE_MAIN
