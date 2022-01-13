@@ -10,13 +10,29 @@ if(APPLE AND ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
 endif()
 
 project(sge LANGUAGES ${SGE_LANGUAGES})
-set(SGE_DESKTOP $<PLATFORM_ID:Windows,Linux,Darwin>)
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-# dependencies
+# platform detection
+if(${CMAKE_SYSTEM_NAME} STREQUAL Windows)
+    set(SGE_PLATFORM_WINDOWS ON)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+    set(SGE_PLATFORM_LINUX ON)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
+    set(SGE_PLATFORM_MACOSX ON)
+endif()
+set(SGE_PLATFORM_DESKTOP ${SGE_PLATFORM_WINDOWS} OR ${SGE_PLATFORM_LINUX} OR ${SGE_PLATFORM_MACOSX})
+
+# find packages
 find_package(Vulkan)
 find_package(Mono REQUIRED)
+
+# options
+include(CMakeDependentOption)
+
+option(SGE_BUILD_SCRIPTCORE "Build SGE script core." ON)
+cmake_dependent_option(SGE_USE_VULKAN "Use the Vulkan graphics api." ON "SGE_PLATFORM_DESKTOP AND Vulkan_FOUND" OFF)
+
+# dependencies
 add_subdirectory("vendor")
 
 # mono DLL macro

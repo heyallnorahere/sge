@@ -19,7 +19,7 @@ if(SGE_DESKTOP)
     add_subdirectory("glfw")
 endif()
 
-if(Vulkan_FOUND)
+if(SGE_USE_VULKAN)
     add_subdirectory("VulkanMemoryAllocator")
 endif()
 

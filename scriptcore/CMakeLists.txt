@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-option(SGE_BUILD_SCRIPTCORE "Build SGE script core." ON)
 if(SGE_BUILD_SCRIPTCORE)
     if(MSVC)
         include_external_msproject(scriptcore "${CMAKE_CURRENT_SOURCE_DIR}/scriptcore.csproj")
