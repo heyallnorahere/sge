@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2022 Nora Beda and SGE contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,18 +16,17 @@
 
 using System;
 
-namespace SGE.Setup.Tasks
+namespace SGE.Components
 {
-    [Task("setup-ci")]
-    [TaskDependency("install-vulkan", "--ci")]
-    [TaskDependency("install-mono", "--ci")]
-    internal class SetupCI : Task
+    public sealed class SpriteRendererComponent
     {
-        public override string Description => "Setup all required dependencies for a CI build";
-        public override int Run(string[] args)
+        internal SpriteRendererComponent(IntPtr address)
         {
-            Console.WriteLine("Dependencies should be set up.");
-            return 0;
+            mAddress = address;
         }
+
+        // todo: fully implement
+
+        private readonly IntPtr mAddress;
     }
 }

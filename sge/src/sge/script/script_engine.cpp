@@ -18,6 +18,7 @@
 #include "sge/script/script_engine.h"
 #include "sge/script/mono_include.h"
 #include "sge/script/garbage_collector.h"
+#include "sge/script/internal_calls.h"
 namespace sge {
     struct assembly_t {
         MonoAssembly* assembly;
@@ -43,6 +44,7 @@ namespace sge {
         garbage_collector::init();
 
         load_assembly(fs::current_path() / "assemblies" / "SGE.dll");
+        register_internal_script_calls();
     }
 
     void script_engine::shutdown() {
@@ -56,6 +58,10 @@ namespace sge {
 
         mono_jit_cleanup(script_engine_data->root_domain);
         script_engine_data.reset();
+    }
+
+    void script_engine::register_internal_call(const std::string& name, const void* callback) {
+        mono_add_internal_call(name.c_str(), callback);
     }
 
     static std::optional<size_t> find_viable_assembly_index() {
@@ -358,6 +364,27 @@ namespace sge {
     void* script_engine::get_field_type(void* field) {
         auto mono_field = (MonoClassField*)field;
         auto type = mono_field_get_type(mono_field);
+        return mono_class_from_mono_type(type);
+    }
+
+    void* script_engine::to_managed_string(const std::string& native_string) {
+        return mono_string_new(script_engine_data->root_domain, native_string.c_str());
+    }
+
+    std::string script_engine::from_managed_string(void* managed_string) {
+        auto mono_string = (MonoString*)managed_string;
+        return mono_string_to_utf8(mono_string);
+    }
+
+    void* script_engine::to_reflection_type(void* _class) {
+        auto mono_class = (MonoClass*)_class;
+        auto type = mono_class_get_type(mono_class);
+        return mono_type_get_object(script_engine_data->root_domain, type);
+    }
+
+    void* script_engine::from_reflection_type(void* reflection_type) {
+        auto mono_object = (MonoReflectionType*)reflection_type;
+        auto type = mono_reflection_type_get_type(mono_object);
         return mono_class_from_mono_type(type);
     }
 } // namespace sge

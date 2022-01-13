@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2022 Nora Beda and SGE contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,20 +14,19 @@
    limitations under the License.
 */
 
-using System;
-
-namespace SGE.Setup.Tasks
+namespace SGE
 {
-    [Task("setup-ci")]
-    [TaskDependency("install-vulkan", "--ci")]
-    [TaskDependency("install-mono", "--ci")]
-    internal class SetupCI : Task
+    public struct GUID
     {
-        public override string Description => "Setup all required dependencies for a CI build";
-        public override int Run(string[] args)
+        public ulong ID;
+
+        public GUID(ulong id)
         {
-            Console.WriteLine("Dependencies should be set up.");
-            return 0;
+            ID = id;
         }
+        public static GUID Generate() => InternalCalls.GenerateGUID();
+
+        public static implicit operator GUID(ulong id) => new GUID(id);
+        public static implicit operator ulong(GUID guid) => guid.ID;
     }
 }

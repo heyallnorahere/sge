@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2022 Nora Beda and SGE contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,20 +14,7 @@
    limitations under the License.
 */
 
-using System;
-
-namespace SGE.Setup.Tasks
-{
-    [Task("setup-ci")]
-    [TaskDependency("install-vulkan", "--ci")]
-    [TaskDependency("install-mono", "--ci")]
-    internal class SetupCI : Task
-    {
-        public override string Description => "Setup all required dependencies for a CI build";
-        public override int Run(string[] args)
-        {
-            Console.WriteLine("Dependencies should be set up.");
-            return 0;
-        }
-    }
-}
+#pragma once
+namespace sge {
+    void register_internal_script_calls();
+} // namespace sge

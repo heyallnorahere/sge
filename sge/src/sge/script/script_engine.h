@@ -37,6 +37,7 @@ namespace sge {
 
         static void init();
         static void shutdown();
+        static void register_internal_call(const std::string& name, const void* callback);
 
         static size_t load_assembly(const fs::path& path);
         static void close_assembly(size_t index);
@@ -82,5 +83,11 @@ namespace sge {
 
         static std::string get_field_name(void* field);
         static void* get_field_type(void* field);
+
+        static void* to_managed_string(const std::string& native_string);
+        static std::string from_managed_string(void* managed_string);
+
+        static void* to_reflection_type(void* _class);
+        static void* from_reflection_type(void* reflection_type);
     };
 } // namespace sge
