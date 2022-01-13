@@ -18,7 +18,6 @@
 #include "sge/script/script_engine.h"
 #include "sge/script/mono_include.h"
 #include "sge/script/garbage_collector.h"
-#include <mono/metadata/mono-config.h>
 namespace sge {
     struct assembly_t {
         MonoAssembly* assembly;
@@ -118,40 +117,67 @@ namespace sge {
         script_engine_data->assemblies[index] = { nullptr, nullptr };
     }
 
+    size_t script_engine::get_assembly_count() { return script_engine_data->assemblies.size(); }
+
+    std::string script_engine::get_string(const class_name_t& class_name) {
+        if (!class_name.namespace_name.empty()) {
+            return class_name.namespace_name + "." + class_name.class_name;
+        } else {
+            return class_name.class_name;
+        }
+    }
+
+    void script_engine::get_class_name(void* _class, class_name_t& name) {
+        auto mono_class = (MonoClass*)_class;
+
+        name.namespace_name = mono_class_get_namespace(mono_class);
+        name.class_name = mono_class_get_name(mono_class);
+    }
+
+    void script_engine::iterate_classes(size_t assembly, std::vector<void*>& classes) {
+        if (assembly >= script_engine_data->assemblies.size() ||
+            script_engine_data->assemblies[assembly].assembly == nullptr) {
+            throw std::runtime_error("attempted to iterate over a nonexistent assembly!");
+        }
+
+        auto image = script_engine_data->assemblies[assembly].image;
+        auto table = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
+        int32_t row_count = mono_table_info_get_rows(table);
+
+        classes.clear();
+        for (int32_t i = 1; i < row_count; i++) {
+            auto _class = mono_class_get(image, (i + 1) | MONO_TOKEN_TYPE_DEF);
+            classes.push_back(_class);
+        }
+    }
+
     void* script_engine::get_class(size_t assembly, const std::string& name) {
-        std::string class_name = name;
-        std::string namespace_name;
+        class_name_t class_name;
+        class_name.class_name = name;
 
         size_t separator_pos = name.find_last_of('.');
         if (separator_pos != std::string::npos) {
-            class_name = name.substr(separator_pos + 1);
-            namespace_name = name.substr(0, separator_pos);
+            class_name.class_name = name.substr(separator_pos + 1);
+            class_name.namespace_name = name.substr(0, separator_pos);
         }
 
-        return get_class(assembly, namespace_name, class_name);
+        return get_class(assembly, class_name);
     }
 
-    void* script_engine::get_class(size_t assembly, const std::string& namespace_name,
-                                   const std::string& name) {
+    void* script_engine::get_class(size_t assembly, const class_name_t& name) {
         if (assembly >= script_engine_data->assemblies.size() ||
             script_engine_data->assemblies[assembly].assembly == nullptr) {
             throw std::runtime_error("assembly " + std::to_string(assembly) + " does not exist!");
         }
 
         const auto& mono_assembly = script_engine_data->assemblies[assembly];
-        return mono_class_from_name(mono_assembly.image, namespace_name.c_str(), name.c_str());
+        return mono_class_from_name(mono_assembly.image, name.namespace_name.c_str(),
+                                    name.class_name.c_str());
     }
 
-    void* script_engine::get_class(void* parameter_type) {
-        auto reflection_type = (MonoReflectionType*)parameter_type;
-        auto type = mono_reflection_type_get_type(reflection_type);
-        return mono_type_get_class(type);
-    }
-
-    void* script_engine::get_parameter_type(void* _class) {
-        auto mono_class = (MonoClass*)_class;
-        auto type = mono_class_get_type(mono_class);
-        return mono_type_get_object(script_engine_data->root_domain, type);
+    void* script_engine::get_class_from_object(void* object) {
+        auto mono_object = (MonoObject*)object;
+        return mono_object_get_class(mono_object);
     }
 
     void* script_engine::alloc_object(void* _class) {
@@ -178,6 +204,57 @@ namespace sge {
         return mono_method_desc_search_in_class(mono_desc, mono_class);
     }
 
+    std::string script_engine::get_method_name(void* method) {
+        auto mono_method = (MonoMethod*)method;
+        return mono_method_get_name(mono_method);
+    }
+
+    void* script_engine::get_method_return_type(void* method) {
+        auto mono_method = (MonoMethod*)method;
+        auto signature = mono_method_signature(mono_method);
+
+        auto return_type = mono_signature_get_return_type(signature);
+        return mono_class_from_mono_type(return_type);
+    }
+
+    void script_engine::get_method_parameters(void* method,
+                                              std::vector<method_parameter_t>& parameters) {
+        auto mono_method = (MonoMethod*)method;
+        auto signature = mono_method_signature(mono_method);
+
+        uint32_t param_count = mono_signature_get_param_count(signature);
+        auto names = (const char**)malloc(sizeof(size_t) * param_count);
+        mono_method_get_param_names(mono_method, names);
+
+        MonoType* type = nullptr;
+        void* iterator = nullptr;
+
+        parameters.clear();
+        size_t parameter_index = 0;
+        while ((type = mono_signature_get_params(signature, &iterator)) != nullptr) {
+            method_parameter_t parameter;
+            parameter.name = names[parameter_index];
+            parameter.type = mono_class_from_mono_type(type);
+            parameters.push_back(parameter);
+
+            parameter_index++;
+        }
+
+        free(names);
+    }
+
+    void script_engine::iterate_methods(void* _class, std::vector<void*>& methods) {
+        auto mono_class = (MonoClass*)_class;
+
+        MonoMethod* method = nullptr;
+        void* iterator = nullptr;
+
+        methods.clear();
+        while ((method = mono_class_get_methods(mono_class, &iterator)) != nullptr) {
+            methods.push_back(method);
+        }
+    }
+
     static void handle_mono_exception(MonoObject* exception) {
         if (exception != nullptr) {
             spdlog::error("exception was thrown - whoopsie");
@@ -195,5 +272,92 @@ namespace sge {
         handle_mono_exception(exc);
 
         return returned;
+    }
+
+    void* script_engine::get_property(void* _class, const std::string& name) {
+        auto mono_class = (MonoClass*)_class;
+        return mono_class_get_property_from_name(mono_class, name.c_str());
+    }
+
+    void script_engine::iterate_properties(void* _class, std::vector<void*>& properties) {
+        auto mono_class = (MonoClass*)_class;
+
+        MonoProperty* property = nullptr;
+        void* iterator = nullptr;
+
+        properties.clear();
+        while ((property = mono_class_get_properties(mono_class, &iterator)) != nullptr) {
+            properties.push_back(property);
+        }
+    }
+
+    std::string script_engine::get_property_name(void* property) {
+        auto mono_property = (MonoProperty*)property;
+        return mono_property_get_name(mono_property);
+    }
+
+    void* script_engine::get_property_type(void* property) {
+        auto mono_property = (MonoProperty*)property;
+
+        auto method = mono_property_get_get_method(mono_property);
+        if (method != nullptr) {
+            return get_method_return_type(method);
+        }
+
+        method = mono_property_get_set_method(mono_property);
+        if (method != nullptr) {
+            void* iterator = nullptr;
+            auto signature = mono_method_signature(method);
+
+            auto type = mono_signature_get_params(signature, &iterator);
+            return mono_class_from_mono_type(type);
+        }
+
+        return nullptr;
+    }
+
+    uint32_t script_engine::get_property_accessors(void* property) {
+        auto mono_property = (MonoProperty*)property;
+        uint32_t accessors = property_accessor_none;
+
+        auto method = mono_property_get_get_method(mono_property);
+        if (method != nullptr) {
+            accessors |= property_accessor_get;
+        }
+
+        method = mono_property_get_set_method(mono_property);
+        if (method != nullptr) {
+            accessors |= property_accessor_set;
+        }
+
+        return accessors;
+    }
+
+    void* script_engine::get_field(void* _class, const std::string& name) {
+        auto mono_class = (MonoClass*)_class;
+        return mono_class_get_field_from_name(mono_class, name.c_str());
+    }
+
+    void script_engine::iterate_fields(void* _class, std::vector<void*>& fields) {
+        auto mono_class = (MonoClass*)_class;
+
+        MonoClassField* field = nullptr;
+        void* iterator = nullptr;
+
+        fields.clear();
+        while ((field = mono_class_get_fields(mono_class, &iterator)) != nullptr) {
+            fields.push_back(field);
+        }
+    }
+
+    std::string script_engine::get_field_name(void* field) {
+        auto mono_field = (MonoClassField*)field;
+        return mono_field_get_name(mono_field);
+    }
+
+    void* script_engine::get_field_type(void* field) {
+        auto mono_field = (MonoClassField*)field;
+        auto type = mono_field_get_type(mono_field);
+        return mono_class_from_mono_type(type);
     }
 } // namespace sge

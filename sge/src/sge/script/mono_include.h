@@ -21,3 +21,5 @@
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/mono-config.h>
+#include <mono/metadata/tokentype.h>

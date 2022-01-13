@@ -15,6 +15,7 @@ namespace SGE
             Console.WriteLine($"{mX} * {y} = {mX * y}");
         }
 
+        public int X => mX;
         private int mX;
     }
 }

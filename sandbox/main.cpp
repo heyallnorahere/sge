@@ -18,6 +18,76 @@
 #include <sge.h>
 using namespace sge;
 namespace sandbox {
+    static void managed_reflect(void* _class) {
+        class_name_t name_data;
+        script_engine::get_class_name(_class, name_data);
+        std::string class_name = script_engine::get_string(name_data);
+        spdlog::info("{0} reflection results:", class_name);
+
+        std::vector<void*> methods;
+        script_engine::iterate_methods(_class, methods);
+
+        spdlog::info("\tMethods:");
+        for (void* method : methods) {
+            auto return_type = script_engine::get_method_return_type(method);
+            script_engine::get_class_name(return_type, name_data);
+
+            std::string name = script_engine::get_method_name(method);
+            std::string signature = name_data.class_name + " " + name + "(";
+
+            std::vector<method_parameter_t> parameters;
+            script_engine::get_method_parameters(method, parameters);
+            for (size_t i = 0; i < parameters.size(); i++) {
+                const auto& parameter = parameters[i];
+
+                script_engine::get_class_name(parameter.type, name_data);
+                signature += name_data.class_name + " " + parameter.name;
+
+                if (i != parameters.size() - 1) {
+                    signature += ", ";
+                }
+            }
+
+            signature += ")";
+            spdlog::info("\t\t{0}", signature);
+        }
+
+        std::vector<void*> properties;
+        script_engine::iterate_properties(_class, properties);
+
+        spdlog::info("\tProperties:");
+        for (void* property : properties) {
+            auto type = script_engine::get_property_type(property);
+            script_engine::get_class_name(type, name_data);
+
+            std::string name = script_engine::get_property_name(property);
+            std::string signature = name_data.class_name + " " + name + " {";
+
+            uint32_t accessors = script_engine::get_property_accessors(property);
+            if ((accessors & property_accessor_get) != property_accessor_none) {
+                signature += " get;";
+            }
+            if ((accessors & property_accessor_set) != property_accessor_none) {
+                signature += " set;";
+            }
+
+            signature += " }";
+            spdlog::info("\t\t{0}", signature);
+        }
+
+        std::vector<void*> fields;
+        script_engine::iterate_fields(_class, fields);
+
+        spdlog::info("\tFields:");
+        for (void* field : fields) {
+            auto type = script_engine::get_field_type(field);
+            script_engine::get_class_name(type, name_data);
+
+            std::string name = script_engine::get_field_name(field);
+            spdlog::info("\t\t{0} {1}", name_data.class_name, name);
+        }
+    }
+
     class camera_controller : public entity_script {
     public:
         virtual void on_update(timestep ts) {
@@ -211,15 +281,7 @@ namespace sandbox {
         virtual void on_init() override {
             {
                 void* test_class = script_engine::get_class(0, "SGE.TestClass");
-                void* test_method = script_engine::get_method(test_class, "TestMethod(int)");
-
-                void* instance = script_engine::alloc_object(test_class);
-                void* constructor = script_engine::get_method(test_class, ".ctor(int)");
-                int32_t x = 42;
-                int32_t y = 7;
-
-                script_engine::call_method(instance, constructor, &x);
-                script_engine::call_method(instance, test_method, &y);
+                managed_reflect(test_class);
             }
 
             m_layer = new sandbox_layer;
