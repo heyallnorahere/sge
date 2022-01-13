@@ -15,7 +15,7 @@ if(NOT SHADERC_DEPENDENCIES_SYNCED)
 endif()
 add_subdirectory("shaderc")
 
-if(SGE_DESKTOP)
+if(SGE_PLATFORM_DESKTOP)
     add_subdirectory("glfw")
 endif()
 
