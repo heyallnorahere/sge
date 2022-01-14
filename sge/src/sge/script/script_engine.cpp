@@ -36,9 +36,11 @@ namespace sge {
             throw std::runtime_error("the script engine has already been initialized!");
         }
         script_engine_data = std::make_unique<script_engine_data_t>();
-
         mono_config_parse(nullptr);
-        mono_set_rootdir();
+
+        // todo(nora): build tpa list of .net 6 assemblies
+        auto assembly_path = (fs::current_path() / "assets").string();
+        mono_set_assemblies_path(assembly_path.c_str());
 
         script_engine_data->root_domain = mono_jit_init("SGE");
         garbage_collector::init();

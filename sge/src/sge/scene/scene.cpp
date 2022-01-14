@@ -20,6 +20,8 @@
 #include "sge/renderer/renderer.h"
 #include "sge/scene/entity.h"
 #include "sge/scene/components.h"
+#include "sge/script/script_engine.h"
+#include "sge/script/garbage_collector.h"
 
 #include <box2d/b2_world.h>
 #include <box2d/b2_body.h>
@@ -67,9 +69,7 @@ namespace sge {
         }
 
     private:
-        scene_contact_listener(scene* _scene) {
-            m_scene = _scene;
-        }
+        scene_contact_listener(scene* _scene) { m_scene = _scene; }
 
         scene* m_scene;
     };
@@ -89,6 +89,25 @@ namespace sge {
     }
 
     scene::~scene() {
+        {
+            auto view = m_registry.view<native_script_component>();
+            for (entt::entity id : view) {
+                entity e(id, this);
+                auto& nsc = e.get_component<native_script_component>();
+                if (nsc.script != nullptr) {
+                    nsc.destroy(&nsc);
+                }
+            }
+        }
+
+        {
+            auto view = m_registry.view<script_component>();
+            for (entt::entity id : view) {
+                entity e(id, this);
+                remove_script(e);
+            }
+        }
+
         if (m_physics_data != nullptr) {
             delete m_physics_data->world;
             delete m_physics_data;
@@ -122,6 +141,10 @@ namespace sge {
             }
         }
 
+        if (e.has_all<script_component>()) {
+            remove_script(e);
+        }
+
         m_registry.destroy(e);
     }
 
@@ -136,12 +159,52 @@ namespace sge {
             }
         });
 
+        {
+            auto view = m_registry.view<script_component>();
+            for (entt::entity id : view) {
+                entity e(id, this);
+                remove_script(e);
+            }
+        }
+
         m_registry.clear();
     }
 
+    void scene::set_script(entity e, void* _class) {
+        if (!e.has_all<script_component>()) {
+            e.add_component<script_component>();
+        }
+
+        remove_script(e);
+        e.get_component<script_component>()._class = _class;
+    }
+
+    void scene::reset_script(entity e) {
+        if (e.has_all<script_component>()) {
+            remove_script(e);
+            e.remove_component<script_component>();
+        }
+    }
+
     template <typename T>
-    static void copy_component(entt::registry& dst, entt::registry& src,
-        const std::unordered_map<guid, entt::entity>& entity_map) {
+    static T copy_component(const T& src) {
+        return src;
+    }
+
+    template <>
+    static script_component copy_component<script_component>(const script_component& src) {
+        script_component dst;
+        dst._class = src._class;
+
+        void* instance = garbage_collector::get_ref_data(src.gc_handle);
+        dst.gc_handle = garbage_collector::create_ref(instance);
+
+        return dst;
+    }
+
+    template <typename T>
+    static void copy_component_type(entt::registry& dst, entt::registry& src,
+                                    const std::unordered_map<guid, entt::entity>& entity_map) {
         auto view = src.view<T>();
         for (entt::entity e : view) {
             guid id = src.get<id_component>(e).id;
@@ -151,7 +214,7 @@ namespace sge {
 
             entt::entity new_entity = entity_map.at(id);
             T& data = src.get<T>(e);
-            dst.emplace_or_replace<T>(new_entity, data);
+            dst.emplace_or_replace<T>(new_entity, copy_component(data));
         }
     }
 
@@ -173,12 +236,13 @@ namespace sge {
             }
         }
 
-        copy_component<transform_component>(dst_registry, m_registry, entity_map);
-        copy_component<camera_component>(dst_registry, m_registry, entity_map);
-        copy_component<sprite_renderer_component>(dst_registry, m_registry, entity_map);
-        copy_component<native_script_component>(dst_registry, m_registry, entity_map);
-        copy_component<rigid_body_component>(dst_registry, m_registry, entity_map);
-        copy_component<box_collider_component>(dst_registry, m_registry, entity_map);
+        copy_component_type<transform_component>(dst_registry, m_registry, entity_map);
+        copy_component_type<camera_component>(dst_registry, m_registry, entity_map);
+        copy_component_type<sprite_renderer_component>(dst_registry, m_registry, entity_map);
+        copy_component_type<native_script_component>(dst_registry, m_registry, entity_map);
+        copy_component_type<rigid_body_component>(dst_registry, m_registry, entity_map);
+        copy_component_type<box_collider_component>(dst_registry, m_registry, entity_map);
+        copy_component_type<script_component>(dst_registry, m_registry, entity_map);
 
         new_scene->set_viewport_size(m_viewport_width, m_viewport_height);
         return new_scene;
@@ -186,57 +250,101 @@ namespace sge {
 
     void scene::on_start() {
         // Initialize the box2d physics engine
-        m_physics_data = new scene_physics_data;
-        m_physics_data->world = new b2World(b2Vec2(0.f, -9.8f));
-        m_physics_data->listener = scene_contact_listener::create(this);
-        m_physics_data->world->SetContactListener(m_physics_data->listener.get());
+        {
+            m_physics_data = new scene_physics_data;
+            m_physics_data->world = new b2World(b2Vec2(0.f, -9.8f));
+            m_physics_data->listener = scene_contact_listener::create(this);
+            m_physics_data->world->SetContactListener(m_physics_data->listener.get());
 
-        auto view = m_registry.view<rigid_body_component>();
-        for (auto id : view) {
-            entity e(id, this);
-            auto& transform = e.get_component<transform_component>();
-            auto& rb = e.get_component<rigid_body_component>();
+            auto view = m_registry.view<rigid_body_component>();
+            for (auto id : view) {
+                entity e(id, this);
+                auto& transform = e.get_component<transform_component>();
+                auto& rb = e.get_component<rigid_body_component>();
 
-            b2BodyDef body_def;
-            body_def.type = rigid_body_type_to_box2d_body(rb.type);
-            body_def.position.Set(transform.translation.x, transform.translation.y);
-            body_def.angle = glm::radians(transform.rotation);
-            b2Body* body = m_physics_data->world->CreateBody(&body_def);
-            body->SetFixedRotation(rb.fixed_rotation);
-            rb.runtime_body = body;
+                b2BodyDef body_def;
+                body_def.type = rigid_body_type_to_box2d_body(rb.type);
+                body_def.position.Set(transform.translation.x, transform.translation.y);
+                body_def.angle = glm::radians(transform.rotation);
+                b2Body* body = m_physics_data->world->CreateBody(&body_def);
+                body->SetFixedRotation(rb.fixed_rotation);
+                rb.runtime_body = body;
 
-            if (e.has_all<box_collider_component>()) {
-                auto& bc = e.get_component<box_collider_component>();
+                if (e.has_all<box_collider_component>()) {
+                    auto& bc = e.get_component<box_collider_component>();
 
-                b2PolygonShape box_shape;
-                box_shape.SetAsBox(bc.size.x * transform.scale.x, bc.size.y * transform.scale.y);
+                    b2PolygonShape box_shape;
+                    box_shape.SetAsBox(bc.size.x * transform.scale.x,
+                                       bc.size.y * transform.scale.y);
 
-                b2FixtureDef fixture_def;
-                fixture_def.shape = &box_shape;
-                fixture_def.density = bc.density;
-                fixture_def.friction = bc.friction;
-                fixture_def.restitution = bc.restitution;
-                fixture_def.restitutionThreshold = bc.restitution_threashold;
-                fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
+                    b2FixtureDef fixture_def;
+                    fixture_def.shape = &box_shape;
+                    fixture_def.density = bc.density;
+                    fixture_def.friction = bc.friction;
+                    fixture_def.restitution = bc.restitution;
+                    fixture_def.restitutionThreshold = bc.restitution_threashold;
+                    fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
 
-                auto fixture = body->CreateFixture(&fixture_def);
-                bc.runtime_fixture = fixture;
+                    auto fixture = body->CreateFixture(&fixture_def);
+                    bc.runtime_fixture = fixture;
+                }
+            }
+        }
+
+        // Call OnStart method, if it exists
+        {
+            auto view = m_registry.view<script_component>();
+            for (entt::entity id : view) {
+                entity e(id, this);
+                verify_script(e);
+
+                auto& sc = e.get_component<script_component>();
+                if (sc._class == nullptr) {
+                    continue;
+                }
+
+                void* OnStart = script_engine::get_method(sc._class, "OnStart()");
+                if (OnStart != nullptr) {
+                    void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+                    script_engine::call_method(instance, OnStart);
+                }
             }
         }
     }
 
     void scene::on_stop() {
+        // Call OnStop method, if it exists
+        {
+            auto view = m_registry.view<script_component>();
+            for (entt::entity id : view) {
+                entity e(id, this);
+                verify_script(e);
+
+                auto& sc = e.get_component<script_component>();
+                if (sc._class == nullptr) {
+                    continue;
+                }
+
+                void* OnStop = script_engine::get_method(sc._class, "OnStop()");
+                if (OnStop != nullptr) {
+                    void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+                    script_engine::call_method(instance, OnStop);
+                }
+            }
+        }
+
+        // Delete physics data
         delete m_physics_data->world;
         delete m_physics_data;
         m_physics_data = nullptr;
     }
 
     void scene::on_runtime_update(timestep ts) {
-        // Scripts
+        // Native Scripts
         {
             auto view = m_registry.view<native_script_component>();
-            for (auto entt_entity : view) {
-                entity entity(entt_entity, this);
+            for (auto id : view) {
+                entity entity(id, this);
                 auto& nsc = entity.get_component<native_script_component>();
 
                 if (nsc.script == nullptr && nsc.instantiate != nullptr) {
@@ -245,6 +353,28 @@ namespace sge {
 
                 if (nsc.script != nullptr) {
                     nsc.script->on_update(ts);
+                }
+            }
+        }
+
+        // Managed Scripts
+        {
+            auto view = m_registry.view<script_component>();
+            for (auto id : view) {
+                entity e(id, this);
+                verify_script(e);
+
+                auto& sc = e.get_component<script_component>();
+                if (sc._class == nullptr) {
+                    continue;
+                }
+
+                void* OnUpdate = script_engine::get_method(sc._class, "OnUpdate(Timestep)");
+                if (OnUpdate != nullptr) {
+                    void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+
+                    double timestep_data = ts.count();
+                    script_engine::call_method(instance, OnUpdate, &timestep_data);
                 }
             }
         }
@@ -384,6 +514,43 @@ namespace sge {
                 renderer::draw_rotated_quad(transform.translation, transform.rotation,
                                             transform.scale, sprite.color);
             }
+        }
+    }
+
+    void scene::verify_script(entity e) {
+        auto& sc = e.get_component<script_component>();
+        if (sc._class != nullptr && sc.gc_handle == 0) {
+            void* instance = script_engine::alloc_object(sc._class);
+
+            if (script_engine::get_method(sc._class, ".ctor") != nullptr) {
+                void* constructor = script_engine::get_method(sc._class, ".ctor()");
+                if (constructor != nullptr) {
+                    script_engine::call_method(instance, constructor);
+                } else {
+                    class_name_t name_data;
+                    script_engine::get_class_name(sc._class, name_data);
+                    std::string full_name = script_engine::get_string(name_data);
+
+                    throw std::runtime_error("could not find a suitable constructor for script: " +
+                                             full_name);
+                }
+            } else {
+                script_engine::init_object(instance);
+            }
+
+            sc.gc_handle = garbage_collector::create_ref(instance);
+        }
+    }
+
+    void scene::remove_script(entity e) {
+        auto& sc = e.get_component<script_component>();
+        if (sc._class != nullptr) {
+            if (sc.gc_handle != 0) {
+                garbage_collector::destroy_ref(sc.gc_handle);
+                sc.gc_handle = 0;
+            }
+
+            sc._class = nullptr;
         }
     }
 

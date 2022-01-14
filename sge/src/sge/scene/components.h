@@ -148,15 +148,26 @@ namespace sge {
 
         // Pointer to the partner Box2D Fixture object
         void* runtime_fixture = nullptr;
+        std::optional<glm::vec2> previous_hitbox_size;
 
         box_collider_component() = default;
         box_collider_component(const box_collider_component&) = default;
         box_collider_component& operator=(const box_collider_component&) = default;
     };
 
+    struct script_component {
+        script_component() = default;
+
+        script_component(const script_component&) = default;
+        script_component& operator=(const script_component&) = default;
+
+        uint32_t gc_handle = 0;
+        void* _class = nullptr;
+    };
+
     //=== scene::on_component_added/on_component_removed ====
     template <>
-    inline void scene::on_component_added<camera_component>(entity& entity,
+    inline void scene::on_component_added<camera_component>(entity entity,
                                                             camera_component& component) {
         uint32_t width = m_viewport_width;
         uint32_t height = m_viewport_height;
@@ -166,10 +177,16 @@ namespace sge {
 
     template <>
     inline void scene::on_component_removed<native_script_component>(
-        entity& entity, native_script_component& component) {
+        entity entity, native_script_component& component) {
         if (component.script != nullptr) {
             component.destroy(&component);
         }
+    }
+
+    template <>
+    inline void scene::on_component_removed<script_component>(entity entity,
+                                                              script_component& component) {
+        remove_script(entity);
     }
 
 } // namespace sge

@@ -25,6 +25,7 @@
 namespace sge {
 
     class entity;
+    class scene_serializer;
     class scene_contact_listener;
     struct scene_physics_data;
 
@@ -40,6 +41,9 @@ namespace sge {
         entity create_entity(guid id, const std::string& name = std::string());
         void destroy_entity(entity entity);
         void clear();
+
+        void set_script(entity e, void* _class);
+        void reset_script(entity e);
 
         ref<scene> copy();
 
@@ -63,17 +67,20 @@ namespace sge {
 
     private:
         template <typename T>
-        void on_component_added(entity& entity, T& component) {
+        void on_component_added(entity entity, T& component) {
             // no behavior
         }
 
         template <typename T>
-        void on_component_removed(entity& entity, T& component) {
+        void on_component_removed(entity entity, T& component) {
             // no behavior
         }
 
         void view_iteration(entt::entity id, const std::function<void(entity)>& callback);
         void render();
+
+        void verify_script(entity e);
+        void remove_script(entity e);
 
         guid get_guid(entity e);
 
@@ -83,5 +90,6 @@ namespace sge {
 
         friend class entity;
         friend class scene_contact_listener;
+        friend class scene_serializer;
     };
 } // namespace sge
