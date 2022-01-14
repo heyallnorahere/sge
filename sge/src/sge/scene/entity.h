@@ -26,7 +26,7 @@ namespace sge {
         entity(const entity& other) = default;
 
         template <typename T, typename... Args>
-        T& add_component(Args&&... args) {
+        T& add_component(Args&&... args) const {
             if (has_all<T>()) {
                 throw std::runtime_error("entity already has component!");
             }
@@ -37,7 +37,7 @@ namespace sge {
         }
 
         template <typename T>
-        T& get_component() {
+        T& get_component() const {
             if (!has_all<T>()) {
                 throw std::runtime_error("entity does not have component!");
             }
@@ -46,17 +46,17 @@ namespace sge {
         }
 
         template <typename... T>
-        bool has_all() {
+        bool has_all() const {
             return m_scene->m_registry.all_of<T...>(m_handle);
         }
 
         template <typename... T>
-        bool has_any() {
+        bool has_any() const {
             return m_scene->m_registry.any_of<T...>(m_handle);
         }
 
         template <typename T>
-        void remove_component() {
+        void remove_component() const {
             if (!has_all<T>()) {
                 throw std::runtime_error("entity does not have component!");
             }

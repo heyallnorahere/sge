@@ -20,6 +20,7 @@
 #include "sge/scene/entity_script.h"
 #include "sge/scene/entity.h"
 #include "sge/core/guid.h"
+#include "sge/scene/scene.h"
 namespace sge {
     struct id_component {
         guid id;
@@ -167,7 +168,7 @@ namespace sge {
 
     //=== scene::on_component_added/on_component_removed ====
     template <>
-    inline void scene::on_component_added<camera_component>(entity entity,
+    inline void scene::on_component_added<camera_component>(const entity& e,
                                                             camera_component& component) {
         uint32_t width = m_viewport_width;
         uint32_t height = m_viewport_height;
@@ -177,16 +178,16 @@ namespace sge {
 
     template <>
     inline void scene::on_component_removed<native_script_component>(
-        entity entity, native_script_component& component) {
+        const entity& e, native_script_component& component) {
         if (component.script != nullptr) {
             component.destroy(&component);
         }
     }
 
     template <>
-    inline void scene::on_component_removed<script_component>(entity entity,
+    inline void scene::on_component_removed<script_component>(const entity& e,
                                                               script_component& component) {
-        remove_script(entity);
+        remove_script(e);
     }
 
 } // namespace sge

@@ -192,7 +192,7 @@ namespace sge {
     }
 
     template <>
-    static script_component copy_component<script_component>(const script_component& src) {
+    script_component copy_component<script_component>(const script_component& src) {
         script_component dst;
         dst._class = src._class;
 

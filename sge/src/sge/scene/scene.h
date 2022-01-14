@@ -67,12 +67,12 @@ namespace sge {
 
     private:
         template <typename T>
-        void on_component_added(entity entity, T& component) {
+        void on_component_added(const entity& e, T& component) {
             // no behavior
         }
 
         template <typename T>
-        void on_component_removed(entity entity, T& component) {
+        void on_component_removed(const entity& e, T& component) {
             // no behavior
         }
 
