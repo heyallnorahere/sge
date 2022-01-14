@@ -14,35 +14,28 @@
    limitations under the License.
 */
 
+using SGE;
+using SGE.Components;
 using System;
 
-namespace SGE.Components
+namespace ExampleScripts
 {
-    public enum BodyType
+    public sealed class CameraScript : Script
     {
-        Static = 0,
-        Kinematic,
-        Dynamic
-    }
-    public sealed class RigidBodyComponent
-    {
-        internal RigidBodyComponent(IntPtr address)
+        public void OnStart()
         {
-            mAddress = address;
+            var tagComponent = GetComponent<TagComponent>();
+            Console.WriteLine($"{tagComponent.Tag}: started scene");
         }
-
-        public BodyType BodyType
+        public void OnUpdate(Timestep ts)
         {
-            get => InternalCalls.GetBodyType(mAddress);
-            set => InternalCalls.SetBodyType(mAddress, value);
+            if (Target != null)
+            {
+                var targetTransform = Target.GetComponent<TransformComponent>();
+                var transform = GetComponent<TransformComponent>();
+                transform.Translation = targetTransform.Translation;
+            }
         }
-
-        public bool FixedRotation
-        {
-            get => InternalCalls.GetFixedRotation(mAddress);
-            set => InternalCalls.SetFixedRotation(mAddress, value);
-        }
-
-        private readonly IntPtr mAddress;
+        public Entity Target { get; set; } = null;
     }
 }

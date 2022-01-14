@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+using SGE.Components;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -42,5 +43,87 @@ namespace SGE
         // guid
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern GUID GenerateGUID();
+
+        // tag component
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetTag(IntPtr component, string tag);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetTag(IntPtr component);
+
+        // transform component
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetTranslation(IntPtr component, out Vector2 translation);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetTranslation(IntPtr component, Vector2 translation);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetRotation(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetRotation(IntPtr component, float rotation);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetScale(IntPtr component, out Vector2 scale);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetScale(IntPtr component, Vector2 scale);
+
+        // camera component
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetPrimary(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetPrimary(IntPtr component, bool primary);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern ProjectionType GetProjectionType(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetProjectionType(IntPtr component, ProjectionType type);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetViewSize(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetViewSize(IntPtr component, float viewSize);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetFOV(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetFOV(IntPtr component, float fov);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetOrthographicClips(IntPtr component, out CameraClips clips);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetOrthographicClips(IntPtr component, CameraClips clips);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetPerspectiveClips(IntPtr component, out CameraClips clips);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetPerspectiveClips(IntPtr component, CameraClips clips);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetOrthographic(IntPtr component, float viewSize, CameraClips clips);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetPerspective(IntPtr component, float fov, CameraClips clips);
+
+        // rigid body component
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern BodyType GetBodyType(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetBodyType(IntPtr component, BodyType bodyType);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetFixedRotation(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetFixedRotation(IntPtr component, bool fixedRotation);
+
+        // box collider component
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetSize(IntPtr component, out Vector2 size);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetSize(IntPtr component, Vector2 size);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetDensity(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetDensity(IntPtr component, float density);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetFriction(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetFriction(IntPtr component, float friction);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetRestitution(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetRestitution(IntPtr component, float restitution);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetRestitutionThreashold(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetRestitutionThreashold(IntPtr component, float threashold);
     }
 }

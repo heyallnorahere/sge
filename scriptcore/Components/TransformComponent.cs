@@ -25,7 +25,33 @@ namespace SGE.Components
             mAddress = address;
         }
 
-        // todo: fully implement
+        public Vector2 Translation
+        {
+            get
+            {
+                Vector2 translation;
+                InternalCalls.GetTranslation(mAddress, out translation);
+                return translation;
+            }
+            set => InternalCalls.SetTranslation(mAddress, value);
+        }
+
+        public float Rotation
+        {
+            get => InternalCalls.GetRotation(mAddress);
+            set => InternalCalls.SetRotation(mAddress, value);
+        }
+
+        public Vector2 Scale
+        {
+            get
+            {
+                Vector2 scale;
+                InternalCalls.GetScale(mAddress, out scale);
+                return scale;
+            }
+            set => InternalCalls.SetScale(mAddress, value);
+        }
 
         private readonly IntPtr mAddress;
     }

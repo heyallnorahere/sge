@@ -18,6 +18,15 @@ using System;
 
 namespace SGE.Components
 {
+    public enum ProjectionType
+    {
+        Orthographic = 0,
+        Perspective
+    }
+    public struct CameraClips
+    {
+        public float Near, Far;
+    }
     public sealed class CameraComponent
     {
         internal CameraComponent(IntPtr address)
@@ -25,7 +34,54 @@ namespace SGE.Components
             mAddress = address;
         }
 
-        // todo: fully implement
+        public void SetOrthographic(float viewSize, CameraClips clips) => InternalCalls.SetOrthographic(mAddress, viewSize, clips);
+        public void SetPerspective(float fov, CameraClips clips) => InternalCalls.SetPerspective(mAddress, fov, clips);
+
+        public bool Primary
+        {
+            get => InternalCalls.GetPrimary(mAddress);
+            set => InternalCalls.SetPrimary(mAddress, value);
+        }
+
+        public ProjectionType ProjectionType
+        {
+            get => InternalCalls.GetProjectionType(mAddress);
+            set => InternalCalls.SetProjectionType(mAddress, value);
+        }
+
+        public float ViewSize
+        {
+            get => InternalCalls.GetViewSize(mAddress);
+            set => InternalCalls.SetViewSize(mAddress, value);
+        }
+
+        public float FOV
+        {
+            get => InternalCalls.GetFOV(mAddress);
+            set => InternalCalls.SetFOV(mAddress, value);
+        }
+
+        public CameraClips OrthographicClips
+        {
+            get
+            {
+                CameraClips clips;
+                InternalCalls.GetOrthographicClips(mAddress, out clips);
+                return clips;
+            }
+            set => InternalCalls.SetOrthographicClips(mAddress, value);
+        }
+
+        public CameraClips PerspectiveClips
+        {
+            get
+            {
+                CameraClips clips;
+                InternalCalls.GetPerspectiveClips(mAddress, out clips);
+                return clips;
+            }
+            set => InternalCalls.SetPerspectiveClips(mAddress, value);
+        }
 
         private readonly IntPtr mAddress;
     }

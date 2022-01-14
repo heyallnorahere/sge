@@ -23,9 +23,10 @@ namespace SGE.Components
         internal SpriteRendererComponent(IntPtr address)
         {
             mAddress = address;
+            throw new NotImplementedException();
         }
 
-        // todo: fully implement
+        // todo(nora): we need a vector4 struct and a managed texture class
 
         private readonly IntPtr mAddress;
     }

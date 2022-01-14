@@ -116,6 +116,133 @@ namespace sge {
         }
 
         static guid GenerateGUID() { return guid(); }
+
+        static void SetTag(tag_component* component, void* tag) {
+            component->tag = script_engine::from_managed_string(tag);
+        }
+
+        static void* GetTag(tag_component* component) {
+            return script_engine::to_managed_string(component->tag);
+        }
+
+        static void GetTranslation(transform_component* component, glm::vec2* translation) {
+            *translation = component->translation;
+        }
+
+        static void SetTranslation(transform_component* component, glm::vec2 translation) {
+            component->translation = translation;
+        }
+
+        static float GetRotation(transform_component* component) { return component->rotation; }
+
+        static void SetRotation(transform_component* component, float rotation) {
+            component->rotation = rotation;
+        }
+
+        static void GetScale(transform_component* component, glm::vec2* scale) {
+            *scale = component->scale;
+        }
+
+        static void SetScale(transform_component* component, glm::vec2 scale) {
+            component->scale = scale;
+        }
+
+        static bool GetPrimary(camera_component* component) { return component->primary; }
+
+        static void SetPrimary(camera_component* component, bool primary) {
+            component->primary = primary;
+        }
+
+        static projection_type GetProjectionType(camera_component* component) {
+            return component->camera.get_projection_type();
+        }
+
+        static void SetProjectionType(camera_component* component, projection_type type) {
+            component->camera.set_projection_type(type);
+        }
+
+        static float GetViewSize(camera_component* component) {
+            return component->camera.get_orthographic_size();
+        }
+
+        static void SetViewSize(camera_component* component, float view_size) {
+            component->camera.set_orthographic_size(view_size);
+        }
+
+        static float GetFOV(camera_component* component) {
+            return component->camera.get_vertical_fov();
+        }
+
+        static void SetFOV(camera_component* component, float fov) {
+            component->camera.set_vertical_fov(fov);
+        }
+
+        static void GetOrthographicClips(camera_component* component,
+                                         runtime_camera::clips* clips) {
+            *clips = component->camera.get_orthographic_clips();
+        }
+
+        static void SetOrthographicClips(camera_component* component, runtime_camera::clips clips) {
+            component->camera.set_orthographic_clips(clips);
+        }
+
+        static void GetPerspectiveClips(camera_component* component, runtime_camera::clips* clips) {
+            *clips = component->camera.get_perspective_clips();
+        }
+
+        static void SetPerspectiveClips(camera_component* component, runtime_camera::clips clips) {
+            component->camera.set_perspective_clips(clips);
+        }
+
+        static void SetOrthographic(camera_component* component, float viewSize,
+                                    runtime_camera::clips clips) {
+            component->camera.set_orthographic(viewSize, clips.near, clips.far);
+        }
+
+        static void SetPerspective(camera_component* component, float fov,
+                                   runtime_camera::clips clips) {
+            component->camera.set_perspective(fov, clips.near, clips.far);
+        }
+
+        static rigid_body_component::body_type GetBodyType(rigid_body_component* rb) {
+            return rb->type;
+        }
+
+        static void SetBodyType(rigid_body_component* rb, rigid_body_component::body_type type) {
+            rb->type = type;
+        }
+
+        static bool GetFixedRotation(rigid_body_component* rb) { return rb->fixed_rotation; }
+
+        static void SetFixedRotation(rigid_body_component* rb, bool fixed_rotation) {
+            rb->fixed_rotation = fixed_rotation;
+        }
+
+        static void GetSize(box_collider_component* bc, glm::vec2* size) { *size = bc->size; }
+        static void SetSize(box_collider_component* bc, glm::vec2 size) { bc->size = size; }
+
+        static float GetDensity(box_collider_component* bc) { return bc->density; }
+        static void SetDensity(box_collider_component* bc, float density) { bc->density = density; }
+
+        static float GetFriction(box_collider_component* bc) { return bc->friction; }
+
+        static void SetFriction(box_collider_component* bc, float friction) {
+            bc->friction = friction;
+        }
+
+        static float GetRestitution(box_collider_component* bc) { return bc->restitution; }
+        
+        static void SetRestitution(box_collider_component* bc, float restitution) {
+            bc->restitution = restitution;
+        }
+
+        static float GetRestitutionThreashold(box_collider_component* bc) {
+            return bc->restitution_threashold;
+        }
+
+        static void SetRestitutionThreashold(box_collider_component* bc, float threashold) {
+            bc->restitution_threashold = threashold;
+        }
     } // namespace internal_script_calls
 
     void register_internal_script_calls() {
@@ -139,6 +266,52 @@ namespace sge {
 
         // guid
         REGISTER_CALL(GenerateGUID);
+
+        // tag component
+        REGISTER_CALL(SetTag);
+        REGISTER_CALL(GetTag);
+
+        // transform component
+        REGISTER_CALL(GetTranslation);
+        REGISTER_CALL(SetTranslation);
+        REGISTER_CALL(GetRotation);
+        REGISTER_CALL(SetRotation);
+        REGISTER_CALL(GetScale);
+        REGISTER_CALL(SetScale);
+
+        // camera component
+        REGISTER_CALL(GetPrimary);
+        REGISTER_CALL(SetPrimary);
+        REGISTER_CALL(GetProjectionType);
+        REGISTER_CALL(SetProjectionType);
+        REGISTER_CALL(GetViewSize);
+        REGISTER_CALL(SetViewSize);
+        REGISTER_CALL(GetFOV);
+        REGISTER_CALL(SetFOV);
+        REGISTER_CALL(GetOrthographicClips);
+        REGISTER_CALL(SetOrthographicClips);
+        REGISTER_CALL(GetPerspectiveClips);
+        REGISTER_CALL(SetPerspectiveClips);
+        REGISTER_CALL(SetOrthographic);
+        REGISTER_CALL(SetPerspective);
+
+        // rigid body component
+        REGISTER_CALL(GetBodyType);
+        REGISTER_CALL(SetBodyType);
+        REGISTER_CALL(GetFixedRotation);
+        REGISTER_CALL(SetFixedRotation);
+
+        // box collider component
+        REGISTER_CALL(GetSize);
+        REGISTER_CALL(SetSize);
+        REGISTER_CALL(GetDensity);
+        REGISTER_CALL(SetDensity);
+        REGISTER_CALL(GetFriction);
+        REGISTER_CALL(SetFriction);
+        REGISTER_CALL(GetRestitution);
+        REGISTER_CALL(SetRestitution);
+        REGISTER_CALL(GetRestitutionThreashold);
+        REGISTER_CALL(SetRestitutionThreashold);
 
 #undef REGISTER_CALL
     }

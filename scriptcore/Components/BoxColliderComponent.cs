@@ -25,7 +25,40 @@ namespace SGE.Components
             mAddress = address;
         }
 
-        // todo: fully implement
+        public Vector2 Size
+        {
+            get
+            {
+                Vector2 size;
+                InternalCalls.GetSize(mAddress, out size);
+                return size;
+            }
+            set => InternalCalls.SetSize(mAddress, value);
+        }
+
+        public float Density
+        {
+            get => InternalCalls.GetDensity(mAddress);
+            set => InternalCalls.SetDensity(mAddress, value);
+        }
+
+        public float Friction
+        {
+            get => InternalCalls.GetFriction(mAddress);
+            set => InternalCalls.SetFriction(mAddress, value);
+        }
+
+        public float Restitution
+        {
+            get => InternalCalls.GetRestitution(mAddress);
+            set => InternalCalls.SetRestitution(mAddress, value);
+        }
+
+        public float RestitutionThreashold
+        {
+            get => InternalCalls.GetRestitutionThreashold(mAddress);
+            set => InternalCalls.SetRestitutionThreashold(mAddress, value);
+        }
 
         private readonly IntPtr mAddress;
     }

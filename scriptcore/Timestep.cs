@@ -1,4 +1,4 @@
-/*
+﻿/*
    Copyright 2022 Nora Beda and SGE contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,23 +14,18 @@
    limitations under the License.
 */
 
-using System;
-
-namespace SGE.Components
+namespace SGE
 {
-    public sealed class TagComponent
+    public struct Timestep
     {
-        internal TagComponent(IntPtr address)
+        public Timestep(double value)
         {
-            mAddress = address;
+            Value = value;
         }
 
-        public string Tag
-        {
-            get => InternalCalls.GetTag(mAddress);
-            set => InternalCalls.SetTag(mAddress, value);
-        }
+        public static implicit operator double(Timestep ts) => ts.Value;
+        public static implicit operator Timestep(double value) => new Timestep(value);
 
-        private readonly IntPtr mAddress;
+        public double Value;
     }
 }

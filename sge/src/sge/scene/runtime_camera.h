@@ -20,6 +20,10 @@ namespace sge {
 
     class runtime_camera {
     public:
+        struct clips {
+            float near, far;
+        };
+
         runtime_camera() { recalculate_projection(); }
 
         runtime_camera(const runtime_camera&) = default;
@@ -48,6 +52,12 @@ namespace sge {
             recalculate_projection();
         }
 
+        const clips& get_perspective_clips() const { return m_perspective_clips; }
+        void set_perspective_clips(const clips& c) {
+            m_perspective_clips = c;
+            recalculate_projection();
+        }
+
         float get_orthographic_size() const { return m_orthographic_size; }
         void set_orthographic_size(float size) {
             m_orthographic_size = size;
@@ -66,6 +76,12 @@ namespace sge {
             recalculate_projection();
         }
 
+        const clips& get_orthographic_clips() const { return m_orthographic_clips; }
+        void set_orthographic_clips(const clips& c) {
+            m_orthographic_clips = c;
+            recalculate_projection();
+        }
+
         const glm::mat4& get_projection() const { return m_projection; }
         projection_type get_projection_type() const { return m_type; }
         void set_projection_type(projection_type type) {
@@ -74,10 +90,6 @@ namespace sge {
         }
 
     private:
-        struct clips {
-            float near, far;
-        };
-
         void recalculate_projection();
         glm::mat4 m_projection;
 
