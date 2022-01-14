@@ -107,7 +107,8 @@ namespace sgm {
                 component_pair<camera_component>("Camera"),
                 component_pair<sprite_renderer_component>("Sprite renderer"),
                 component_pair<rigid_body_component>("Rigid body"),
-                component_pair<box_collider_component>("Box collider")
+                component_pair<box_collider_component>("Box collider"),
+                component_pair<script_component>("Script"),
             };
 
             for (const auto& [text, callback] : options) {
@@ -242,5 +243,39 @@ namespace sgm {
                 ImGui::DragFloat("Restitution threashold", &component.restitution_threashold, 0.1f);
                 ImGui::DragFloat2("Size", &component.size.x, 0.01f);
             });
+
+        draw_component<script_component>("Script", selection, [this, selection](script_component& component) {
+            // todo: script cache
+            size_t assembly_index = editor_scene::get_assembly_index();
+            auto is_class_valid = [assembly_index](const std::string& name) {
+                void* _class = script_engine::get_class(assembly_index, name);
+                return _class != nullptr;
+            };
+
+            bool valid_script = is_class_valid(component.class_name);
+            bool invalid_name = !valid_script;
+
+            if (invalid_name) {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.f, 0.f, 1.f));
+            }
+
+            if (ImGui::InputText("Script Name", &component.class_name)) {
+                valid_script = is_class_valid(component.class_name);
+
+                auto _scene = editor_scene::get_scene();
+                if (valid_script) {
+                    void* _class = script_engine::get_class(assembly_index, component.class_name);
+                    _scene->set_script(selection, _class);
+                } else {
+                    _scene->set_script(selection, nullptr);
+                }
+            }
+
+            if (invalid_name) {
+                ImGui::PopStyleColor();
+            }
+
+            // todo: render property controls
+        });
     }
 } // namespace sgm

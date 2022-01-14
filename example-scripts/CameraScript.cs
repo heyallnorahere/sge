@@ -25,16 +25,18 @@ namespace ExampleScripts
         public void OnStart()
         {
             var tagComponent = GetComponent<TagComponent>();
-            Console.WriteLine($"{tagComponent.Tag}: started scene");
+            Log.Info("{0}: started scene", tagComponent.Tag);
         }
         public void OnUpdate(Timestep ts)
         {
-            if (Target != null)
+            if (Target is null)
             {
-                var targetTransform = Target.GetComponent<TransformComponent>();
-                var transform = GetComponent<TransformComponent>();
-                transform.Translation = targetTransform.Translation;
+                return;
             }
+
+            var targetTransform = Target.GetComponent<TransformComponent>();
+            var transform = GetComponent<TransformComponent>();
+            transform.Translation = targetTransform.Translation;
         }
         public Entity Target { get; set; } = null;
     }

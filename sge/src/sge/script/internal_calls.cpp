@@ -41,7 +41,7 @@ namespace sge {
         callbacks.has = [](entity e) { return e.has_all<T>(); };
 
         callbacks.get = [_class](entity e) mutable {
-            void* constructor = script_engine::get_method(_class, ".ctor(IntPtr)");
+            void* constructor = script_engine::get_method(_class, ".ctor");
             auto component = &e.get_component<T>();
 
             void* instance = script_engine::alloc_object(_class);
@@ -77,23 +77,11 @@ namespace sge {
     }
 
     namespace internal_script_calls {
-        static bool AreRefsEqual(void* lhs, void* rhs) {
-            void* ptr1 = *(void**)lhs;
-            void* ptr2 = *(void**)rhs;
-            return ptr1 == ptr2;
-        }
-
-        static void GetRefPointer(void* nativeRef, void** pointer) {
-            *pointer = *(void**)nativeRef;
-        }
-
-        static void DestroySceneRef(void* nativeRef) { delete (ref<scene>*)nativeRef; }
-
         static bool HasComponent(void* componentType, uint32_t entityID, void* _scene) {
             verify_component_type_validity(componentType);
 
-            auto scene_ref = *(ref<scene>*)_scene;
-            entity e((entt::entity)entityID, scene_ref.raw());
+            auto scene_ptr = (scene*)_scene;
+            entity e((entt::entity)entityID, scene_ptr);
 
             const auto& callbacks = internal_script_call_data.component_callbacks[componentType];
             return callbacks.has(e);
@@ -102,16 +90,16 @@ namespace sge {
         static void* GetComponent(void* componentType, uint32_t entityID, void* _scene) {
             verify_component_type_validity(componentType);
 
-            auto scene_ref = *(ref<scene>*)_scene;
-            entity e((entt::entity)entityID, scene_ref.raw());
+            auto scene_ptr = (scene*)_scene;
+            entity e((entt::entity)entityID, scene_ptr);
 
             const auto& callbacks = internal_script_call_data.component_callbacks[componentType];
             return callbacks.get(e);
         }
 
         static guid GetGUID(uint32_t entityID, void* _scene) {
-            auto scene_ref = *(ref<scene>*)_scene;
-            entity e((entt::entity)entityID, scene_ref.raw());
+            auto scene_ptr = (scene*)_scene;
+            entity e((entt::entity)entityID, scene_ptr);
             return e.get_guid();
         }
 
@@ -243,6 +231,26 @@ namespace sge {
         static void SetRestitutionThreashold(box_collider_component* bc, float threashold) {
             bc->restitution_threashold = threashold;
         }
+
+        static void LogDebug(void* message) {
+            std::string string = script_engine::from_managed_string(message);
+            spdlog::debug(string);
+        }
+
+        static void LogInfo(void* message) {
+            std::string string = script_engine::from_managed_string(message);
+            spdlog::info(string);
+        }
+
+        static void LogWarn(void* message) {
+            std::string string = script_engine::from_managed_string(message);
+            spdlog::warn(string);
+        }
+
+        static void LogError(void* message) {
+            std::string string = script_engine::from_managed_string(message);
+            spdlog::error(string);
+        }
     } // namespace internal_script_calls
 
     void register_internal_script_calls() {
@@ -251,13 +259,6 @@ namespace sge {
 #define REGISTER_CALL(name)                                                                        \
     script_engine::register_internal_call("SGE.InternalCalls::" #name,                             \
                                           (void*)internal_script_calls::name)
-
-        // ref
-        REGISTER_CALL(AreRefsEqual);
-        REGISTER_CALL(GetRefPointer);
-
-        // scene
-        REGISTER_CALL(DestroySceneRef);
 
         // entity
         REGISTER_CALL(HasComponent);
@@ -312,6 +313,12 @@ namespace sge {
         REGISTER_CALL(SetRestitution);
         REGISTER_CALL(GetRestitutionThreashold);
         REGISTER_CALL(SetRestitutionThreashold);
+
+        // logger
+        REGISTER_CALL(LogDebug);
+        REGISTER_CALL(LogInfo);
+        REGISTER_CALL(LogWarn);
+        REGISTER_CALL(LogError);
 
 #undef REGISTER_CALL
     }

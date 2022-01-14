@@ -164,6 +164,7 @@ namespace sge {
 
         uint32_t gc_handle = 0;
         void* _class = nullptr;
+        std::string class_name;
     };
 
     //=== scene::on_component_added/on_component_removed ====

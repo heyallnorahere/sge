@@ -40,7 +40,6 @@ namespace sge {
         static void register_internal_call(const std::string& name, const void* callback);
 
         static size_t load_assembly(const fs::path& path);
-        static void close_assembly(size_t index);
         static size_t get_assembly_count();
 
         static std::string get_string(const class_name_t& class_name);
@@ -62,6 +61,7 @@ namespace sge {
         static void iterate_methods(void* _class, std::vector<void*>& methods);
 
         static void* call_method(void* object, void* method, void** arguments = nullptr);
+        static void handle_exception(void* exception);
 
         template <typename... Args>
         static void* call_method(void* object, void* method, Args*... args) {
@@ -89,5 +89,27 @@ namespace sge {
 
         static void* to_reflection_type(void* _class);
         static void* from_reflection_type(void* reflection_type);
+
+        static void* get_property_value(void* object, void* property, void** arguments = nullptr);
+        static void set_property_value(void* object, void* property, void** arguments);
+
+        template <typename... Args>
+        static void* get_property_value(void* object, void* property, Args*... args) {
+            std::vector<void*> args_vector = { std::forward<Args*>(args)... };
+            void** arguments = args_vector.empty() ? nullptr : args_vector.data();
+
+            return get_property_value(object, property, arguments);
+        }
+
+        template <typename... Args>
+        static void set_property_value(void* object, void* property, void* value, Args*... args) {
+            std::vector<void*> args_vector = { std::forward<Args*>(args)... };
+            args_vector.insert(args_vector.begin(), value);
+
+            set_property_value(object, property, args_vector.data());
+        }
+
+        static void* get_field_value(void* object, void* field);
+        static void set_field_value(void* object, void* field, void* value);
     };
 } // namespace sge

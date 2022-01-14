@@ -66,6 +66,7 @@ namespace sge {
         }
 
         guid get_guid() { return m_scene->get_guid(*this); }
+        scene* get_scene() { return m_scene; }
 
         operator bool() const { return m_handle != entt::null; }
         operator entt::entity() const { return m_handle; }

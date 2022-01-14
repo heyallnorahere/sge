@@ -20,28 +20,16 @@ namespace SGE
 {
     public sealed class Scene
     {
-        internal Scene(IntPtr nativeRef)
+        internal Scene(IntPtr nativeAddress)
         {
-            mNativeRef = nativeRef;
-        }
-
-        ~Scene()
-        {
-            InternalCalls.DestroySceneRef(mNativeRef);
+            mNativeAddress = nativeAddress;
         }
 
         public override bool Equals(object obj)
         {
             if (obj is Scene scene)
             {
-                if (mNativeRef == IntPtr.Zero || scene.mNativeRef == IntPtr.Zero)
-                {
-                    return mNativeRef == scene.mNativeRef;
-                }
-                else
-                {
-                    return InternalCalls.AreRefsEqual(mNativeRef, scene.mNativeRef);
-                }
+                return mNativeAddress == scene.mNativeAddress;
             }
             else
             {
@@ -49,13 +37,7 @@ namespace SGE
             }
         }
 
-        public override int GetHashCode()
-        {
-            IntPtr pointer;
-            InternalCalls.GetRefPointer(mNativeRef, out pointer);
-
-            return pointer.GetHashCode();
-        }
+        public override int GetHashCode() => mNativeAddress.GetHashCode();
 
         public static bool operator ==(Scene lhs, Scene rhs)
         {
@@ -67,6 +49,6 @@ namespace SGE
             return !lhs.Equals(rhs);
         }
 
-        internal readonly IntPtr mNativeRef;
+        internal readonly IntPtr mNativeAddress;
     }
 }

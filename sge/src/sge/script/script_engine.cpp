@@ -21,8 +21,9 @@
 #include "sge/script/internal_calls.h"
 namespace sge {
     struct assembly_t {
-        MonoAssembly* assembly;
-        MonoImage* image;
+        MonoAssembly* assembly = nullptr;
+        MonoImage* image = nullptr;
+        fs::path path;
     };
 
     struct script_engine_data_t {
@@ -56,7 +57,7 @@ namespace sge {
 
         garbage_collector::shutdown();
 
-        // todo: close?
+        // todo: close assemblies?
 
         mono_jit_cleanup(script_engine_data->root_domain);
         script_engine_data.reset();
@@ -83,6 +84,13 @@ namespace sge {
 
     size_t script_engine::load_assembly(const fs::path& path) {
         std::string string_path = path.string();
+        for (size_t i = 0; i < script_engine_data->assemblies.size(); i++) {
+            if (script_engine_data->assemblies[i].path == path) {
+                spdlog::warn("attempted to load {0} more than once", string_path);
+                return i;
+            }
+        }
+
         if (!fs::exists(path)) {
             throw std::runtime_error("assembly does not exist: " + string_path);
         }
@@ -108,21 +116,6 @@ namespace sge {
             script_engine_data->assemblies.push_back(assembly);
             return index;
         }
-    }
-
-    void script_engine::close_assembly(size_t index) {
-        if (index >= script_engine_data->assemblies.size() ||
-            script_engine_data->assemblies[index].assembly == nullptr) {
-            throw std::runtime_error("attempted to close a nonexistent assembly!");
-        }
-
-        if (index == 0) {
-            throw std::runtime_error("index 0 is reserved!");
-        }
-
-        // todo: close?
-
-        script_engine_data->assemblies[index] = { nullptr, nullptr };
     }
 
     size_t script_engine::get_assembly_count() { return script_engine_data->assemblies.size(); }
@@ -263,12 +256,6 @@ namespace sge {
         }
     }
 
-    static void handle_mono_exception(MonoObject* exception) {
-        if (exception != nullptr) {
-            spdlog::error("exception was thrown - whoopsie");
-        }
-    }
-
     void* script_engine::call_method(void* object, void* method, void** arguments) {
         if (method == nullptr) {
             throw std::runtime_error("attempted to call nullptr!");
@@ -277,9 +264,40 @@ namespace sge {
 
         MonoObject* exc = nullptr;
         void* returned = mono_runtime_invoke(mono_method, object, arguments, &exc);
-        handle_mono_exception(exc);
+        handle_exception(exc);
 
         return returned;
+    }
+
+    void script_engine::handle_exception(void* exception) {
+        if (exception != nullptr) {
+            void* exc_class = get_class_from_object(exception);
+
+            class_name_t class_name;
+            get_class_name(exc_class, class_name);
+            std::string exception_name = get_string(class_name);
+
+            void* property = get_property(exc_class, "Message");
+            void* value = get_property_value(exception, property);
+            std::string message = from_managed_string(value);
+
+            property = get_property(exc_class, "Source");
+            value = get_property_value(exception, property);
+            std::string source = "none";
+            if (value != nullptr) {
+                source = from_managed_string(value);
+            }
+
+            property = get_property(exc_class, "StackTrace");
+            value = get_property_value(exception, property);
+            std::string stack_trace = "none";
+            if (value != nullptr) {
+                stack_trace = from_managed_string(value);
+            }
+
+            spdlog::error("{0} thrown: {1}\n\tsource: {2}\n\tstack trace: {3}", exception_name,
+                          message, source, stack_trace);
+        }
     }
 
     void* script_engine::get_property(void* _class, const std::string& name) {
@@ -388,5 +406,38 @@ namespace sge {
         auto mono_object = (MonoReflectionType*)reflection_type;
         auto type = mono_reflection_type_get_type(mono_object);
         return mono_class_from_mono_type(type);
+    }
+
+    void* script_engine::get_property_value(void* object, void* property, void** arguments) {
+        auto mono_property = (MonoProperty*)property;
+
+        MonoObject* exc = nullptr;
+        void* value = mono_property_get_value(mono_property, object, arguments, &exc);
+        handle_exception(exc);
+
+        return value;
+    }
+
+    void script_engine::set_property_value(void* object, void* property, void** arguments) {
+        auto mono_property = (MonoProperty*)property;
+
+        MonoObject* exc = nullptr;
+        mono_property_set_value(mono_property, object, arguments, &exc);
+        handle_exception(exc);
+    }
+
+    void* script_engine::get_field_value(void* object, void* field) {
+        auto mono_object = (MonoObject*)object;
+        auto mono_field = (MonoClassField*)field;
+
+        return mono_field_get_value_object(script_engine_data->root_domain, mono_field,
+                                           mono_object);
+    }
+
+    void script_engine::set_field_value(void* object, void* field, void* value) {
+        auto mono_object = (MonoObject*)object;
+        auto mono_field = (MonoClassField*)field;
+
+        mono_field_set_value(mono_object, mono_field, value);
     }
 } // namespace sge

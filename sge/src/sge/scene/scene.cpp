@@ -196,8 +196,10 @@ namespace sge {
         script_component dst;
         dst._class = src._class;
 
-        void* instance = garbage_collector::get_ref_data(src.gc_handle);
-        dst.gc_handle = garbage_collector::create_ref(instance);
+        if (src.gc_handle != 0) {
+            void* instance = garbage_collector::get_ref_data(src.gc_handle);
+            dst.gc_handle = garbage_collector::create_ref(instance);
+        }
 
         return dst;
     }
@@ -517,6 +519,39 @@ namespace sge {
         }
     }
 
+    static void* create_entity_object(entity e) {
+        void* scene_class = script_engine::get_class(0, "SGE.Scene");
+        if (scene_class == nullptr) {
+            throw std::runtime_error("could not find SGE.Scene!");
+        }
+
+        void* scene_constructor = script_engine::get_method(scene_class, ".ctor");
+        if (scene_constructor == nullptr) {
+            throw std::runtime_error("could not find the Scene object constructor!");
+        }
+
+        scene* _scene = e.get_scene();
+
+        void* scene_instance = script_engine::alloc_object(scene_class);
+        script_engine::call_method(scene_instance, scene_constructor, &_scene);
+
+        void* entity_class = script_engine::get_class(0, "SGE.Entity");
+        if (scene_class == nullptr) {
+            throw std::runtime_error("could not find SGE.Entity!");
+        }
+
+        void* entity_constructor = script_engine::get_method(entity_class, ".ctor");
+        if (entity_constructor == nullptr) {
+            throw std::runtime_error("could not find the Entity object constructor!");
+        }
+
+        uint32_t id = (uint32_t)e;
+
+        void* entity_instance = script_engine::alloc_object(entity_class);
+        script_engine::call_method(entity_instance, entity_constructor, &id, scene_instance);
+        return entity_instance;
+    }
+
     void scene::verify_script(entity e) {
         auto& sc = e.get_component<script_component>();
         if (sc._class != nullptr && sc.gc_handle == 0) {
@@ -537,6 +572,10 @@ namespace sge {
             } else {
                 script_engine::init_object(instance);
             }
+
+            void* entity_instance = create_entity_object(e);
+            void* entity_field = script_engine::get_field(sc._class, "mEntity");
+            script_engine::set_field_value(instance, entity_field, entity_instance);
 
             sc.gc_handle = garbage_collector::create_ref(instance);
         }

@@ -24,6 +24,8 @@ namespace sgm {
         ref<scene> _scene, runtime_scene;
         entity selection;
         editor_camera camera;
+
+        size_t assembly_index;
     };
     static std::unique_ptr<scene_data_t> scene_data;
 
@@ -50,6 +52,10 @@ namespace sgm {
 
             scene_data->_framebuffer = framebuffer::create(spec);
         }
+
+        // todo: load from project
+        fs::path assembly_path = fs::current_path() / "assemblies" / "ExampleScripts.dll";
+        scene_data->assembly_index = script_engine::load_assembly(assembly_path);
     }
 
     void editor_scene::destroy() { scene_data.reset(); }
@@ -130,6 +136,7 @@ namespace sgm {
         scene_data->runtime_scene.reset();
     }
 
+    size_t editor_scene::get_assembly_index() { return scene_data->assembly_index; }
     ref<scene> editor_scene::get_scene() { return scene_data->_scene; }
     ref<framebuffer> editor_scene::get_framebuffer() { return scene_data->_framebuffer; }
     editor_camera& editor_scene::get_camera() { return scene_data->camera; }

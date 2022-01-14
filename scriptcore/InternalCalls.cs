@@ -22,16 +22,6 @@ namespace SGE
 {
     internal static class InternalCalls
     {
-        // ref
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool AreRefsEqual(IntPtr lhs, IntPtr rhs);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void GetRefPointer(IntPtr nativeRef, out IntPtr pointer);
-
-        // scene
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void DestroySceneRef(IntPtr nativeRef);
-
         // entity
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool HasComponent(Type componentType, uint entityID, IntPtr scene);
@@ -125,5 +115,15 @@ namespace SGE
         public static extern float GetRestitutionThreashold(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetRestitutionThreashold(IntPtr component, float threashold);
+
+        // logger
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void LogDebug(string message);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void LogInfo(string message);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void LogWarn(string message);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void LogError(string message);
     }
 }

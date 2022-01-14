@@ -24,10 +24,10 @@ namespace SGE
             mScene = scene;
         }
 
-        public bool HasComponent<T>() => InternalCalls.HasComponent(typeof(T), mID, mScene.mNativeRef);
-        public T GetComponent<T>() => (T)InternalCalls.GetComponent(typeof(T), mID, mScene.mNativeRef);
+        public bool HasComponent<T>() => InternalCalls.HasComponent(typeof(T), mID, mScene.mNativeAddress);
+        public T GetComponent<T>() => (T)InternalCalls.GetComponent(typeof(T), mID, mScene.mNativeAddress);
 
-        public GUID GUID => InternalCalls.GetGUID(mID, mScene.mNativeRef);
+        public GUID GUID => InternalCalls.GetGUID(mID, mScene.mNativeAddress);
         public uint ID => mID;
         public Scene Scene => mScene;
 

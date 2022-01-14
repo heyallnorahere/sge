@@ -42,6 +42,7 @@ namespace sgm {
         static void play();
         static void stop();
 
+        static size_t get_assembly_index();
         static ref<scene> get_scene();
         static ref<framebuffer> get_framebuffer();
         static editor_camera& get_camera();
