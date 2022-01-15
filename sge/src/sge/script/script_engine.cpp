@@ -19,6 +19,7 @@
 #include "sge/script/mono_include.h"
 #include "sge/script/garbage_collector.h"
 #include "sge/script/internal_calls.h"
+#include "sge/script/script_helpers.h"
 namespace sge {
     struct assembly_t {
         MonoAssembly* assembly = nullptr;
@@ -48,6 +49,9 @@ namespace sge {
 
         load_assembly(fs::current_path() / "assemblies" / "SGE.dll");
         register_internal_script_calls();
+
+        void* helpers_class = get_class(0, "SGE.Helpers");
+        script_helpers::init(helpers_class);
     }
 
     void script_engine::shutdown() {
@@ -197,6 +201,11 @@ namespace sge {
         mono_runtime_object_init(mono_object);
     }
 
+    const void* script_engine::unbox_object(void* object) {
+        auto mono_object = (MonoObject*)object;
+        return mono_object_unbox(mono_object);
+    }
+
     void* script_engine::get_method(void* _class, const std::string& name) {
         std::string method_desc = "*:" + name;
         auto mono_desc = mono_method_desc_new(method_desc.c_str(), false);
@@ -216,6 +225,42 @@ namespace sge {
 
         auto return_type = mono_signature_get_return_type(signature);
         return mono_class_from_mono_type(return_type);
+    }
+
+    static uint32_t get_visibility_from_flags(uint32_t flags) {
+        uint32_t visibility = member_visibility_flags_none;
+
+        switch (flags & MONO_METHOD_ATTR_ACCESS_MASK) {
+        case MONO_METHOD_ATTR_PUBLIC:
+            visibility |= member_visibility_flags_public;
+            break;
+        case MONO_METHOD_ATTR_FAMILY:
+            visibility |= member_visibility_flags_protected;
+            break;
+        case MONO_METHOD_ATTR_PRIVATE:
+            visibility |= member_visibility_flags_private;
+            break;
+        case MONO_METHOD_ATTR_ASSEM:
+            visibility |= member_visibility_flags_internal;
+            break;
+        default:
+            throw std::runtime_error("invalid access attribute!");
+        }
+
+        if ((flags & MONO_METHOD_ATTR_STATIC) != 0) {
+            visibility |= member_visibility_flags_static;
+        }
+
+        return visibility;
+    }
+
+    uint32_t script_engine::get_method_visibility(void* method) {
+        uint32_t visibility = member_visibility_flags_none;
+
+        auto mono_method = (MonoMethod*)method;
+        uint32_t flags = mono_method_get_flags(mono_method, nullptr);
+
+        return get_visibility_from_flags(flags);
     }
 
     void script_engine::get_method_parameters(void* method,
@@ -359,6 +404,17 @@ namespace sge {
         return accessors;
     }
 
+    uint32_t script_engine::get_property_visibility(void* property) {
+        auto mono_property = (MonoProperty*)property;
+
+        MonoMethod* property_method = mono_property_get_get_method(mono_property);
+        if (property_method == nullptr) {
+            property_method = mono_property_get_set_method(mono_property);
+        }
+
+        return get_method_visibility(property_method);
+    }
+
     void* script_engine::get_field(void* _class, const std::string& name) {
         auto mono_class = (MonoClass*)_class;
         return mono_class_get_field_from_name(mono_class, name.c_str());
@@ -406,6 +462,13 @@ namespace sge {
         auto mono_object = (MonoReflectionType*)reflection_type;
         auto type = mono_reflection_type_get_type(mono_object);
         return mono_class_from_mono_type(type);
+    }
+
+    void* script_engine::to_reflection_property(void* property) {
+        auto mono_property = (MonoProperty*)property;
+        auto mono_class = mono_property_get_parent(mono_property);
+        
+        return mono_property_get_object(script_engine_data->root_domain, mono_class, mono_property);
     }
 
     void* script_engine::get_property_value(void* object, void* property, void** arguments) {

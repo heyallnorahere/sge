@@ -211,7 +211,14 @@ namespace sge {
         bc.size = data["size"].get<glm::vec2>();
     }
 
-    // todo: script component
+    void to_json(json& data, const script_component& component) {
+        if (component._class == nullptr) {
+            data = nullptr;
+            return;
+        }
+
+        data["script_name"] = component.class_name;
+    }
 
     template <typename T>
     static void serialize_component(entity e, const std::string& key, json& data) {

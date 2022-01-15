@@ -31,6 +31,15 @@ namespace sge {
         property_accessor_set = 0x2
     };
 
+    enum member_visibility_flags {
+        member_visibility_flags_none = 0x0,
+        member_visibility_flags_public = 0x1,
+        member_visibility_flags_protected = 0x2,
+        member_visibility_flags_private = 0x4,
+        member_visibility_flags_internal = 0x8,
+        member_visibility_flags_static = 0x10
+    };
+
     class script_engine {
     public:
         script_engine() = delete;
@@ -52,10 +61,18 @@ namespace sge {
 
         static void* alloc_object(void* _class);
         static void init_object(void* object);
+        static const void* unbox_object(void* object);
+
+        template <typename T>
+        static const T& unbox_object(void* object) {
+            const void* ptr = unbox_object(object);
+            return *(const T*)ptr;
+        }
 
         static void* get_method(void* _class, const std::string& name);
         static std::string get_method_name(void* method);
         static void* get_method_return_type(void* method);
+        static uint32_t get_method_visibility(void* method);
         static void get_method_parameters(void* method,
                                           std::vector<method_parameter_t>& parameters);
         static void iterate_methods(void* _class, std::vector<void*>& methods);
@@ -77,6 +94,7 @@ namespace sge {
         static std::string get_property_name(void* property);
         static void* get_property_type(void* property);
         static uint32_t get_property_accessors(void* property);
+        static uint32_t get_property_visibility(void* property);
 
         static void* get_field(void* _class, const std::string& name);
         static void iterate_fields(void* _class, std::vector<void*>& fields);
@@ -89,6 +107,8 @@ namespace sge {
 
         static void* to_reflection_type(void* _class);
         static void* from_reflection_type(void* reflection_type);
+
+        static void* to_reflection_property(void* property);
 
         static void* get_property_value(void* object, void* property, void** arguments = nullptr);
         static void set_property_value(void* object, void* property, void** arguments);
