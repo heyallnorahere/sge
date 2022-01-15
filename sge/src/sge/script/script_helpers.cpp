@@ -27,15 +27,16 @@ namespace sge {
 
         void* method = script_engine::get_method(managed_helpers_class, "PropertyHasAttribute");
         void* returned =
-            script_engine::call_method(nullptr, method, reflection_type, reflection_type);
+            script_engine::call_method(nullptr, method, reflection_property, reflection_type);
         return script_engine::unbox_object<bool>(returned);
     }
 
     bool script_helpers::is_property_serializable(void* property) {
         bool serializable = true;
 
-        void* unserialized_attribute = script_engine::get_class(0, "SGE.UnserializedAttribute");
-        serializable &= ~property_has_attribute(property, unserialized_attribute);
+        void* scriptcore = script_engine::get_assembly(0);
+        void* unserialized_attribute = script_engine::get_class(scriptcore, "SGE.UnserializedAttribute");
+        serializable &= !property_has_attribute(property, unserialized_attribute);
 
         uint32_t accessors = script_engine::get_property_accessors(property);
         serializable &= ((accessors & (property_accessor_get | property_accessor_set)) !=
@@ -46,5 +47,39 @@ namespace sge {
             ((visibility & member_visibility_flags_public) != member_visibility_flags_none);
 
         return serializable;
+    }
+
+    void* script_helpers::create_entity_object(entity e) {
+        void* scriptcore = script_engine::get_assembly(0);
+        void* scene_class = script_engine::get_class(scriptcore, "SGE.Scene");
+        if (scene_class == nullptr) {
+            throw std::runtime_error("could not find SGE.Scene!");
+        }
+
+        void* scene_constructor = script_engine::get_method(scene_class, ".ctor");
+        if (scene_constructor == nullptr) {
+            throw std::runtime_error("could not find the Scene object constructor!");
+        }
+
+        scene* _scene = e.get_scene();
+
+        void* scene_instance = script_engine::alloc_object(scene_class);
+        script_engine::call_method(scene_instance, scene_constructor, &_scene);
+
+        void* entity_class = script_engine::get_class(scriptcore, "SGE.Entity");
+        if (scene_class == nullptr) {
+            throw std::runtime_error("could not find SGE.Entity!");
+        }
+
+        void* entity_constructor = script_engine::get_method(entity_class, ".ctor");
+        if (entity_constructor == nullptr) {
+            throw std::runtime_error("could not find the Entity object constructor!");
+        }
+
+        uint32_t id = (uint32_t)e;
+
+        void* entity_instance = script_engine::alloc_object(entity_class);
+        script_engine::call_method(entity_instance, entity_constructor, &id, scene_instance);
+        return entity_instance;
     }
 } // namespace sge

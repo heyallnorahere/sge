@@ -50,7 +50,7 @@ namespace sge {
         load_assembly(fs::current_path() / "assemblies" / "SGE.dll");
         register_internal_script_calls();
 
-        void* helpers_class = get_class(0, "SGE.Helpers");
+        void* helpers_class = get_class(script_engine_data->assemblies[0].image, "SGE.Helpers");
         script_helpers::init(helpers_class);
     }
 
@@ -124,6 +124,16 @@ namespace sge {
 
     size_t script_engine::get_assembly_count() { return script_engine_data->assemblies.size(); }
 
+    void* script_engine::get_assembly(size_t index) {
+        if (index >= script_engine_data->assemblies.size()) {
+            return nullptr;
+        }
+
+        return script_engine_data->assemblies[index].image;
+    }
+
+    void* script_engine::get_mscorlib() { return mono_get_corlib(); }
+
     std::string script_engine::get_string(const class_name_t& class_name) {
         if (!class_name.namespace_name.empty()) {
             return class_name.namespace_name + "." + class_name.class_name;
@@ -139,13 +149,8 @@ namespace sge {
         name.class_name = mono_class_get_name(mono_class);
     }
 
-    void script_engine::iterate_classes(size_t assembly, std::vector<void*>& classes) {
-        if (assembly >= script_engine_data->assemblies.size() ||
-            script_engine_data->assemblies[assembly].assembly == nullptr) {
-            throw std::runtime_error("attempted to iterate over a nonexistent assembly!");
-        }
-
-        auto image = script_engine_data->assemblies[assembly].image;
+    void script_engine::iterate_classes(void* assembly, std::vector<void*>& classes) {
+        auto image = (MonoImage*)assembly;
         auto table = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
         int32_t row_count = mono_table_info_get_rows(table);
 
@@ -156,7 +161,7 @@ namespace sge {
         }
     }
 
-    void* script_engine::get_class(size_t assembly, const std::string& name) {
+    void* script_engine::get_class(void* assembly, const std::string& name) {
         class_name_t class_name;
         class_name.class_name = name;
 
@@ -169,14 +174,9 @@ namespace sge {
         return get_class(assembly, class_name);
     }
 
-    void* script_engine::get_class(size_t assembly, const class_name_t& name) {
-        if (assembly >= script_engine_data->assemblies.size() ||
-            script_engine_data->assemblies[assembly].assembly == nullptr) {
-            throw std::runtime_error("assembly " + std::to_string(assembly) + " does not exist!");
-        }
-
-        const auto& mono_assembly = script_engine_data->assemblies[assembly];
-        return mono_class_from_name(mono_assembly.image, name.namespace_name.c_str(),
+    void* script_engine::get_class(void* assembly, const class_name_t& name) {
+        auto image = (MonoImage*)assembly;
+        return mono_class_from_name(image, name.namespace_name.c_str(),
                                     name.class_name.c_str());
     }
 

@@ -20,10 +20,10 @@ namespace SGE
     {
         public bool Active { get; set; } = true;
 
-        protected bool HasComponent<T>() => mEntity.HasComponent<T>();
-        protected T GetComponent<T>() => mEntity.GetComponent<T>();
+        protected bool HasComponent<T>() => __internal_mEntity.HasComponent<T>();
+        protected T GetComponent<T>() => __internal_mEntity.GetComponent<T>();
 
-        public Entity Entity => mEntity;
-        private Entity mEntity = null;
+        public Entity Entity => __internal_mEntity;
+        private Entity __internal_mEntity = null;
     }
 }

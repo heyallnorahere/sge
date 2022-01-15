@@ -42,6 +42,7 @@
 
 // script engine
 #include "sge/script/script_engine.h"
+#include "sge/script/script_helpers.h"
 #include "sge/script/garbage_collector.h"
 
 // main

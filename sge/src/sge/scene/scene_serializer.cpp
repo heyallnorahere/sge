@@ -18,6 +18,7 @@
 #include "sge/scene/scene_serializer.h"
 #include "sge/scene/entity.h"
 #include "sge/scene/components.h"
+#include "sge/script/script_engine.h"
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -218,6 +219,18 @@ namespace sge {
         }
 
         data["script_name"] = component.class_name;
+
+        // todo: components
+    }
+
+    void from_json(const json& data, script_component& component) {
+        component.class_name = data["script_name"].get<std::string>();
+
+        // todo: make this more dynamic
+        void* app_assembly = script_engine::get_assembly(1);
+        component._class = script_engine::get_class(app_assembly, component.class_name);
+
+        // todo: components
     }
 
     template <typename T>
@@ -267,6 +280,7 @@ namespace sge {
             serialize_component<sprite_renderer_component>(current, "sprite", entity_data);
             serialize_component<rigid_body_component>(current, "rigid_body", entity_data);
             serialize_component<box_collider_component>(current, "box_collider", entity_data);
+            serialize_component<script_component>(current, "script", entity_data);
 
             entities.push_back(entity_data);
         });
@@ -300,6 +314,7 @@ namespace sge {
             deserialize_component<sprite_renderer_component>(e, "sprite", entity_data);
             deserialize_component<rigid_body_component>(e, "rigid_body", entity_data);
             deserialize_component<box_collider_component>(e, "box_collider", entity_data);
+            deserialize_component<script_component>(e, "script", entity_data);
         }
     }
 } // namespace sge

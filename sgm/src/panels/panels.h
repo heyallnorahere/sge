@@ -60,10 +60,19 @@ namespace sgm {
 
     class editor_panel : public panel {
     public:
+        editor_panel();
+
         virtual void render() override;
 
         virtual std::string get_title() override { return "Editor"; }
         virtual panel_id get_id() override { return panel_id::editor; }
+
+    private:
+        void draw_property_controls();
+
+        using script_control_t = std::function<void(void*, void*, const std::string&)>;
+
+        std::unordered_map<void*, script_control_t> m_script_controls;
     };
 
     class content_browser_panel : public panel {

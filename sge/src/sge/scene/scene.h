@@ -44,6 +44,7 @@ namespace sge {
 
         void set_script(entity e, void* _class);
         void reset_script(entity e);
+        void verify_script(entity e);
 
         ref<scene> copy();
 
@@ -79,7 +80,6 @@ namespace sge {
         void view_iteration(entt::entity id, const std::function<void(entity)>& callback);
         void render();
 
-        void verify_script(entity e);
         void remove_script(entity e);
 
         guid get_guid(entity e);

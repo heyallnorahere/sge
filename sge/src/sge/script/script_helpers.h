@@ -15,6 +15,8 @@
 */
 
 #pragma once
+#include "sge/scene/scene.h"
+#include "sge/scene/entity.h"
 namespace sge {
     class script_helpers {
     public:
@@ -24,5 +26,7 @@ namespace sge {
 
         static bool property_has_attribute(void* property, void* attribute_type);
         static bool is_property_serializable(void* property);
+
+        static void* create_entity_object(entity e);
     };
 } // namespace sge

@@ -39,5 +39,10 @@ namespace ExampleScripts
             transform.Translation = targetTransform.Translation;
         }
         public Entity Target { get; set; } = null;
+        public int Foo { get; set; } = 7;
+        public float Bar { get; set; } = 4.2f;
+        public bool Baz { get; set; } = false;
+        [Unserialized]
+        public int NotSerialized { get; set; } = 100;
     }
 }

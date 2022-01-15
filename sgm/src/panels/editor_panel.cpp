@@ -21,6 +21,58 @@
 #include <sge/renderer/renderer.h>
 #include <imgui_internal.h>
 namespace sgm {
+    static void* get_type(const std::string& name, bool scriptcore = false) {
+        void* assembly =
+            scriptcore ? script_engine::get_assembly(0) : script_engine::get_mscorlib();
+        return script_engine::get_class(assembly, name);
+    }
+
+    static void edit_int(void* instance, void* property, const std::string& label) {
+        void* returned = script_engine::get_property_value(instance, property);
+        int32_t value = script_engine::unbox_object<int32_t>(returned);
+
+        if (ImGui::InputInt(label.c_str(), &value)) {
+            script_engine::set_property_value(instance, property, &value);
+        }
+    }
+
+    static void edit_float(void* instance, void* property, const std::string& label) {
+        void* returned = script_engine::get_property_value(instance, property);
+        float value = script_engine::unbox_object<float>(returned);
+
+        if (ImGui::InputFloat(label.c_str(), &value)) {
+            script_engine::set_property_value(instance, property, &value);
+        }
+    }
+
+    static void edit_bool(void* instance, void* property, const std::string& label) {
+        void* returned = script_engine::get_property_value(instance, property);
+        bool value = script_engine::unbox_object<bool>(returned);
+
+        if (ImGui::Checkbox(label.c_str(), &value)) {
+            script_engine::set_property_value(instance, property, &value);
+        }
+    }
+
+    static void edit_string(void* instance, void* property, const std::string& label) {
+        void* managed_string = script_engine::get_property_value(instance, property);
+        std::string string = script_engine::from_managed_string(managed_string);
+
+        if (ImGui::InputText(label.c_str(), &string)) {
+            managed_string = script_engine::to_managed_string(string);
+            script_engine::set_property_value(instance, property, managed_string);
+        }
+    }
+
+    editor_panel::editor_panel() {
+        m_script_controls = {
+            { get_type("System.Int32"), edit_int },
+            { get_type("System.Single"), edit_float },
+            { get_type("System.Boolean"), edit_bool },
+            { get_type("System.String"), edit_string },
+        };
+    }
+
     template <typename T>
     static void draw_component(const std::string& name, entity e,
                                std::function<void(T&)> callback) {
@@ -244,38 +296,72 @@ namespace sgm {
                 ImGui::DragFloat2("Size", &component.size.x, 0.01f);
             });
 
-        draw_component<script_component>("Script", selection, [this, selection](script_component& component) {
-            // todo: script cache
-            size_t assembly_index = editor_scene::get_assembly_index();
-            auto is_class_valid = [assembly_index](const std::string& name) {
-                void* _class = script_engine::get_class(assembly_index, name);
-                return _class != nullptr;
-            };
+        draw_component<script_component>(
+            "Script", selection, [this, selection](script_component& component) {
+                // todo: script cache
+                size_t assembly_index = editor_scene::get_assembly_index();
+                void* assembly = script_engine::get_assembly(assembly_index);
 
-            bool valid_script = is_class_valid(component.class_name);
-            bool invalid_name = !valid_script;
+                auto is_class_valid = [assembly](const std::string& name) mutable {
+                    void* _class = script_engine::get_class(assembly, name);
+                    return _class != nullptr;
+                };
 
-            if (invalid_name) {
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.f, 0.f, 1.f));
-            }
+                bool valid_script = is_class_valid(component.class_name);
+                bool invalid_name = !valid_script;
 
-            if (ImGui::InputText("Script Name", &component.class_name)) {
-                valid_script = is_class_valid(component.class_name);
-
-                auto _scene = editor_scene::get_scene();
-                if (valid_script) {
-                    void* _class = script_engine::get_class(assembly_index, component.class_name);
-                    _scene->set_script(selection, _class);
-                } else {
-                    _scene->set_script(selection, nullptr);
+                if (invalid_name) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.f, 0.f, 1.f));
                 }
+
+                if (ImGui::InputText("Script Name", &component.class_name)) {
+                    valid_script = is_class_valid(component.class_name);
+
+                    auto _scene = editor_scene::get_scene();
+                    if (valid_script) {
+                        void* _class = script_engine::get_class(assembly, component.class_name);
+                        _scene->set_script(selection, _class);
+                    } else {
+                        _scene->set_script(selection, nullptr);
+                    }
+                }
+
+                if (invalid_name) {
+                    ImGui::PopStyleColor();
+                }
+
+                if (valid_script) {
+                    draw_property_controls();
+                }
+            });
+    }
+
+    void editor_panel::draw_property_controls() {
+        auto selection = editor_scene::get_selection();
+        auto _scene = editor_scene::get_scene();
+        _scene->verify_script(selection);
+
+        auto& sc = selection.get_component<script_component>();
+        void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+
+        std::vector<void*> properties;
+        script_engine::iterate_properties(sc._class, properties);
+
+        for (void* property : properties) {
+            if (!script_helpers::is_property_serializable(property)) {
+                continue;
             }
 
-            if (invalid_name) {
-                ImGui::PopStyleColor();
+            void* property_type = script_engine::get_property_type(property);
+            if (m_script_controls.find(property_type) == m_script_controls.end()) {
+                continue;
             }
 
-            // todo: render property controls
-        });
+            std::string property_name = script_engine::get_property_name(property);
+            // todo: format label?
+
+            const auto& callback = m_script_controls[property_type];
+            callback(instance, property, property_name);
+        }
     }
 } // namespace sgm

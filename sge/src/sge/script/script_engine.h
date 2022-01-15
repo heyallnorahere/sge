@@ -50,13 +50,15 @@ namespace sge {
 
         static size_t load_assembly(const fs::path& path);
         static size_t get_assembly_count();
+        static void* get_assembly(size_t index);
+        static void* get_mscorlib();
 
         static std::string get_string(const class_name_t& class_name);
         static void get_class_name(void* _class, class_name_t& name);
 
-        static void iterate_classes(size_t assembly, std::vector<void*>& classes);
-        static void* get_class(size_t assembly, const std::string& name);
-        static void* get_class(size_t assembly, const class_name_t& name);
+        static void iterate_classes(void* assembly, std::vector<void*>& classes);
+        static void* get_class(void* assembly, const std::string& name);
+        static void* get_class(void* assembly, const class_name_t& name);
         static void* get_class_from_object(void* object);
 
         static void* alloc_object(void* _class);

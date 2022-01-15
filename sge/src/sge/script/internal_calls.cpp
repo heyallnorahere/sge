@@ -35,7 +35,9 @@ namespace sge {
         class_name_t name;
         name.namespace_name = "SGE.Components";
         name.class_name = managed_name;
-        void* _class = script_engine::get_class(0, name);
+
+        void* scriptcore = script_engine::get_assembly(0);
+        void* _class = script_engine::get_class(scriptcore, name);
 
         component_callbacks_t callbacks;
         callbacks.has = [](entity e) { return e.has_all<T>(); };
