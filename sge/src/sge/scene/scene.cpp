@@ -54,6 +54,7 @@ namespace sge {
             user_data = fixture->GetUserData().pointer;
             entity entity_b((entt::entity)(uint32_t)user_data, m_scene);
 
+            // native scripts
             if (entity_a.has_all<native_script_component>()) {
                 auto& nsc = entity_a.get_component<native_script_component>();
                 if (nsc.script != nullptr) {
@@ -65,6 +66,40 @@ namespace sge {
                 auto& nsc = entity_b.get_component<native_script_component>();
                 if (nsc.script != nullptr) {
                     nsc.script->on_collision(entity_a);
+                }
+            }
+
+            // managed scripts
+            std::string event_name = "OnCollision(Entity)";
+            if (entity_a.has_all<script_component>()) {
+                m_scene->verify_script(entity_a);
+
+                auto& sc = entity_a.get_component<script_component>();
+                if (sc._class != nullptr) {
+                    void* OnCollision = script_engine::get_method(sc._class, event_name);
+
+                    if (OnCollision != nullptr) {
+                        void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+
+                        void* param = script_helpers::create_entity_object(entity_b);
+                        script_engine::call_method(instance, OnCollision, param);
+                    }
+                }
+            }
+
+            if (entity_b.has_all<script_component>()) {
+                m_scene->verify_script(entity_b);
+
+                auto& sc = entity_b.get_component<script_component>();
+                if (sc._class != nullptr) {
+                    void* OnCollision = script_engine::get_method(sc._class, event_name);
+
+                    if (OnCollision != nullptr) {
+                        void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+
+                        void* param = script_helpers::create_entity_object(entity_a);
+                        script_engine::call_method(instance, OnCollision, param);
+                    }
                 }
             }
         }

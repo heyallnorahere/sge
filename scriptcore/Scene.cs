@@ -65,13 +65,20 @@ namespace SGE
 
         public static bool operator ==(Scene lhs, Scene rhs)
         {
-            return lhs.Equals(rhs);
+            bool lhsNull = (lhs is null);
+            bool rhsNull = (rhs is null);
+            
+            if (lhsNull || rhsNull)
+            {
+                return lhsNull && rhsNull;
+            }
+            else
+            {
+                return lhs.Equals(rhs);
+            }
         }
 
-        public static bool operator !=(Scene lhs, Scene rhs)
-        {
-            return !lhs.Equals(rhs);
-        }
+        public static bool operator !=(Scene lhs, Scene rhs) => !(lhs == rhs);
 
         internal readonly IntPtr mNativeAddress;
     }

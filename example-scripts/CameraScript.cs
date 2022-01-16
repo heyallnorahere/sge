@@ -16,7 +16,6 @@
 
 using SGE;
 using SGE.Components;
-using System;
 
 namespace ExampleScripts
 {
