@@ -17,16 +17,16 @@
 #include "sgepch.h"
 #include "sge/platform/directx/directx_base.h"
 #include "sge/platform/directx/directx_renderer.h"
+#include "sge/platform/directx/directx_context.h"
 namespace sge {
     void directx_renderer::init() {
-        // todo: initialize directx context
         spdlog::warn(
             "the DirectX backend isn't fully implemented yet - crashes may (probably will) occur");
+
+        directx_context::create();
     }
 
-    void directx_renderer::shutdown() {
-        // todo: shutdown directx context
-    }
+    void directx_renderer::shutdown() { directx_context::destroy(); }
 
     void directx_renderer::wait() {
         // todo: wait for device
