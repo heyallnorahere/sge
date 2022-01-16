@@ -21,6 +21,9 @@
 #ifdef SGE_USE_VULKAN
 #include "sge/platform/vulkan/vulkan_renderer.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_renderer.h"
+#endif
 namespace sge {
     struct vertex {
         glm::vec2 position;
@@ -117,6 +120,12 @@ namespace sge {
     void renderer::init() {
         {
             renderer_api* api_instance = nullptr;
+
+#ifdef SGE_USE_DIRECTX
+            if (api_instance == nullptr) {
+                api_instance = new directx_renderer;
+            }
+#endif
 
 #ifdef SGE_USE_VULKAN
             if (api_instance == nullptr) {

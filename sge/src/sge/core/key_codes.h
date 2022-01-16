@@ -15,6 +15,9 @@
 */
 
 #pragma once
+#ifdef DELETE
+#undef DELETE
+#endif
 namespace sge {
     enum class key_code {
         SPACE,

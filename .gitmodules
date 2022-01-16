@@ -31,3 +31,6 @@
 [submodule "vendor/json"]
 	path = vendor/json
 	url = https://github.com/nlohmann/json.git
+[submodule "vendor/DirectX-Headers"]
+	path = vendor/DirectX-Headers
+	url = https://github.com/microsoft/DirectX-Headers.git

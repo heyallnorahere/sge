@@ -23,4 +23,8 @@ if(SGE_USE_VULKAN)
     add_subdirectory("VulkanMemoryAllocator")
 endif()
 
+if(SGE_USE_DIRECTX)
+    add_subdirectory("DirectX-Headers")
+endif()
+
 include("imgui.cmake")

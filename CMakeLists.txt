@@ -24,13 +24,18 @@ set(SGE_PLATFORM_DESKTOP ${SGE_PLATFORM_WINDOWS} OR ${SGE_PLATFORM_LINUX} OR ${S
 
 # find packages
 find_package(Vulkan)
+find_package(D3D12)
 find_package(Mono REQUIRED)
+
+set(SGE_DIRECTX_SUPPORTED ${SGE_PLATFORM_DESKTOP}) # todo: uwp
+set(SGE_VULKAN_SUPPORTED ${SGE_PLATFORM_DESKTOP})
 
 # options
 include(CMakeDependentOption)
 
 option(SGE_BUILD_SCRIPTCORE "Build SGE script core." ON)
-cmake_dependent_option(SGE_USE_VULKAN "Use the Vulkan graphics api." ON "SGE_PLATFORM_DESKTOP AND Vulkan_FOUND" OFF)
+cmake_dependent_option(SGE_USE_DIRECTX "Use the DirectX 12 graphics api." ON "SGE_DIRECTX_SUPPORTED AND D3D12_FOUND" OFF)
+cmake_dependent_option(SGE_USE_VULKAN "Use the Vulkan graphics api." ON "SGE_VULKAN_SUPPORTED AND Vulkan_FOUND" OFF)
 
 # dependencies
 add_subdirectory("vendor")
