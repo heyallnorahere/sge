@@ -46,6 +46,7 @@ namespace sge {
         void reset_script(entity e);
         void verify_script(entity e);
 
+        entity find_guid(guid id);
         ref<scene> copy();
 
         void on_start();
@@ -80,6 +81,7 @@ namespace sge {
         void view_iteration(entt::entity id, const std::function<void(entity)>& callback);
         void render();
 
+        void verify_script(void* component, entity e);
         void remove_script(entity e);
 
         guid get_guid(entity e);
@@ -91,5 +93,8 @@ namespace sge {
         friend class entity;
         friend class scene_contact_listener;
         friend class scene_serializer;
+
+        template <typename T>
+        friend struct scene_component_copier;
     };
 } // namespace sge

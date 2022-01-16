@@ -22,6 +22,14 @@ namespace SGE
 {
     internal static class InternalCalls
     {
+        // scene
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern uint CreateEntity(string name, IntPtr scene);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern uint CreateEntityWithGUID(GUID id, string name, IntPtr scene);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void DestroyEntity(uint entityID, IntPtr scene);
+
         // entity
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool HasComponent(Type componentType, uint entityID, IntPtr scene);

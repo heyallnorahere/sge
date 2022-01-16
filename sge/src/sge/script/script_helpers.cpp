@@ -67,7 +67,7 @@ namespace sge {
         script_engine::call_method(scene_instance, scene_constructor, &_scene);
 
         void* entity_class = script_engine::get_class(scriptcore, "SGE.Entity");
-        if (scene_class == nullptr) {
+        if (entity_class == nullptr) {
             throw std::runtime_error("could not find SGE.Entity!");
         }
 
@@ -81,5 +81,31 @@ namespace sge {
         void* entity_instance = script_engine::alloc_object(entity_class);
         script_engine::call_method(entity_instance, entity_constructor, &id, scene_instance);
         return entity_instance;
+    }
+
+    entity script_helpers::get_entity_from_object(void* object) {
+        void* scriptcore = script_engine::get_assembly(0);
+        void* entity_class = script_engine::get_class(scriptcore, "SGE.Entity");
+        if (entity_class == nullptr) {
+            throw std::runtime_error("could not find SGE.Entity!");
+        }
+
+        void* field = script_engine::get_field(entity_class, "mID");
+        void* value = script_engine::get_field_value(object, field);
+        uint32_t entity_id = script_engine::unbox_object<uint32_t>(value);
+
+        field = script_engine::get_field(entity_class, "mScene");
+        void* scene_object = script_engine::get_field_value(object, field);
+
+        void* scene_class = script_engine::get_class(scriptcore, "SGE.Scene");
+        if (scene_class == nullptr) {
+            throw std::runtime_error("could not find SGE.Scene!");
+        }
+
+        field = script_engine::get_field(scene_class, "mNativeAddress");
+        value = script_engine::get_field_value(scene_object, field);
+        void* scene_ptr = script_engine::unbox_object<void*>(value);
+
+        return entity((entt::entity)entity_id, (scene*)scene_ptr);
     }
 } // namespace sge

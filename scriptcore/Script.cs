@@ -18,8 +18,6 @@ namespace SGE
 {
     public abstract class Script
     {
-        public bool Active { get; set; } = true;
-
         protected bool HasComponent<T>() => __internal_mEntity.HasComponent<T>();
         protected T GetComponent<T>() => __internal_mEntity.GetComponent<T>();
 

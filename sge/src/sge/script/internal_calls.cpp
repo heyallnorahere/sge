@@ -79,6 +79,27 @@ namespace sge {
     }
 
     namespace internal_script_calls {
+        static uint32_t CreateEntity(void* name, void* _scene) {
+            auto scene_ptr = (scene*)_scene;
+
+            std::string native_name = script_engine::from_managed_string(name);
+            return (uint32_t)scene_ptr->create_entity(native_name);
+        }
+
+        static uint32_t CreateEntityWithGUID(guid id, void* name, void* _scene) {
+            auto scene_ptr = (scene*)_scene;
+
+            std::string native_name = script_engine::from_managed_string(name);
+            return (uint32_t)scene_ptr->create_entity(id, native_name);
+        }
+
+        static void DestroyEntity(uint32_t entityID, void* _scene) {
+            auto scene_ptr = (scene*)_scene;
+            entity e((entt::entity)entityID, scene_ptr);
+
+            scene_ptr->destroy_entity(e);
+        }
+
         static bool HasComponent(void* componentType, uint32_t entityID, void* _scene) {
             verify_component_type_validity(componentType);
 
@@ -261,6 +282,11 @@ namespace sge {
 #define REGISTER_CALL(name)                                                                        \
     script_engine::register_internal_call("SGE.InternalCalls::" #name,                             \
                                           (void*)internal_script_calls::name)
+
+        // scene
+        REGISTER_CALL(CreateEntity);
+        REGISTER_CALL(CreateEntityWithGUID);
+        REGISTER_CALL(DestroyEntity);
 
         // entity
         REGISTER_CALL(HasComponent);

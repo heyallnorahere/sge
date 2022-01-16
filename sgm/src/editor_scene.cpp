@@ -123,6 +123,8 @@ namespace sgm {
             return;
         }
 
+        reset_selection();
+
         scene_data->runtime_scene = scene_data->_scene->copy();
         scene_data->runtime_scene->on_start();
     }
@@ -132,12 +134,21 @@ namespace sgm {
             return;
         }
 
+        reset_selection();
+
         scene_data->runtime_scene->on_stop();
         scene_data->runtime_scene.reset();
     }
 
+    ref<scene> editor_scene::get_scene() {
+        if (scene_data->runtime_scene) {
+            return scene_data->runtime_scene;
+        } else {
+            return scene_data->_scene;
+        }
+    }
+
     size_t editor_scene::get_assembly_index() { return scene_data->assembly_index; }
-    ref<scene> editor_scene::get_scene() { return scene_data->_scene; }
     ref<framebuffer> editor_scene::get_framebuffer() { return scene_data->_framebuffer; }
     editor_camera& editor_scene::get_camera() { return scene_data->camera; }
 } // namespace sgm

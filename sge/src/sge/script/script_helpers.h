@@ -28,5 +28,6 @@ namespace sge {
         static bool is_property_serializable(void* property);
 
         static void* create_entity_object(entity e);
+        static entity get_entity_from_object(void* object);
     };
 } // namespace sge

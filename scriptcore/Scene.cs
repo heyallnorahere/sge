@@ -25,6 +25,30 @@ namespace SGE
             mNativeAddress = nativeAddress;
         }
 
+        public Entity CreateEntity(string name = null)
+        {
+            string entityName = name ?? string.Empty;
+            uint entityID = InternalCalls.CreateEntity(entityName, mNativeAddress);
+            return new Entity(entityID, this);
+        }
+
+        public Entity CreateEntity(GUID id, string name = null)
+        {
+            string entityName = name ?? string.Empty;
+            uint entityID = InternalCalls.CreateEntityWithGUID(id, entityName, mNativeAddress);
+            return new Entity(entityID, this);
+        }
+
+        public void DestroyEntity(Entity entity)
+        {
+            if (entity.Scene != this)
+            {
+                throw new InvalidOperationException("Attempted to destroy an entity with an incompatible scene!");
+            }
+
+            InternalCalls.DestroyEntity(entity.ID, mNativeAddress);
+        }
+
         public override bool Equals(object obj)
         {
             if (obj is Scene scene)
