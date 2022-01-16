@@ -39,6 +39,15 @@ namespace sgm {
                 selection = current;
             }
 
+            if (ImGui::BeginDragDropSource()) {
+                ImGui::Text("%s", tag.tag.c_str());
+
+                guid id = current.get_guid();
+                ImGui::SetDragDropPayload("entity", &id, sizeof(guid));
+
+                ImGui::EndDragDropSource();
+            }
+
             bool delete_entity = false;
             if (ImGui::BeginPopupContextItem()) {
                 if (ImGui::MenuItem("Delete Entity")) {

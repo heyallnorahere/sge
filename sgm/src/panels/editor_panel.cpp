@@ -64,12 +64,44 @@ namespace sgm {
         }
     }
 
+    static void edit_entity_field(void* instance, void* property, const std::string& label) {
+        void* entity_object = script_engine::get_property_value(instance, property);
+        std::string tag;
+
+        if (entity_object != nullptr) {
+            entity e = script_helpers::get_entity_from_object(entity_object);
+            tag = e.get_component<tag_component>().tag;
+        } else {
+            tag = "No entity set";
+        }
+
+        ImGui::InputText(label.c_str(), &tag, ImGuiInputTextFlags_ReadOnly);
+
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("entity")) {
+                guid id = *(guid*)payload->Data;
+
+                auto _scene = editor_scene::get_scene();
+                entity found_entity = _scene->find_guid(id);
+                if (!found_entity) {
+                    throw std::runtime_error("an invalid guid was given!");
+                }
+
+                void* entity_object = script_helpers::create_entity_object(found_entity);
+                script_engine::set_property_value(instance, property, entity_object);
+            }
+
+            ImGui::EndDragDropTarget();
+        }
+    }
+
     editor_panel::editor_panel() {
         m_script_controls = {
             { get_type("System.Int32"), edit_int },
             { get_type("System.Single"), edit_float },
             { get_type("System.Boolean"), edit_bool },
             { get_type("System.String"), edit_string },
+            { get_type("SGE.Entity", true), edit_entity_field },
         };
     }
 
