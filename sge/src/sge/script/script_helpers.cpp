@@ -108,4 +108,10 @@ namespace sge {
 
         return entity((entt::entity)entity_id, (scene*)scene_ptr);
     }
+
+    void* script_helpers::get_core_type(const std::string& name, bool scriptcore) {
+        void* assembly =
+            scriptcore ? script_engine::get_assembly(0) : script_engine::get_mscorlib();
+        return script_engine::get_class(assembly, name);
+    }
 } // namespace sge

@@ -21,12 +21,6 @@
 #include <sge/renderer/renderer.h>
 #include <imgui_internal.h>
 namespace sgm {
-    static void* get_type(const std::string& name, bool scriptcore = false) {
-        void* assembly =
-            scriptcore ? script_engine::get_assembly(0) : script_engine::get_mscorlib();
-        return script_engine::get_class(assembly, name);
-    }
-
     static void edit_int(void* instance, void* property, const std::string& label) {
         void* returned = script_engine::get_property_value(instance, property);
         int32_t value = script_engine::unbox_object<int32_t>(returned);
@@ -97,11 +91,11 @@ namespace sgm {
 
     editor_panel::editor_panel() {
         m_script_controls = {
-            { get_type("System.Int32"), edit_int },
-            { get_type("System.Single"), edit_float },
-            { get_type("System.Boolean"), edit_bool },
-            { get_type("System.String"), edit_string },
-            { get_type("SGE.Entity", true), edit_entity_field },
+            { script_helpers::get_core_type("System.Int32"), edit_int },
+            { script_helpers::get_core_type("System.Single"), edit_float },
+            { script_helpers::get_core_type("System.Boolean"), edit_bool },
+            { script_helpers::get_core_type("System.String"), edit_string },
+            { script_helpers::get_core_type("SGE.Entity", true), edit_entity_field },
         };
     }
 

@@ -26,6 +26,7 @@ namespace sge {
 
     class entity;
     class scene_serializer;
+    struct script_deserializer;
     class scene_contact_listener;
     struct scene_physics_data;
 
@@ -93,6 +94,7 @@ namespace sge {
         friend class entity;
         friend class scene_contact_listener;
         friend class scene_serializer;
+        friend struct script_deserializer;
 
         template <typename T>
         friend struct scene_component_copier;
