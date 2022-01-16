@@ -29,6 +29,8 @@ namespace SGE
         public static extern uint CreateEntityWithGUID(GUID id, string name, IntPtr scene);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void DestroyEntity(uint entityID, IntPtr scene);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool FindEntity(GUID id, out uint entityID, IntPtr scene);
 
         // entity
         [MethodImpl(MethodImplOptions.InternalCall)]

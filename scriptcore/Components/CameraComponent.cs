@@ -27,6 +27,10 @@ namespace SGE.Components
     {
         public float Near, Far;
     }
+
+    /// <summary>
+    /// A camera component adds a camera to the scene. The first primary camera component will render to the viewport.
+    /// </summary>
     public sealed class CameraComponent
     {
         internal CameraComponent(IntPtr address)

@@ -18,6 +18,9 @@ using System;
 
 namespace SGE
 {
+    /// <summary>
+    /// A property with this attribute applied will not be serialized or shown in an editor.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class UnserializedAttribute : Attribute
     {

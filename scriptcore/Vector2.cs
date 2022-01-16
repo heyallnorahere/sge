@@ -19,6 +19,9 @@ using System.Runtime.InteropServices;
 
 namespace SGE
 {
+    /// <summary>
+    /// An object representing two floating point numbers. Maps to glm::vec2.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct Vector2
     {

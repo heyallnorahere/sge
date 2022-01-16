@@ -18,6 +18,9 @@ using System;
 
 namespace SGE
 {
+    /// <summary>
+    /// A scene is a set of entities that can be serialized to a file.
+    /// </summary>
     public sealed class Scene
     {
         internal Scene(IntPtr nativeAddress)
@@ -25,6 +28,11 @@ namespace SGE
             mNativeAddress = nativeAddress;
         }
 
+        /// <summary>
+        /// Creates an entity.
+        /// </summary>
+        /// <param name="name">The name to give the created entity. "Entity" if no name is passed.</param>
+        /// <returns>The created entity.</returns>
         public Entity CreateEntity(string name = null)
         {
             string entityName = name ?? string.Empty;
@@ -32,6 +40,12 @@ namespace SGE
             return new Entity(entityID, this);
         }
 
+        /// <summary>
+        /// Creates an entity with a specific <see cref="GUID"/>.
+        /// </summary>
+        /// <param name="id">The ID to create the entity with.</param>
+        /// <param name="name">The name to give the created entity. "Entity" if no name is passed.</param>
+        /// <returns>The created entity.</returns>
         public Entity CreateEntity(GUID id, string name = null)
         {
             string entityName = name ?? string.Empty;
@@ -39,6 +53,11 @@ namespace SGE
             return new Entity(entityID, this);
         }
 
+        /// <summary>
+        /// Destroys an entity.
+        /// </summary>
+        /// <param name="entity">The entity to destroy.</param>
+        /// <exception cref="InvalidOperationException" />
         public void DestroyEntity(Entity entity)
         {
             if (entity.Scene != this)
@@ -47,6 +66,22 @@ namespace SGE
             }
 
             InternalCalls.DestroyEntity(entity.ID, mNativeAddress);
+        }
+
+        /// <summary>
+        /// Attempts to find an entity with the given <see cref="GUID"/>.
+        /// </summary>
+        /// <param name="id">The ID to search for.</param>
+        /// <returns>An entity, if one was found. Returns null on failure.</returns>
+        public Entity FindEntity(GUID id)
+        {
+            uint entityID;
+            if (InternalCalls.FindEntity(id, out entityID, mNativeAddress))
+            {
+                return new Entity(entityID, this);
+            }
+
+            return null;
         }
 
         public override bool Equals(object obj)

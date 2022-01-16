@@ -16,6 +16,9 @@
 
 namespace SGE
 {
+    /// <summary>
+    /// How much time has passed between two frames. Maps to sge::timestep::count().
+    /// </summary>
     public struct Timestep
     {
         public Timestep(double value)

@@ -18,6 +18,9 @@ using System;
 
 namespace SGE.Components
 {
+    /// <summary>
+    /// A sprite renderer component, as the name suggests, renders a sprite.
+    /// </summary>
     public sealed class SpriteRendererComponent
     {
         internal SpriteRendererComponent(IntPtr address)

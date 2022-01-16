@@ -16,6 +16,9 @@
 
 namespace SGE
 {
+    /// <summary>
+    /// A script is an object that can be applied to an entity to give custom behavior.
+    /// </summary>
     public abstract class Script
     {
         protected bool HasComponent<T>() => __internal_mEntity.HasComponent<T>();
