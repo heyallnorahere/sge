@@ -9,7 +9,7 @@
     <OutputPath>bin/$(Platform)/$(Configuration)</OutputPath>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SGE</RootNamespace>
-    <AssemblyName>SGE</AssemblyName>
+    <AssemblyName>SGE.Scriptcore</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
