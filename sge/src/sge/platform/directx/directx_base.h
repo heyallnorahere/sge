@@ -49,4 +49,11 @@ namespace sge {
 
         COM_assert(CreateDXGIFactory2(flags, IID_PPV_ARGS(&factory)));
     }
+
+    template <typename T>
+    static T dx_init() {
+        T data;
+        memset(&data, 0, sizeof(T));
+        return data;
+    }
 } // namespace sge

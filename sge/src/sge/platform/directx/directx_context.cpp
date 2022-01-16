@@ -21,17 +21,20 @@ namespace sge {
     static std::unique_ptr<directx_context> dx_context;
 
     struct dx_data {
+        D3D_FEATURE_LEVEL feature_level = D3D_FEATURE_LEVEL_12_0;
         ComPtr<IDXGIAdapter4> adapter;
+        ComPtr<ID3D12Device2> device;
+        DWORD info_queue_callback_cookie = 0;
     };
 
-    void directx_context::create() {
+    void directx_context::create(D3D_FEATURE_LEVEL feature_level) {
         if (dx_context) {
             spdlog::warn("attempted to initialize DirectX twice");
             return;
         }
 
         dx_context = std::unique_ptr<directx_context>(new directx_context);
-        dx_context->init();
+        dx_context->init(feature_level);
     }
 
     void directx_context::destroy() {
@@ -58,7 +61,7 @@ namespace sge {
             adapter->GetDesc1(&adapter_desc);
 
             if ((adapter_desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == DXGI_ADAPTER_FLAG_NONE &&
-                SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0,
+                SUCCEEDED(D3D12CreateDevice(adapter.Get(), data->feature_level,
                                             __uuidof(ID3D12Device), nullptr)) &&
                 adapter_desc.DedicatedVideoMemory > max_dedicated_video_memory) {
                 if (SUCCEEDED(adapter.As(&data->adapter))) {
@@ -85,8 +88,74 @@ namespace sge {
         }
     }
 
-    void directx_context::init() {
+    static void directx_message_callback(D3D12_MESSAGE_CATEGORY category,
+                                         D3D12_MESSAGE_SEVERITY severity, D3D12_MESSAGE_ID id,
+                                         LPCSTR description, void* context) {
+        std::string message = "directx info queue: " + std::string(description);
+
+        switch (severity) {
+        case D3D12_MESSAGE_SEVERITY_CORRUPTION:
+        case D3D12_MESSAGE_SEVERITY_ERROR:
+            spdlog::error(message);
+            break;
+        case D3D12_MESSAGE_SEVERITY_WARNING:
+            spdlog::warn(message);
+            break;
+        default:
+            // not important enough to show
+            break;
+        }
+    }
+
+    static void create_device(dx_data* data) {
+        COM_assert(D3D12CreateDevice(data->adapter.Get(), data->feature_level,
+                                     IID_PPV_ARGS(&data->device)));
+
+#ifdef SGE_DEBUG
+        ComPtr<ID3D12InfoQueue> info_queue;
+        if (SUCCEEDED(data->device.As(&info_queue))) {
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+
+            static std::vector<D3D12_MESSAGE_SEVERITY> deny_severities = {
+                D3D12_MESSAGE_SEVERITY_INFO
+            };
+
+            static std::vector<D3D12_MESSAGE_ID> deny_ids = {
+                // we should allow arbitrary clear values
+                D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+
+                // the visual studio graphics debugger triggers these
+                D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+                D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+            };
+
+            auto filter = dx_init<D3D12_INFO_QUEUE_FILTER>();
+
+            filter.DenyList.NumSeverities = deny_severities.size();
+            filter.DenyList.pSeverityList = deny_severities.data();
+
+            filter.DenyList.NumIDs = deny_ids.size();
+            filter.DenyList.pIDList = deny_ids.data();
+
+            COM_assert(info_queue->PushStorageFilter(&filter));
+
+            ComPtr<ID3D12InfoQueue1> info_queue_1;
+            if (SUCCEEDED(info_queue.As(&info_queue_1))) {
+                COM_assert(info_queue_1->RegisterMessageCallback(
+                    directx_message_callback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr,
+                    &data->info_queue_callback_cookie));
+            } else {
+                spdlog::warn("could not register info queue callback!");
+            }
+        } else {
+            spdlog::warn("could not configure the device info queue!");
+        }
+#endif
+    }
+
+    void directx_context::init(D3D_FEATURE_LEVEL feature_level) {
         m_data = new dx_data;
+        m_data->feature_level = feature_level;
 
 #ifdef SGE_DEBUG
         {
@@ -100,11 +169,15 @@ namespace sge {
 #endif
 
         choose_adapter(m_data);
-        // todo: create device
+        create_device(m_data);
     }
 
     void directx_context::shutdown() {
-        // todo: destroy device
+        if (m_data->info_queue_callback_cookie > 0) {
+            ComPtr<ID3D12InfoQueue1> info_queue;
+            COM_assert(m_data->device.As(&info_queue));
+            info_queue->UnregisterMessageCallback(m_data->info_queue_callback_cookie);
+        }
 
         delete m_data;
     }

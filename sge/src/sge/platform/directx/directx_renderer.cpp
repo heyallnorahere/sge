@@ -23,7 +23,7 @@ namespace sge {
         spdlog::warn(
             "the DirectX backend isn't fully implemented yet - crashes may (probably will) occur");
 
-        directx_context::create();
+        directx_context::create(D3D_FEATURE_LEVEL_12_0);
     }
 
     void directx_renderer::shutdown() { directx_context::destroy(); }

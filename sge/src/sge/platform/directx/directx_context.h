@@ -19,7 +19,7 @@ namespace sge {
     struct dx_data;
     class directx_context {
     public:
-        static void create();
+        static void create(D3D_FEATURE_LEVEL feature_level);
         static void destroy();
         static directx_context& get();
 
@@ -29,7 +29,7 @@ namespace sge {
     private:
         directx_context() = default;
 
-        void init();
+        void init(D3D_FEATURE_LEVEL feature_level);
         void shutdown();
 
         dx_data* m_data;
