@@ -15,6 +15,11 @@
 */
 
 #pragma once
+
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 #include <wrl.h>
 #include <directx/d3d12.h>
 #include <directx/d3dx12.h>
@@ -24,10 +29,24 @@
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
+#ifdef DELETE
+#undef DELETE
+#endif
+
 namespace sge {
     inline void COM_assert(HRESULT result) {
-        if (SUCCEEDED(result)) {
+        if (FAILED(result)) {
             throw std::runtime_error("an error was thrown executing a COM command!");
         }
+    }
+
+    inline void create_factory(ComPtr<IDXGIFactory4>& factory) {
+        uint32_t flags = 0;
+
+#ifdef SGE_DEBUG
+        flags |= DXGI_CREATE_FACTORY_DEBUG;
+#endif
+
+        COM_assert(CreateDXGIFactory2(flags, IID_PPV_ARGS(&factory)));
     }
 } // namespace sge

@@ -21,8 +21,7 @@ namespace sge {
     static std::unique_ptr<directx_context> dx_context;
 
     struct dx_data {
-        // todo: directx device
-        uint32_t unused = 0;
+        ComPtr<IDXGIAdapter4> adapter;
     };
 
     void directx_context::create() {
@@ -47,6 +46,45 @@ namespace sge {
 
     directx_context& directx_context::get() { return *dx_context; }
 
+    static void choose_adapter(dx_data* data) {
+        ComPtr<IDXGIAdapter1> adapter;
+
+        ComPtr<IDXGIFactory4> factory;
+        create_factory(factory);
+
+        size_t max_dedicated_video_memory = 0;
+        for (uint32_t i = 0; factory->EnumAdapters1(i, &adapter) != DXGI_ERROR_NOT_FOUND; i++) {
+            DXGI_ADAPTER_DESC1 adapter_desc;
+            adapter->GetDesc1(&adapter_desc);
+
+            if ((adapter_desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == DXGI_ADAPTER_FLAG_NONE &&
+                SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0,
+                                            __uuidof(ID3D12Device), nullptr)) &&
+                adapter_desc.DedicatedVideoMemory > max_dedicated_video_memory) {
+                if (SUCCEEDED(adapter.As(&data->adapter))) {
+                    max_dedicated_video_memory = adapter_desc.DedicatedVideoMemory;
+                }
+            }
+        }
+
+        if (data->adapter) {
+            DXGI_ADAPTER_DESC adapter_desc;
+            data->adapter->GetDesc(&adapter_desc);
+
+            std::wstring wchar_name = adapter_desc.Description;
+            std::string name;
+
+            // hack hacky hack hack
+            for (wchar_t character : wchar_name) {
+                name.push_back((char)character);
+            }
+
+            spdlog::info("chose adapter: {0}", name);
+        } else {
+            throw std::runtime_error("could not find a suitable adapter!");
+        }
+    }
+
     void directx_context::init() {
         m_data = new dx_data;
 
@@ -61,6 +99,7 @@ namespace sge {
         }
 #endif
 
+        choose_adapter(m_data);
         // todo: create device
     }
 
