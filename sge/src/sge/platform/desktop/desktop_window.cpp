@@ -22,6 +22,13 @@
 #include "sge/events/window_events.h"
 #include "sge/events/input_events.h"
 #include "sge/core/input.h"
+#include "sge/renderer/renderer.h"
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_command_queue.h"
+#define GLFW_EXPOSE_NATIVE_WIN32
+#endif
+#include <GLFW/glfw3native.h>
 namespace sge {
     static uint32_t glfw_window_count = 0;
 
@@ -44,8 +51,8 @@ namespace sge {
         // we are not going to support OpenGL
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        m_window = glfwCreateWindow(m_data.width, m_data.height,
-                                          m_data.title.c_str(), nullptr, nullptr);
+        m_window =
+            glfwCreateWindow(m_data.width, m_data.height, m_data.title.c_str(), nullptr, nullptr);
         if (m_window == nullptr) {
             throw std::runtime_error("could not create glfw window!");
         }
@@ -69,6 +76,35 @@ namespace sge {
     }
 
     void* desktop_window::create_render_surface(void* params) {
+#ifdef SGE_USE_DIRECTX
+        // for directx, let's just create the swapchain
+        {
+            HWND native_window = glfwGetWin32Window(m_window);
+
+            ComPtr<IDXGIFactory4> factory;
+            create_factory(factory);
+
+            ComPtr<IDXGISwapChain4> swapchain4;
+            {
+                auto queue = renderer::get_queue(command_list_type::graphics);
+                auto dx_queue = queue.as<directx_command_queue>();
+                auto cmdqueue = dx_queue->get_queue();
+
+                ComPtr<IDXGISwapChain1> swapchain1;
+                auto desc = (DXGI_SWAP_CHAIN_DESC1*)params;
+                COM_assert(factory->CreateSwapChainForHwnd(cmdqueue.Get(), native_window, desc,
+                                                           nullptr, nullptr, &swapchain1));
+                COM_assert(swapchain1.As(&swapchain4));
+            }
+
+            COM_assert(factory->MakeWindowAssociation(native_window, DXGI_MWA_NO_ALT_ENTER));
+
+            auto ptr = swapchain4.Get();
+            ptr->AddRef();
+            return ptr;
+        }
+#endif
+
 #ifdef SGE_USE_VULKAN
         {
             auto instance = (VkInstance)params;
@@ -92,23 +128,24 @@ namespace sge {
         for (uint32_t i = 0; i < glfw_extension_count; i++) {
             extensions.insert(glfw_extensions[i]);
         }
+#else
+        throw std::runtime_error("vulkan is not enabled!");
 #endif
     }
 
     void desktop_window::setup_event_callbacks() {
         glfwSetWindowUserPointer(m_window, &m_data);
 
-        glfwSetWindowSizeCallback(
-            m_window, [](GLFWwindow* window, int32_t width, int32_t height) {
-                window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
-                wd->width = (uint32_t)width;
-                wd->height = (uint32_t)height;
+        glfwSetWindowSizeCallback(m_window, [](GLFWwindow* window, int32_t width, int32_t height) {
+            window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
+            wd->width = (uint32_t)width;
+            wd->height = (uint32_t)height;
 
-                if (wd->event_callback != nullptr) {
-                    window_resize_event resize_event(wd->width, wd->height);
-                    wd->event_callback(resize_event);
-                }
-            });
+            if (wd->event_callback != nullptr) {
+                window_resize_event resize_event(wd->width, wd->height);
+                wd->event_callback(resize_event);
+            }
+        });
 
         glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
@@ -146,7 +183,7 @@ namespace sge {
             });
 
         glfwSetKeyCallback(m_window, [](GLFWwindow* window, int32_t key, int32_t scancode,
-                                              int32_t action, int32_t mods) {
+                                        int32_t action, int32_t mods) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
 
             if (wd->event_callback != nullptr) {

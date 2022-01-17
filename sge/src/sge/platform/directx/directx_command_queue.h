@@ -35,6 +35,8 @@ namespace sge {
 
         virtual command_list_type get_type() override { return m_type; }
 
+        ComPtr<ID3D12CommandQueue> get_queue() { return m_queue; }
+
     private:
         directx_command_list* create_cmdlist();
 

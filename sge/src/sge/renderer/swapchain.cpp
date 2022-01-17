@@ -20,9 +20,19 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_swapchain.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_swapchain.h"
+#endif
 namespace sge {
     std::unique_ptr<swapchain> swapchain::create(ref<window> _window) {
         swapchain* instance = nullptr;
+
+#ifdef SGE_USE_DIRECTX
+        if (instance == nullptr) {
+            instance = new directx_swapchain(_window);
+        }
+#endif
 
 #ifdef SGE_USE_VULKAN
         if (instance == nullptr) {

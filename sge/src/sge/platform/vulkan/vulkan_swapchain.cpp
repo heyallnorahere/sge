@@ -53,6 +53,7 @@ namespace sge {
         m_window = _window;
         m_surface = (VkSurfaceKHR)m_window->create_render_surface(instance);
         m_current_frame = 0;
+        m_resize = false;
 
         create(true);
         allocate_command_buffers();
@@ -85,10 +86,6 @@ namespace sge {
 
         destroy();
         fpDestroySurfaceKHR(instance, m_surface, nullptr);
-    }
-
-    void vulkan_swapchain::on_resize(uint32_t new_width, uint32_t new_height) {
-        m_new_size = glm::uvec2(new_width, new_height);
     }
 
     void vulkan_swapchain::new_frame() {
@@ -153,8 +150,9 @@ namespace sge {
         present_info.pImageIndices = &m_current_image_index;
 
         VkResult result = fpQueuePresentKHR(present_queue, &present_info);
-        if (m_new_size.has_value() || result == VK_ERROR_OUT_OF_DATE_KHR ||
-            result == VK_SUBOPTIMAL_KHR) {
+        if (m_resize || result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            m_resize = false;
+
             resize();
         } else {
             check_vk_result(result);
@@ -353,19 +351,12 @@ namespace sge {
             if (present_queue.has_value()) {
                 m_present_queue = present_queue.value();
             } else {
-                throw std::runtime_error("could not find a suitable presentation queue family");
+                throw std::runtime_error("could not find a suitable presentation queue family!");
             }
         }
 
-        uint32_t width, height;
-        if (m_new_size.has_value()) {
-            width = m_new_size->x;
-            height = m_new_size->y;
-            m_new_size.reset();
-        } else {
-            width = m_window->get_width();
-            height = m_window->get_height();
-        }
+        uint32_t width = m_window->get_width();
+        uint32_t height = m_window->get_height();
 
         auto create_info =
             vk_init<VkSwapchainCreateInfoKHR>(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);

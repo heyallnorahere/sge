@@ -24,7 +24,9 @@ namespace sge {
         vulkan_swapchain(ref<window> _window);
         virtual ~vulkan_swapchain() override;
 
-        virtual void on_resize(uint32_t new_width, uint32_t new_height) override;
+        virtual void on_resize(uint32_t new_width, uint32_t new_height) override {
+            m_resize = true;
+        }
 
         virtual void new_frame() override;
         virtual void present() override;
@@ -68,10 +70,12 @@ namespace sge {
         };
 
         ref<window> m_window;
-
         uint32_t m_width, m_height;
+        bool m_resize;
+
         VkSurfaceKHR m_surface;
         uint32_t m_present_queue;
+
         VkSwapchainKHR m_swapchain;
         ref<render_pass> m_render_pass;
 
@@ -90,7 +94,5 @@ namespace sge {
 
         VkCommandPool m_command_pool;
         std::vector<std::unique_ptr<vulkan_command_list>> m_command_buffers;
-
-        std::optional<glm::uvec2> m_new_size;
     };
 } // namespace sge
