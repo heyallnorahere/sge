@@ -20,6 +20,10 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_shader.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_shader.h"
+#endif
 namespace sge {
     static const std::unordered_map<std::string, shader_stage> stage_map = {
         { "vertex", shader_stage::vertex },
@@ -65,6 +69,10 @@ namespace sge {
 
     ref<shader> shader::create(const fs::path& path, shader_language language) {
         fs::path filepath = fs::absolute(path);
+
+#ifdef SGE_USE_DIRECTX
+        return ref<directx_shader>::create(filepath, language);
+#endif
 
 #ifdef SGE_USE_VULKAN
         return ref<vulkan_shader>::create(filepath, language);

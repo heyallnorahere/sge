@@ -19,64 +19,10 @@
 #include "sge/platform/vulkan/vulkan_shader.h"
 #include "sge/platform/vulkan/vulkan_context.h"
 #include "sge/renderer/renderer.h"
+#include "sge/renderer/shader_internals.h"
 #include <shaderc/shaderc.hpp>
 #include <spirv_glsl.hpp>
 namespace sge {
-    class file_finder : public shaderc::CompileOptions::IncluderInterface {
-    public:
-        virtual shaderc_include_result* GetInclude(const char* requested_source,
-                                                   shaderc_include_type type,
-                                                   const char* requesting_source,
-                                                   size_t include_depth) {
-            // get c++17 paths
-            fs::path requested_path = requested_source;
-            fs::path requesting_path = requesting_source;
-
-            // sort out paths
-            if (!requesting_path.has_parent_path()) {
-                requesting_path = fs::absolute(requesting_path);
-            }
-            if (type != shaderc_include_type_standard) {
-                requested_path = requesting_path.parent_path() / requested_path;
-            }
-
-            // read data
-            auto file_info = new included_file_info;
-            file_info->path = requested_path.string();
-            {
-                if (!fs::exists(requested_path)) {
-                    throw std::runtime_error(requested_path.string() + " does not exist!");
-                }
-
-                std::ifstream file(requested_path);
-                std::string line;
-                while (std::getline(file, line)) {
-                    file_info->content += line + '\n';
-                }
-                file.close();
-            }
-
-            // return result
-            auto result = new shaderc_include_result;
-            result->user_data = file_info;
-            result->content = file_info->content.c_str();
-            result->content_length = file_info->content.length();
-            result->source_name = file_info->path.c_str();
-            result->source_name_length = file_info->path.length();
-            return result;
-        }
-
-        virtual void ReleaseInclude(shaderc_include_result* data) {
-            delete (included_file_info*)data->user_data;
-            delete data;
-        }
-
-    private:
-        struct included_file_info {
-            std::string content, path;
-        };
-    };
-
     VkShaderStageFlagBits vulkan_shader::get_shader_stage_flags(shader_stage stage) {
         switch (stage) {
         case shader_stage::vertex:
@@ -119,7 +65,7 @@ namespace sge {
             m_pipeline_info.push_back(stage_info);
         }
 
-        { 
+        {
             size_t ubo_count = 0;
             size_t ssbo_count = 0;
             size_t image_count = 0;
@@ -195,7 +141,8 @@ namespace sge {
         uint32_t vulkan_version = vulkan_context::get().get_vulkan_version();
         options.SetTargetEnvironment(shaderc_target_env_vulkan, vulkan_version);
 
-        std::unique_ptr<shaderc::CompileOptions::IncluderInterface> includer(new file_finder);
+        std::unique_ptr<shaderc::CompileOptions::IncluderInterface> includer(
+            new shaderc_file_finder);
         options.SetIncluder(std::move(includer));
 
         shaderc_shader_kind kind;
@@ -281,10 +228,10 @@ namespace sge {
                       resource_type::storage_buffer, compiler);
         map_resources(resources.sampled_images, m_reflection_data, stage,
                       resource_type::sampled_image, compiler);
-        map_resources(resources.separate_images, m_reflection_data, stage,
-                      resource_type::image, compiler);
-        map_resources(resources.separate_samplers, m_reflection_data, stage,
-                      resource_type::sampler, compiler);
+        map_resources(resources.separate_images, m_reflection_data, stage, resource_type::image,
+                      compiler);
+        map_resources(resources.separate_samplers, m_reflection_data, stage, resource_type::sampler,
+                      compiler);
 
         for (const auto& spirv_resource : resources.push_constant_buffers) {
             const auto& spirv_type = compiler.get_type(spirv_resource.type_id);

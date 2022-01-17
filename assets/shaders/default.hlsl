@@ -16,18 +16,18 @@
 */
 
 struct vs_input {
-    [[vk::location(0)]] float2 position : POSITION0;
-    [[vk::location(1)]] float4 color : COLOR0;
-    [[vk::location(2)]] float2 uv : TEXCOORD0;
-    [[vk::location(3)]] int texture_index : TEXTUREINDEX0;
+    float2 position : POSITION0;
+    float4 color : COLOR0;
+    float2 uv : TEXCOORD0;
+    int texture_index : TEXTUREINDEX0;
 };
 
 struct vs_output {
     float4 position : SV_POSITION;
 
-    [[vk::location(0)]] float4 color : COLOR0;
-    [[vk::location(1)]] float2 uv : TEXCOORD0;
-    [[vk::location(2)]] int texture_index : TEXTUREINDEX0; 
+    float4 color : COLOR0;
+    float2 uv : TEXCOORD0;
+    int texture_index : TEXTUREINDEX0; 
 };
 
 struct camera_data_t {
@@ -49,9 +49,9 @@ vs_output main(vs_input input) {
 
 #stage pixel
 struct ps_input {
-    [[vk::location(0)]] float4 color : COLOR0;
-    [[vk::location(1)]] float2 uv : TEXCOORD0;
-    [[vk::location(2)]] int texture_index : TEXTUREINDEX0; 
+    float4 color : COLOR0;
+    float2 uv : TEXCOORD0;
+    int texture_index : TEXTUREINDEX0; 
 };
 
 Texture2D textures[16] : register(t1);

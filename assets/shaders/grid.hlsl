@@ -16,16 +16,16 @@
 */
 
 struct vs_input {
-    [[vk::location(0)]] float2 position : POSITION0;
-    [[vk::location(1)]] float4 color : COLOR0;
-    [[vk::location(2)]] float2 uv : TEXCOORD0;
-    [[vk::location(3)]] int texture_index : TEXTUREINDEX0;
+    float2 position : POSITION0;
+    float4 color : COLOR0;
+    float2 uv : TEXCOORD0;
+    int texture_index : TEXTUREINDEX0;
 };
 
 struct vs_output {
     float4 position : SV_POSITION;
 
-    [[vk::location(0)]] float2 uv : TEXCOORD0;
+    float2 uv : TEXCOORD0;
 };
 
 vs_output main(vs_input input) {
@@ -55,7 +55,7 @@ float2 get_coords(float2 uv) {
     return grid_data.camera_position + view_coords;
 }
 
-float4 main([[vk::location(0)]] float2 uv : TEXCOORD0) : SV_TARGET {
+float4 main(float2 uv : TEXCOORD0) : SV_TARGET {
     float2 coords = get_coords(uv);
     float line_width = grid_data.view_size * 0.005f;
 
@@ -68,9 +68,9 @@ float4 main([[vk::location(0)]] float2 uv : TEXCOORD0) : SV_TARGET {
         } else if (!axis_aligned_x) {
             return float4(0.f, 1.f, 0.f, 1.f);
         } else {
-            return float4(1.f);
+            return float4(1.f, 1.f, 1.f, 1.f);
         }
     }
 
-    return float4(0.f);
+    return float4(0.f, 0.f, 0.f, 0.f);
 }

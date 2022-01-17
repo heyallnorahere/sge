@@ -38,7 +38,7 @@ endif()
 
 if(SGE_USE_DIRECTX)
     list(APPEND SGE_INCLUDES ${D3D12_INCLUDE_DIRS})
-    list(APPEND SGE_LIBS DirectX-Headers ${D3D12_LIBRARIES})
+    list(APPEND SGE_LIBS DirectX-Headers ${D3D12_LIBRARIES} spirv-cross-hlsl)
     list(APPEND SGE_DEFINES SGE_USE_DIRECTX)
     list(APPEND ENABLED_PLATFORMS directx)
 endif()
