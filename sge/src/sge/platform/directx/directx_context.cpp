@@ -49,6 +49,9 @@ namespace sge {
 
     directx_context& directx_context::get() { return *dx_context; }
 
+    ComPtr<IDXGIAdapter4> directx_context::get_adapter() { return m_data->adapter; }
+    ComPtr<ID3D12Device2> directx_context::get_device() { return m_data->device; }
+
     static void choose_adapter(dx_data* data) {
         ComPtr<IDXGIAdapter1> adapter;
 

@@ -15,25 +15,20 @@
 */
 
 #include "sgepch.h"
-#include "sge/renderer/command_queue.h"
-#ifdef SGE_USE_VULKAN
-#include "sge/platform/vulkan/vulkan_base.h"
-#include "sge/platform/vulkan/vulkan_command_queue.h"
-#endif
-#ifdef SGE_USE_DIRECTX
 #include "sge/platform/directx/directx_base.h"
-#include "sge/platform/directx/directx_command_queue.h"
-#endif
+#include "sge/platform/directx/directx_command_list.h"
 namespace sge {
-    ref<command_queue> command_queue::create(command_list_type type) {
-#ifdef SGE_USE_DIRECTX
-        return ref<directx_command_queue>::create(type);
-#endif
-
-#ifdef SGE_USE_VULKAN
-        return ref<vulkan_command_queue>::create(type);
-#endif
-
-        return nullptr;
+    directx_command_list::directx_command_list(ComPtr<ID3D12CommandAllocator> allocator,
+                                               ComPtr<ID3D12GraphicsCommandList2> cmdlist) {
+        m_cmdlist = cmdlist;
+        m_allocator = allocator;
     }
+
+    void directx_command_list::reset() { COM_assert(m_cmdlist->Reset(m_allocator.Get(), nullptr)); }
+
+    void directx_command_list::begin() {
+        // nothing
+    }
+
+    void directx_command_list::end() { COM_assert(m_cmdlist->Close()); }
 } // namespace sge

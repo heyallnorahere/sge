@@ -17,18 +17,20 @@
 #pragma once
 #include "sge/renderer/command_list.h"
 namespace sge {
-    enum class command_list_type { graphics, compute, transfer };
-    class command_queue : public ref_counted {
+    class directx_command_list : public command_list {
     public:
-        static ref<command_queue> create(command_list_type type);
+        directx_command_list(ComPtr<ID3D12CommandAllocator> allocator,
+                             ComPtr<ID3D12GraphicsCommandList2> cmdlist);
+        virtual ~directx_command_list() override = default;
 
-        virtual ~command_queue() = default;
+        virtual void reset() override;
+        virtual void begin() override;
+        virtual void end() override;
 
-        virtual void wait() = 0;
+        ComPtr<ID3D12GraphicsCommandList2> get() { return m_cmdlist; }
 
-        virtual command_list& get() = 0;
-        virtual void submit(command_list& cmdlist, bool wait = false) = 0;
-
-        virtual command_list_type get_type() = 0;
+    private:
+        ComPtr<ID3D12CommandAllocator> m_allocator;
+        ComPtr<ID3D12GraphicsCommandList2> m_cmdlist;
     };
 } // namespace sge

@@ -16,28 +16,40 @@
 
 #pragma once
 #include "sge/renderer/command_queue.h"
+#include "sge/platform/directx/directx_command_list.h"
 namespace sge {
-    class vulkan_command_queue : public command_queue {
+    class directx_command_queue : public command_queue {
     public:
-        vulkan_command_queue(command_list_type type);
-        virtual ~vulkan_command_queue() override;
+        static D3D12_COMMAND_LIST_TYPE get_cmdlist_type(command_list_type type);
+
+        directx_command_queue(command_list_type type);
+        virtual ~directx_command_queue() override;
 
         virtual void wait() override;
+        uint64_t signal();
+        bool is_fence_complete(uint64_t value);
+        void wait_for_fence_value(uint64_t value);
 
         virtual command_list& get() override;
-        virtual void submit(command_list& cmdlist, bool wait) override;
+        virtual void submit(command_list& cmdlist, bool wait = false) override;
 
         virtual command_list_type get_type() override { return m_type; }
 
     private:
-        struct stored_command_list {
-            std::unique_ptr<command_list> cmdlist;
-            VkFence fence;
+        directx_command_list* create_cmdlist();
+
+        struct command_list_entry {
+            uint64_t fence_value;
+            std::unique_ptr<directx_command_list> cmdlist;
         };
 
         command_list_type m_type;
-        VkQueue m_queue;
-        VkCommandPool m_command_pool;
-        std::queue<stored_command_list> m_command_lists;
+        ComPtr<ID3D12CommandQueue> m_queue;
+
+        ComPtr<ID3D12Fence> m_fence;
+        HANDLE m_fence_event;
+        uint64_t m_fence_value;
+
+        std::queue<command_list_entry> m_cmdlists;
     };
 } // namespace sge

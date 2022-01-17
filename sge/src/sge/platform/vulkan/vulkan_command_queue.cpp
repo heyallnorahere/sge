@@ -74,6 +74,8 @@ namespace sge {
         vkDestroyCommandPool(device, m_command_pool, nullptr);
     }
 
+    void vulkan_command_queue::wait() { vkQueueWaitIdle(m_queue); }
+
     static bool is_fence_complete(VkDevice device, VkFence fence) {
         VkResult status = vkGetFenceStatus(device, fence);
         return status == VK_SUCCESS;
@@ -83,8 +85,7 @@ namespace sge {
         VkDevice device = vulkan_context::get().get_device().get();
 
         command_list* cmdlist;
-        if (!m_command_lists.empty() &&
-            is_fence_complete(device, m_command_lists.front().fence)) {
+        if (!m_command_lists.empty() && is_fence_complete(device, m_command_lists.front().fence)) {
             auto& front = m_command_lists.front();
             cmdlist = front.cmdlist.release();
             cmdlist->reset();

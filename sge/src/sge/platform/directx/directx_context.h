@@ -26,6 +26,9 @@ namespace sge {
         directx_context(const directx_context&) = delete;
         directx_context& operator=(const directx_context&) = delete;
 
+        ComPtr<IDXGIAdapter4> get_adapter();
+        ComPtr<ID3D12Device2> get_device();
+
     private:
         directx_context() = default;
 
