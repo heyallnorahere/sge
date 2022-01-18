@@ -20,6 +20,10 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_image.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_image.h"
+#endif
 #ifdef SGE_PLATFORM_LINUX
 #define STBI_NO_SIMD
 #endif
@@ -90,6 +94,10 @@ namespace sge {
     }
 
     ref<image_2d> image_2d::create(const image_spec& spec) {
+#ifdef SGE_USE_DIRECTX
+        return ref<directx_image_2d>::create(spec);
+#endif
+
 #ifdef SGE_USE_VULKAN
         return ref<vulkan_image_2d>::create(spec);
 #endif

@@ -20,8 +20,16 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_pipeline.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_pipeline.h"
+#endif
 namespace sge {
     ref<pipeline> pipeline::create(const pipeline_spec& spec) {
+#ifdef SGE_USE_DIRECTX
+        return ref<directx_pipeline>::create(spec);
+#endif
+
 #ifdef SGE_USE_VULKAN
         return ref<vulkan_pipeline>::create(spec);
 #endif

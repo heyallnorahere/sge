@@ -20,8 +20,16 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_vertex_buffer.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_vertex_buffer.h"
+#endif
 namespace sge {
     ref<vertex_buffer> vertex_buffer::create(const void* data, size_t stride, size_t count) {
+#ifdef SGE_USE_DIRECTX
+        return ref<directx_vertex_buffer>::create(data, stride, count);
+#endif
+
 #ifdef SGE_USE_VULKAN
         return ref<vulkan_vertex_buffer>::create(data, stride, count);
 #endif

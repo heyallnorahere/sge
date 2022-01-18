@@ -23,6 +23,10 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_imgui_backend.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_imgui_backend.h"
+#endif
 namespace sge {
     std::unique_ptr<imgui_backend> imgui_backend::create_platform_backend() {
         imgui_backend* backend = nullptr;
@@ -38,6 +42,12 @@ namespace sge {
 
     std::unique_ptr<imgui_backend> imgui_backend::create_renderer_backend() {
         imgui_backend* backend = nullptr;
+
+#ifdef SGE_USE_DIRECTX
+        if (backend == nullptr) {
+            backend = new directx_imgui_backend;
+        }
+#endif
 
 #ifdef SGE_USE_VULKAN
         if (backend == nullptr) {

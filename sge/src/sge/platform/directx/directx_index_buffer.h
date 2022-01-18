@@ -15,16 +15,13 @@
 */
 
 #pragma once
-#include "sge/renderer/command_list.h"
+#include "sge/renderer/index_buffer.h"
 namespace sge {
-    class imgui_backend {
+    class directx_index_buffer : public index_buffer {
     public:
-        static std::unique_ptr<imgui_backend> create_platform_backend();
-        static std::unique_ptr<imgui_backend> create_renderer_backend();
+        directx_index_buffer(const uint32_t* data, size_t count) {}
+        virtual ~directx_index_buffer() override = default;
 
-        virtual ~imgui_backend() = default;
-
-        virtual void begin() = 0;
-        virtual void* render(command_list& cmdlist) { return nullptr; }
+        virtual size_t get_index_count() override { return 0; }
     };
-} // namespace sge
+}

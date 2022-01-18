@@ -15,16 +15,15 @@
 */
 
 #pragma once
-#include "sge/renderer/command_list.h"
+#include "sge/renderer/uniform_buffer.h"
 namespace sge {
-    class imgui_backend {
+    class directx_constant_buffer : public uniform_buffer {
     public:
-        static std::unique_ptr<imgui_backend> create_platform_backend();
-        static std::unique_ptr<imgui_backend> create_renderer_backend();
+        directx_constant_buffer(size_t size) {}
+        virtual ~directx_constant_buffer() override = default;
 
-        virtual ~imgui_backend() = default;
+        virtual size_t get_size() override { return 0; }
 
-        virtual void begin() = 0;
-        virtual void* render(command_list& cmdlist) { return nullptr; }
+        virtual void set_data(const void* data, size_t size, size_t offset) override {}
     };
 } // namespace sge

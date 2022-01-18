@@ -20,6 +20,10 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_texture.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_texture.h"
+#endif
 namespace sge {
     ref<texture_2d> texture_2d::create(const texture_spec& spec) {
         if (!spec.image) {
@@ -27,6 +31,10 @@ namespace sge {
         } else if ((spec.image->get_usage() & image_usage_texture) == 0) {
             throw std::runtime_error("cannot create a texture from the passed image!");
         }
+
+#ifdef SGE_USE_DIRECTX
+        return ref<directx_texture_2d>::create(spec);
+#endif
 
 #ifdef SGE_USE_VULKAN
         return ref<vulkan_texture_2d>::create(spec);

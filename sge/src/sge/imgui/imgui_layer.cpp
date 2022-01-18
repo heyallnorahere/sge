@@ -60,12 +60,12 @@ namespace sge {
 
     void imgui_layer::end(command_list& cmdlist) {
         ImGui::Render();
-        m_renderer->render(cmdlist);
+        void* param = m_renderer->render(cmdlist);
 
         ImGuiIO& io = ImGui::GetIO();
         if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != ImGuiConfigFlags_None) {
             ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
+            ImGui::RenderPlatformWindowsDefault(nullptr, param);
         }
     }
 

@@ -14,17 +14,6 @@
    limitations under the License.
 */
 
-#pragma once
-#include "sge/renderer/command_list.h"
-namespace sge {
-    class imgui_backend {
-    public:
-        static std::unique_ptr<imgui_backend> create_platform_backend();
-        static std::unique_ptr<imgui_backend> create_renderer_backend();
-
-        virtual ~imgui_backend() = default;
-
-        virtual void begin() = 0;
-        virtual void* render(command_list& cmdlist) { return nullptr; }
-    };
-} // namespace sge
+#include "sgepch.h"
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_index_buffer.h"

@@ -23,7 +23,7 @@ namespace sge {
         virtual ~vulkan_imgui_backend() override;
 
         virtual void begin() override;
-        virtual void render(command_list& cmdlist) override;
+        virtual void* render(command_list& cmdlist) override;
 
     private:
         void init();

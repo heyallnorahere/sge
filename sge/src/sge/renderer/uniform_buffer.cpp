@@ -20,8 +20,16 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_uniform_buffer.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_constant_buffer.h"
+#endif
 namespace sge {
     ref<uniform_buffer> uniform_buffer::create(size_t size) {
+#ifdef SGE_USE_DIRECTX
+        return ref<directx_constant_buffer>::create(size);
+#endif
+
 #ifdef SGE_USE_VULKAN
         return ref<vulkan_uniform_buffer>::create(size);
 #endif

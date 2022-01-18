@@ -15,16 +15,17 @@
 */
 
 #pragma once
-#include "sge/renderer/command_list.h"
+#include "sge/renderer/texture.h"
 namespace sge {
-    class imgui_backend {
+    class directx_texture_2d : public texture_2d {
     public:
-        static std::unique_ptr<imgui_backend> create_platform_backend();
-        static std::unique_ptr<imgui_backend> create_renderer_backend();
+        directx_texture_2d(const texture_spec& spec) {}
+        virtual ~directx_texture_2d() override = default;
 
-        virtual ~imgui_backend() = default;
+        virtual ref<image_2d> get_image() override { return nullptr; }
+        virtual texture_wrap get_wrap() override { return texture_wrap::repeat; }
+        virtual texture_filter get_filter() override { return texture_filter::linear; }
 
-        virtual void begin() = 0;
-        virtual void* render(command_list& cmdlist) { return nullptr; }
+        virtual ImTextureID get_imgui_id() override { return (ImTextureID)0; }
     };
 } // namespace sge

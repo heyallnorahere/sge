@@ -15,16 +15,14 @@
 */
 
 #pragma once
-#include "sge/renderer/command_list.h"
+#include "sge/renderer/vertex_buffer.h"
 namespace sge {
-    class imgui_backend {
+    class directx_vertex_buffer : public vertex_buffer {
     public:
-        static std::unique_ptr<imgui_backend> create_platform_backend();
-        static std::unique_ptr<imgui_backend> create_renderer_backend();
+        directx_vertex_buffer(const void* data, size_t stride, size_t count) {}
+        virtual ~directx_vertex_buffer() override = default;
 
-        virtual ~imgui_backend() = default;
-
-        virtual void begin() = 0;
-        virtual void* render(command_list& cmdlist) { return nullptr; }
+        virtual size_t get_vertex_stride() override { return 0; }
+        virtual size_t get_vertex_count() override { return 0; }
     };
 } // namespace sge

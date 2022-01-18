@@ -21,7 +21,25 @@
 #include "sge/platform/directx/directx_context.h"
 #include "sge/renderer/renderer.h"
 namespace sge {
-    directx_swapchain::directx_swapchain(ref<window> _window) { 
+    class directx_swapchain_render_pass : public render_pass {
+    public:
+        directx_swapchain_render_pass(directx_swapchain* swap_chain) { m_swapchain = swap_chain; }
+
+        virtual void begin(command_list& cmdlist, const glm::vec4& clear_color) override {
+            m_swapchain->begin(cmdlist, clear_color);
+        }
+
+        virtual void end(command_list& cmdlist) override { m_swapchain->end(cmdlist); }
+
+        virtual render_pass_parent_type get_parent_type() override {
+            return render_pass_parent_type::swapchain;
+        }
+
+    private:
+        directx_swapchain* m_swapchain;
+    };
+
+    directx_swapchain::directx_swapchain(ref<window> _window) {
         m_window = _window;
         m_width = m_window->get_width();
         m_height = m_window->get_height();
@@ -34,6 +52,8 @@ namespace sge {
         create_swapchain();
         create_descriptor_heap();
         update_rtvs();
+
+        m_render_pass = ref<directx_swapchain_render_pass>::create(this);
     }
 
     directx_swapchain::~directx_swapchain() {
@@ -44,8 +64,6 @@ namespace sge {
             }
         }
         queue->wait();
-
-        m_swapchain.Reset();
     }
 
     void directx_swapchain::new_frame() {
@@ -87,6 +105,18 @@ namespace sge {
         }
     }
 
+    command_list& directx_swapchain::get_command_list(size_t index) {
+        if (m_cmdlists[index] != nullptr) {
+            return *m_cmdlists[index];
+        } else {
+            auto queue = renderer::get_queue(command_list_type::graphics);
+            auto& cmdlist = queue->get();
+
+            m_cmdlists[index] = &cmdlist;
+            return cmdlist;
+        }
+    }
+
     void directx_swapchain::begin(command_list& cmdlist, const glm::vec4& clear_color) {
         auto dx_cmdlist = (directx_command_list*)&cmdlist;
         auto commandlist = dx_cmdlist->get();
@@ -100,6 +130,7 @@ namespace sge {
 
         commandlist->ResourceBarrier(1, &barrier);
         commandlist->ClearRenderTargetView(rtv, &clear_color.x, 0, nullptr);
+        commandlist->OMSetRenderTargets(1, &rtv, false, nullptr);
     }
 
     void directx_swapchain::end(command_list& cmdlist) {
@@ -107,22 +138,10 @@ namespace sge {
         auto commandlist = dx_cmdlist->get();
 
         auto resource = m_backbuffers[m_current_image].Get();
-        auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource, D3D12_RESOURCE_STATE_PRESENT,
-                                                            D3D12_RESOURCE_STATE_RENDER_TARGET);
+        auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+            resource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
         commandlist->ResourceBarrier(1, &barrier);
-    }
-
-    command_list& directx_swapchain::get_command_list(size_t index) {
-        if (m_cmdlists[index] != nullptr) {
-            return *m_cmdlists[index];
-        } else {
-            auto queue = renderer::get_queue(command_list_type::graphics);
-            auto& cmdlist = queue->get();
-
-            m_cmdlists[index] = &cmdlist;
-            return cmdlist;
-        }
     }
 
     void directx_swapchain::create_swapchain() {
@@ -131,7 +150,7 @@ namespace sge {
         desc.Width = m_width;
         desc.Height = m_height;
 
-        desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        desc.Format = rtv_format;
         desc.Stereo = false;
         desc.SampleDesc = { 1, 0 };
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -144,6 +163,8 @@ namespace sge {
         auto swap_chain = (IDXGISwapChain4*)m_window->create_render_surface(&desc);
         m_swapchain = swap_chain;
         swap_chain->Release();
+
+        m_current_image = m_swapchain->GetCurrentBackBufferIndex();
     }
 
     void directx_swapchain::create_descriptor_heap() {
@@ -173,4 +194,4 @@ namespace sge {
             rtv_handle.Offset(m_rtv_size);
         }
     }
-}
+} // namespace sge

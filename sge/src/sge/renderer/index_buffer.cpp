@@ -20,8 +20,16 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_index_buffer.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_index_buffer.h"
+#endif
 namespace sge {
     ref<index_buffer> index_buffer::create(const uint32_t* data, size_t count) {
+#ifdef SGE_USE_DIRECTX
+        return ref<directx_index_buffer>::create(data, count);
+#endif
+
 #ifdef SGE_USE_VULKAN
         return ref<vulkan_index_buffer>::create(data, count);
 #endif

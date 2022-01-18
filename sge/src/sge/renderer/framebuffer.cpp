@@ -20,11 +20,19 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_framebuffer.h"
 #endif
+#ifdef SGE_USE_DIRECTX
+#include "sge/platform/directx/directx_base.h"
+#include "sge/platform/directx/directx_framebuffer.h"
+#endif
 namespace sge {
     ref<framebuffer> framebuffer::create(const framebuffer_spec& spec) {
         if (spec.attachments.empty()) {
             throw std::runtime_error("cannot create a framebuffer from no attachments!");
         }
+
+#ifdef SGE_USE_DIRECTX
+        return ref<directx_framebuffer>::create(spec);
+#endif
         
 #ifdef SGE_USE_VULKAN
         return ref<vulkan_framebuffer>::create(spec);

@@ -15,16 +15,17 @@
 */
 
 #pragma once
-#include "sge/renderer/command_list.h"
+#include "sge/imgui/imgui_backend.h"
 namespace sge {
-    class imgui_backend {
+    class directx_imgui_backend : public imgui_backend {
     public:
-        static std::unique_ptr<imgui_backend> create_platform_backend();
-        static std::unique_ptr<imgui_backend> create_renderer_backend();
+        directx_imgui_backend();
+        virtual ~directx_imgui_backend() override;
 
-        virtual ~imgui_backend() = default;
+        virtual void begin() override;
+        virtual void* render(command_list& cmdlist) override;
 
-        virtual void begin() = 0;
-        virtual void* render(command_list& cmdlist) { return nullptr; }
+    private:
+        ComPtr<ID3D12DescriptorHeap> m_srv_heap;
     };
 } // namespace sge

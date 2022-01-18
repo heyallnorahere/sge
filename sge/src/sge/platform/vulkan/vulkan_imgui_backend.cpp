@@ -39,12 +39,14 @@ namespace sge {
 
     void vulkan_imgui_backend::begin() { ImGui_ImplVulkan_NewFrame(); }
     
-    void vulkan_imgui_backend::render(command_list& cmdlist) {
+    void* vulkan_imgui_backend::render(command_list& cmdlist) {
         auto vk_cmdlist = (vulkan_command_list*)&cmdlist;
         VkCommandBuffer cmdbuffer = vk_cmdlist->get();
 
         ImDrawData* draw_data = ImGui::GetDrawData();
         ImGui_ImplVulkan_RenderDrawData(draw_data, cmdbuffer);
+
+        return nullptr;
     }
 
     void vulkan_imgui_backend::init() {

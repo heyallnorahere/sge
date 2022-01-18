@@ -179,7 +179,10 @@ namespace sandbox {
             ImGui::Begin("Sandbox");
 
             ImGui::Text("Hello!");
-            ImGui::Image(m_tux->get_imgui_id(), ImVec2(50.f, 50.f));
+            //ImGui::Image(m_tux->get_imgui_id(), ImVec2(50.f, 50.f));
+
+            ImGuiIO& io = ImGui::GetIO();
+            ImGui::Text("Running at %f FPS", io.Framerate);
 
             ImGui::End();
         }
