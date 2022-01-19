@@ -18,6 +18,9 @@ using System;
 
 namespace SGE.Components
 {
+    /// <summary>
+    /// A tag component represents an entity's name.
+    /// </summary>
     public sealed class TagComponent
     {
         internal TagComponent(IntPtr address)

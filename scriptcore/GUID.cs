@@ -16,6 +16,9 @@
 
 namespace SGE
 {
+    /// <summary>
+    /// A GUID is a <b>G</b>lobally <b>U</b>nique <b>ID</b>entifier that can be used to identify an <see cref="Entity"/> through a <see cref="Scene"/>.
+    /// </summary>
     public struct GUID
     {
         public ulong ID;

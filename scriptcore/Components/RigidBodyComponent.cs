@@ -24,6 +24,10 @@ namespace SGE.Components
         Kinematic,
         Dynamic
     }
+
+    /// <summary>
+    /// A rigid body component describes how other entities should affect its parent.
+    /// </summary>
     public sealed class RigidBodyComponent
     {
         internal RigidBodyComponent(IntPtr address)

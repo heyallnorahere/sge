@@ -18,13 +18,16 @@ using System;
 
 namespace SGE.Components
 {
+    /// <summary>
+    /// A transform component describes an entity's location in a scene.
+    /// </summary>
     public sealed class TransformComponent
     {
         internal TransformComponent(IntPtr address)
         {
             mAddress = address;
         }
-
+        
         public Vector2 Translation
         {
             get

@@ -47,7 +47,7 @@ namespace sge {
         script_engine_data->root_domain = mono_jit_init("SGE");
         garbage_collector::init();
 
-        load_assembly(fs::current_path() / "assemblies" / "SGE.dll");
+        load_assembly(fs::current_path() / "assemblies" / "SGE.Scriptcore.dll");
         register_internal_script_calls();
 
         void* helpers_class = get_class(script_engine_data->assemblies[0].image, "SGE.Helpers");

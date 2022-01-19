@@ -100,6 +100,18 @@ namespace sge {
             scene_ptr->destroy_entity(e);
         }
 
+        static bool FindEntity(guid id, uint32_t* entityID, void* _scene) {
+            auto scene_ptr = (scene*)_scene;
+
+            entity found_entity = scene_ptr->find_guid(id);
+            if (found_entity) {
+                *entityID = (uint32_t)found_entity;
+                return true;
+            }
+
+            return false;
+        }
+
         static bool HasComponent(void* componentType, uint32_t entityID, void* _scene) {
             verify_component_type_validity(componentType);
 
@@ -287,6 +299,7 @@ namespace sge {
         REGISTER_CALL(CreateEntity);
         REGISTER_CALL(CreateEntityWithGUID);
         REGISTER_CALL(DestroyEntity);
+        REGISTER_CALL(FindEntity);
 
         // entity
         REGISTER_CALL(HasComponent);

@@ -18,6 +18,9 @@ using System;
 
 namespace SGE.Components
 {
+    /// <summary>
+    /// A box collider component gives its parent entity a rectangular collider.
+    /// </summary>
     public sealed class BoxColliderComponent
     {
         internal BoxColliderComponent(IntPtr address)

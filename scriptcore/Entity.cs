@@ -16,6 +16,9 @@
 
 namespace SGE
 {
+    /// <summary>
+    /// Entities are objects that give scenes behavior.
+    /// </summary>
     public sealed class Entity
     {
         internal Entity(uint id, Scene scene)
@@ -24,11 +27,33 @@ namespace SGE
             mScene = scene;
         }
 
+        /// <summary>
+        /// Checks if this entity has a component of the specified type.
+        /// </summary>
+        /// <typeparam name="T">A type of a component.</typeparam>
+        /// <returns>See above.</returns>
         public bool HasComponent<T>() => InternalCalls.HasComponent(typeof(T), mID, mScene.mNativeAddress);
+
+        /// <summary>
+        /// Retrieves a component of the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type of component to search for.</typeparam>
+        /// <returns>The component.</returns>
         public T GetComponent<T>() => (T)InternalCalls.GetComponent(typeof(T), mID, mScene.mNativeAddress);
 
+        /// <summary>
+        /// The <see cref="SGE.GUID"/> of this entity.
+        /// </summary>
         public GUID GUID => InternalCalls.GetGUID(mID, mScene.mNativeAddress);
+
+        /// <summary>
+        /// The ID of this entity within the scene.
+        /// </summary>
         public uint ID => mID;
+
+        /// <summary>
+        /// The scene that owns this entity.
+        /// </summary>
         public Scene Scene => mScene;
 
         public override bool Equals(object obj)
