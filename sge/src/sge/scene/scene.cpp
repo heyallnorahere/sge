@@ -228,7 +228,7 @@ namespace sge {
         }
 
         auto& sc = e.get_component<script_component>();
-        verify_script(&sc, e);
+        sc.verify_script(e);
     }
 
     entity scene::find_guid(guid id) {
@@ -248,86 +248,14 @@ namespace sge {
         return found;
     }
 
-    // hack hackity hack hack
-    template <typename T>
-    struct scene_component_copier {
-        T operator()(const T& src, entity e) { return src; }
-    };
-
-    template <>
-    struct scene_component_copier<script_component> {
-        script_component operator()(const script_component& src, entity e) {
-            scene* dst_scene = e.get_scene();
-
-            script_component dst;
-            dst._class = src._class;
-
-            if (src.gc_handle != 0) {
-                dst_scene->verify_script(&dst, e);
-
-                void* src_instance = garbage_collector::get_ref_data(src.gc_handle);
-                void* dst_instance = garbage_collector::get_ref_data(dst.gc_handle);
-
-                std::vector<void*> properties;
-                script_engine::iterate_properties(src._class, properties);
-
-                void* scriptcore = script_engine::get_assembly(0);
-                void* entity_class = script_engine::get_class(scriptcore, "SGE.Entity");
-
-                for (void* property : properties) {
-                    if (!script_helpers::is_property_serializable(property)) {
-                        continue;
-                    }
-
-                    void* value = script_engine::get_property_value(src_instance, property);
-                    if (script_engine::get_property_type(property) != entity_class ||
-                        value == nullptr) {
-                        script_engine::set_property_value(dst_instance, property, value);
-                    } else {
-                        entity native_entity = script_helpers::get_entity_from_object(value);
-
-                        entity found_entity = dst_scene->find_guid(native_entity.get_guid());
-                        if (!found_entity) {
-                            throw std::runtime_error("scene did not copy correctly!");
-                        }
-
-                        void* entity_object = script_helpers::create_entity_object(found_entity);
-                        script_engine::set_property_value(dst_instance, property, entity_object);
-                    }
-                }
-            }
-
-            return dst;
-        }
-    };
-
-    template <typename T>
-    static void copy_component_type(entt::registry& dst, entt::registry& src,
-                                    const std::unordered_map<guid, entt::entity>& entity_map,
-                                    scene* dst_scene) {
-        scene_component_copier<T> copier;
-
-        auto view = src.view<T>();
-        for (entt::entity e : view) {
-            guid id = src.get<id_component>(e).id;
-            if (entity_map.find(id) == entity_map.end()) {
-                throw std::runtime_error("entity registries do not match!");
-            }
-
-            entt::entity new_entity = entity_map.at(id);
-            T& data = src.get<T>(e);
-
-            entity entity_object(new_entity, dst_scene);
-            dst.emplace_or_replace<T>(new_entity, copier(data, entity_object));
-        }
-    }
-
     ref<scene> scene::copy() {
         auto new_scene = ref<scene>::create();
 
-        entt::registry& dst_registry = new_scene->m_registry;
-        std::unordered_map<guid, entt::entity> entity_map;
+        // Map from the entt entity id in the old scene to the new scene
+        std::unordered_map<entt::entity, entt::entity> entity_map;
 
+        // Create corresponding entities (without components) in the new scene. Make sure guid and
+        // tag match.  Also store map from id to new entity in entity map.
         {
             auto view = m_registry.view<id_component>();
             for (entt::entity id : view) {
@@ -336,24 +264,31 @@ namespace sge {
                 const std::string& tag = original.get_component<tag_component>().tag;
 
                 entity new_entity = new_scene->create_entity(entity_id, tag);
-                entity_map.insert(std::make_pair(entity_id, (entt::entity)new_entity));
+                entity_map.insert(std::make_pair(id, (entt::entity)new_entity));
             }
         }
 
-        copy_component_type<transform_component>(dst_registry, m_registry, entity_map,
-                                                 new_scene.raw());
-        copy_component_type<camera_component>(dst_registry, m_registry, entity_map,
-                                              new_scene.raw());
-        copy_component_type<sprite_renderer_component>(dst_registry, m_registry, entity_map,
-                                                       new_scene.raw());
-        copy_component_type<native_script_component>(dst_registry, m_registry, entity_map,
-                                                     new_scene.raw());
-        copy_component_type<rigid_body_component>(dst_registry, m_registry, entity_map,
-                                                  new_scene.raw());
-        copy_component_type<box_collider_component>(dst_registry, m_registry, entity_map,
-                                                    new_scene.raw());
-        copy_component_type<script_component>(dst_registry, m_registry, entity_map,
-                                              new_scene.raw());
+        // Loop over every component type in source scene
+        for (auto&& curr : m_registry.storage()) {
+            using namespace entt::literals;
+            auto& storage = curr.second;
+            // Only iterate over the entities in the storage pool if that type supports cloning.
+            auto type = entt::resolve(storage.type());
+            if (!type) {
+                continue;
+            }
+            if (auto clone = type.func("clone"_hs); clone) {
+                for (auto&& e : storage) {
+                    auto srce = entity{ e, this };
+                    auto dste = entity{ entity_map.at(e), new_scene.raw() };
+                    auto raw = storage.get(e);
+                    if (!clone.invoke({}, entt::forward_as_meta(srce), entt::forward_as_meta(dste),
+                                      raw)) {
+                        throw std::runtime_error("Error cloning component!");
+                    }
+                }
+            }
+        }
 
         new_scene->set_viewport_size(m_viewport_width, m_viewport_height);
         return new_scene;
@@ -625,35 +560,6 @@ namespace sge {
                 renderer::draw_rotated_quad(transform.translation, transform.rotation,
                                             transform.scale, sprite.color);
             }
-        }
-    }
-
-    void scene::verify_script(void* component, entity e) {
-        auto& sc = *(script_component*)component;
-        if (sc._class != nullptr && sc.gc_handle == 0) {
-            void* instance = script_engine::alloc_object(sc._class);
-
-            if (script_engine::get_method(sc._class, ".ctor") != nullptr) {
-                void* constructor = script_engine::get_method(sc._class, ".ctor()");
-                if (constructor != nullptr) {
-                    script_engine::call_method(instance, constructor);
-                } else {
-                    class_name_t name_data;
-                    script_engine::get_class_name(sc._class, name_data);
-                    std::string full_name = script_engine::get_string(name_data);
-
-                    throw std::runtime_error("could not find a suitable constructor for script: " +
-                                             full_name);
-                }
-            } else {
-                script_engine::init_object(instance);
-            }
-
-            void* entity_instance = script_helpers::create_entity_object(e);
-            void* entity_field = script_engine::get_field(sc._class, "__internal_mEntity");
-            script_engine::set_field_value(instance, entity_field, entity_instance);
-
-            sc.gc_handle = garbage_collector::create_ref(instance);
         }
     }
 

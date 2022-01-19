@@ -45,6 +45,31 @@ namespace sge {
             return m_scene->m_registry.get<T>(m_handle);
         }
 
+        template <typename T, typename... Args>
+        T& ensure_component(Args&&... args) const {
+            if (has_all<T>()) {
+                return m_scene->m_registry.get<T>(m_handle);
+            }
+
+            T& component = m_scene->m_registry.emplace<T>(m_handle, std::forward<Args>(args)...);
+            m_scene->on_component_added(*this, component);
+            return component;
+        }
+
+        template <typename T, typename... Args>
+        T& add_or_replace_component(Args&&... args) const {
+            T& component =
+                m_scene->m_registry.emplace_or_replace<T>(m_handle, std::forward<Args>(args)...);
+            m_scene->on_component_changed(*this, component);
+            return component;
+        }
+
+        template <typename T>
+        void signal_component_change() const {
+            auto& component = get_component<T>();
+            m_scene->on_component_changed(*this, component);
+        }
+
         template <typename... T>
         bool has_all() const {
             return m_scene->m_registry.all_of<T...>(m_handle);
@@ -65,8 +90,8 @@ namespace sge {
             m_scene->m_registry.remove<T>(m_handle);
         }
 
-        guid get_guid() { return m_scene->get_guid(*this); }
-        scene* get_scene() { return m_scene; }
+        guid get_guid() const { return m_scene->get_guid(*this); }
+        scene* get_scene() const { return m_scene; }
 
         operator bool() const { return m_handle != entt::null; }
         operator entt::entity() const { return m_handle; }

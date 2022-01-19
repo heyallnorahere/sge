@@ -5,3 +5,4 @@ build/
 obj/
 bin/
 assemblies/
+mono_crash.*.json

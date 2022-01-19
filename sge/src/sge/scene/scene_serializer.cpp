@@ -208,7 +208,6 @@ namespace sge {
 
         data["properties"] = nullptr;
         if (component.gc_handle != 0) {
-            current_serialization->_scene->verify_script(current_serialization->current_entity);
             void* instance = garbage_collector::get_ref_data(component.gc_handle);
 
             std::vector<void*> properties;
@@ -290,7 +289,7 @@ namespace sge {
                 };
 
             entity current_entity = current_serialization->current_entity;
-            current_serialization->_scene->verify_script(&component, current_entity);
+            component.verify_script(current_entity);
             void* instance = garbage_collector::get_ref_data(component.gc_handle);
 
             std::vector<void*> properties;

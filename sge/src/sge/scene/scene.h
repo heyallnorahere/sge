@@ -75,6 +75,11 @@ namespace sge {
         }
 
         template <typename T>
+        void on_component_changed(const entity& e, T& component) {
+            // no behavior
+        }
+
+        template <typename T>
         void on_component_removed(const entity& e, T& component) {
             // no behavior
         }
