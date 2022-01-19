@@ -17,7 +17,6 @@
 #pragma once
 namespace sge {
     enum class shader_language { glsl, hlsl };
-
     enum class shader_stage { vertex, fragment };
 
     class shader : public ref_counted {

@@ -21,44 +21,7 @@
 #include "sge/script/script_engine.h"
 #include "sge/script/script_helpers.h"
 #include "sge/script/garbage_collector.h"
-
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
-
-namespace glm {
-    void to_json(json& data, const vec2& vec) {
-        for (length_t i = 0; i < 2; i++) {
-            data.push_back(vec[i]);
-        }
-    }
-
-    void from_json(const json& data, vec2& vec) {
-        if (data.size() != 2) {
-            throw std::runtime_error("malformed json");
-        }
-
-        for (length_t i = 0; i < 2; i++) {
-            vec[i] = data[i].get<float>();
-        }
-    }
-
-    void to_json(json& data, const vec4& vec) {
-        for (length_t i = 0; i < 4; i++) {
-            data.push_back(vec[i]);
-        }
-    }
-
-    void from_json(const json& data, vec4& vec) {
-        if (data.size() != 4) {
-            throw std::runtime_error("malformed json");
-        }
-
-        for (length_t i = 0; i < 4; i++) {
-            vec[i] = data[i].get<float>();
-        }
-    }
-} // namespace glm
-
+#include "sge/asset/json.h"
 namespace sge {
     struct serialization_data {
         std::queue<std::function<void()>> post_deserialize;
@@ -66,17 +29,6 @@ namespace sge {
         entity current_entity;
     };
     static std::unique_ptr<serialization_data> current_serialization;
-
-    static std::string serialize_path(const fs::path& path) {
-        std::string result = path.string();
-
-        size_t pos;
-        while ((pos = result.find('\\')) != std::string::npos) {
-            result.replace(pos, 1, "/");
-        }
-
-        return result;
-    }
 
     void to_json(json& data, const guid& id) { data = (uint64_t)id; }
     void from_json(const json& data, guid& id) { id = data.get<uint64_t>(); }
@@ -143,7 +95,7 @@ namespace sge {
         data["color"] = comp.color;
 
         if (!comp.texture_path.empty()) {
-            data["texture"] = serialize_path(comp.texture_path);
+            data["texture"] = comp.texture_path;
         } else {
             data["texture"] = nullptr;
         }
@@ -153,7 +105,7 @@ namespace sge {
         comp.color = data["color"].get<glm::vec4>();
 
         if (!data["texture"].is_null()) {
-            fs::path path = data["texture"].get<std::string>();
+            fs::path path = data["texture"].get<fs::path>();
 
             auto img_data = image_data::load(path);
             if (!img_data) {
