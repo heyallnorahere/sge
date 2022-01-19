@@ -257,10 +257,10 @@ namespace sge {
         // Create corresponding entities (without components) in the new scene. Make sure guid and
         // tag match.  Also store map from id to new entity in entity map.
         {
-            auto view = m_registry.view<id_component>();
+            auto view = m_registry.view<id_component, tag_component>();
             for (entt::entity id : view) {
                 entity original(id, this);
-                guid entity_id = original.get_component<id_component>().id;
+                guid entity_id = original.get_guid();
                 const std::string& tag = original.get_component<tag_component>().tag;
 
                 entity new_entity = new_scene->create_entity(entity_id, tag);
