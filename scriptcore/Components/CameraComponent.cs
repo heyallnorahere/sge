@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-using System;
-
 namespace SGE.Components
 {
     public enum ProjectionType
@@ -31,13 +29,8 @@ namespace SGE.Components
     /// <summary>
     /// A camera component adds a camera to the scene. The first primary camera component will render to the viewport.
     /// </summary>
-    public sealed class CameraComponent
+    public sealed class CameraComponent : Component<CameraComponent>
     {
-        internal CameraComponent(IntPtr address)
-        {
-            mAddress = address;
-        }
-
         public void SetOrthographic(float viewSize, CameraClips clips) => InternalCalls.SetOrthographic(mAddress, viewSize, clips);
         public void SetPerspective(float fov, CameraClips clips) => InternalCalls.SetPerspective(mAddress, fov, clips);
 
@@ -86,7 +79,5 @@ namespace SGE.Components
             }
             set => InternalCalls.SetPerspectiveClips(mAddress, value);
         }
-
-        private readonly IntPtr mAddress;
     }
 }

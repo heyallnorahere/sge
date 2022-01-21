@@ -14,20 +14,13 @@
    limitations under the License.
 */
 
-using System;
-
 namespace SGE.Components
 {
     /// <summary>
     /// A box collider component gives its parent entity a rectangular collider.
     /// </summary>
-    public sealed class BoxColliderComponent
+    public sealed class BoxColliderComponent : Component<BoxColliderComponent>
     {
-        internal BoxColliderComponent(IntPtr address)
-        {
-            mAddress = address;
-        }
-
         public Vector2 Size
         {
             get
@@ -62,7 +55,5 @@ namespace SGE.Components
             get => InternalCalls.GetRestitutionThreashold(mAddress);
             set => InternalCalls.SetRestitutionThreashold(mAddress, value);
         }
-
-        private readonly IntPtr mAddress;
     }
 }

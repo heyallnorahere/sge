@@ -14,6 +14,9 @@
    limitations under the License.
 */
 
+using SGE.Components;
+using System;
+
 namespace SGE
 {
     /// <summary>
@@ -39,7 +42,14 @@ namespace SGE
         /// </summary>
         /// <typeparam name="T">The type of component to search for.</typeparam>
         /// <returns>The component.</returns>
-        public T GetComponent<T>() => (T)InternalCalls.GetComponent(typeof(T), mID, mScene.mNativeAddress);
+        public T GetComponent<T>() where T : Component<T>, new()
+        {
+            IntPtr address = InternalCalls.GetComponent(typeof(T), mID, mScene.mNativeAddress);
+
+            var component = new T();
+            component.SetInternalData(address, this);
+            return component;
+        }
 
         /// <summary>
         /// The <see cref="SGE.GUID"/> of this entity.

@@ -14,20 +14,13 @@
    limitations under the License.
 */
 
-using System;
-
 namespace SGE.Components
 {
     /// <summary>
     /// A transform component describes an entity's location in a scene.
     /// </summary>
-    public sealed class TransformComponent
+    public sealed class TransformComponent : Component<TransformComponent>
     {
-        internal TransformComponent(IntPtr address)
-        {
-            mAddress = address;
-        }
-        
         public Vector2 Translation
         {
             get
@@ -55,7 +48,5 @@ namespace SGE.Components
             }
             set => InternalCalls.SetScale(mAddress, value);
         }
-
-        private readonly IntPtr mAddress;
     }
 }

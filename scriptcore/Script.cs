@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+using SGE.Components;
+
 namespace SGE
 {
     /// <summary>
@@ -22,7 +24,7 @@ namespace SGE
     public abstract class Script
     {
         protected bool HasComponent<T>() => __internal_mEntity.HasComponent<T>();
-        protected T GetComponent<T>() => __internal_mEntity.GetComponent<T>();
+        protected T GetComponent<T>() where T : Component<T>, new() => __internal_mEntity.GetComponent<T>();
 
         public Entity Entity => __internal_mEntity;
         private Entity __internal_mEntity = null;

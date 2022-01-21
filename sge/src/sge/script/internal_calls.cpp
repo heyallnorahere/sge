@@ -41,15 +41,7 @@ namespace sge {
 
         component_callbacks_t callbacks;
         callbacks.has = [](entity e) { return e.has_all<T>(); };
-
-        callbacks.get = [_class](entity e) mutable {
-            void* constructor = script_engine::get_method(_class, ".ctor");
-            auto component = &e.get_component<T>();
-
-            void* instance = script_engine::alloc_object(_class);
-            script_engine::call_method(instance, constructor, &component);
-            return instance;
-        };
+        callbacks.get = [](entity e) { return &e.get_component<T>(); };
 
         auto reflection_type = script_engine::to_reflection_type(_class);
         internal_script_call_data.component_callbacks.insert(
@@ -254,7 +246,7 @@ namespace sge {
         }
 
         static float GetRestitution(box_collider_component* bc) { return bc->restitution; }
-        
+
         static void SetRestitution(box_collider_component* bc, float restitution) {
             bc->restitution = restitution;
         }

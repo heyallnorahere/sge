@@ -36,7 +36,7 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool HasComponent(Type componentType, uint entityID, IntPtr scene);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object GetComponent(Type componentType, uint entityID, IntPtr scene);
+        public static extern IntPtr GetComponent(Type componentType, uint entityID, IntPtr scene);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern GUID GetGUID(uint entityID, IntPtr scene);
 

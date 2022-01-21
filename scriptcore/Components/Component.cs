@@ -14,30 +14,19 @@
    limitations under the License.
 */
 
+using System;
+
 namespace SGE.Components
 {
-    public enum BodyType
+    public abstract class Component<T> where T : Component<T>, new()
     {
-        Static = 0,
-        Kinematic,
-        Dynamic
-    }
-
-    /// <summary>
-    /// A rigid body component describes how other entities should affect its parent.
-    /// </summary>
-    public sealed class RigidBodyComponent : Component<RigidBodyComponent>
-    {
-        public BodyType BodyType
+        internal void SetInternalData(IntPtr address, Entity parent)
         {
-            get => InternalCalls.GetBodyType(mAddress);
-            set => InternalCalls.SetBodyType(mAddress, value);
+            mAddress = address;
+            mParent = parent;
         }
 
-        public bool FixedRotation
-        {
-            get => InternalCalls.GetFixedRotation(mAddress);
-            set => InternalCalls.SetFixedRotation(mAddress, value);
-        }
+        protected IntPtr mAddress = IntPtr.Zero;
+        protected Entity mParent = null;
     }
 }
