@@ -47,6 +47,8 @@ namespace sge {
         void reset_script(entity e);
         void verify_script(entity e);
 
+        void update_physics_data(entity e);
+
         entity find_guid(guid id);
         ref<scene> copy();
 

@@ -224,7 +224,7 @@ namespace sge {
             rb->type = type;
 
             entity e = script_helpers::get_entity_from_object(_entity);
-            // todo: update body
+            e.get_scene()->update_physics_data(e);
         }
 
         static bool GetFixedRotation(rigid_body_component* rb) { return rb->fixed_rotation; }
@@ -233,7 +233,7 @@ namespace sge {
             rb->fixed_rotation = fixed_rotation;
 
             entity e = script_helpers::get_entity_from_object(_entity);
-            // todo: update body
+            e.get_scene()->update_physics_data(e);
         }
 
         static void GetSize(box_collider_component* bc, glm::vec2* size) { *size = bc->size; }
@@ -242,7 +242,7 @@ namespace sge {
             bc->size = size;
 
             entity e = script_helpers::get_entity_from_object(_entity);
-            // todo: update body
+            e.get_scene()->update_physics_data(e);
         }
 
         static float GetDensity(box_collider_component* bc) { return bc->density; }
@@ -251,7 +251,7 @@ namespace sge {
             bc->density = density;
 
             entity e = script_helpers::get_entity_from_object(_entity);
-            // todo: update body
+            e.get_scene()->update_physics_data(e);
         }
 
         static float GetFriction(box_collider_component* bc) { return bc->friction; }
@@ -260,7 +260,7 @@ namespace sge {
             bc->friction = friction;
 
             entity e = script_helpers::get_entity_from_object(_entity);
-            // todo: update body
+            e.get_scene()->update_physics_data(e);
         }
 
         static float GetRestitution(box_collider_component* bc) { return bc->restitution; }
@@ -269,7 +269,7 @@ namespace sge {
             bc->restitution = restitution;
 
             entity e = script_helpers::get_entity_from_object(_entity);
-            // todo: update body
+            e.get_scene()->update_physics_data(e);
         }
 
         static float GetRestitutionThreashold(box_collider_component* bc) {
@@ -281,7 +281,7 @@ namespace sge {
             bc->restitution_threashold = threashold;
 
             entity e = script_helpers::get_entity_from_object(_entity);
-            // todo: update body
+            e.get_scene()->update_physics_data(e);
         }
 
         static void LogDebug(void* message) {

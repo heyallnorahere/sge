@@ -173,9 +173,6 @@ namespace sge {
         body_type type = body_type::static_;
         bool fixed_rotation = false;
 
-        // Pointer to partner Box2D body object
-        void* runtime_body = nullptr;
-
         rigid_body_component(const rigid_body_component&) = default;
         rigid_body_component(rigid_body_component::body_type type_ = body_type::static_,
                              bool fixed_rotation_ = false)
@@ -212,18 +209,12 @@ namespace sge {
         float restitution = 0.f;
         float restitution_threashold = 0.5f;
 
-        // Pointer to the partner Box2D Fixture object
-        void* runtime_fixture = nullptr;
-        std::optional<glm::vec2> previous_hitbox_size;
-
         box_collider_component() = default;
         box_collider_component(const box_collider_component&) = default;
         box_collider_component& operator=(const box_collider_component&) = default;
 
         static box_collider_component& clone(const entity& src, const entity& dst, void* srcc) {
             auto dstc = box_collider_component(*reinterpret_cast<box_collider_component*>(srcc));
-            dstc.runtime_fixture = nullptr;
-
             return dst.add_component<box_collider_component>(dstc);
         }
 

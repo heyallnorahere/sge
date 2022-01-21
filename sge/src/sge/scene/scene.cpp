@@ -32,8 +32,21 @@
 #include <box2d/b2_contact.h>
 
 namespace sge {
+    enum class collider_type {
+        box,
+    };
+
+    struct entity_physics_data {
+        std::optional<collider_type> _collider_type;
+        std::optional<glm::vec2> current_box_size;
+
+        b2Fixture* fixture;
+        b2Body* body;
+    };
 
     struct scene_physics_data {
+        std::unordered_map<entt::entity, entity_physics_data> bodies;
+
         b2World* world;
         std::unique_ptr<b2ContactListener> listener;
     };
@@ -231,6 +244,91 @@ namespace sge {
         sc.verify_script(e);
     }
 
+    void scene::update_physics_data(entity e) {
+        if (e.has_all<rigid_body_component>()) {
+            if (m_physics_data->bodies.find(e) == m_physics_data->bodies.end()) {
+                m_physics_data->bodies.insert(
+                    std::make_pair((entt::entity)e, entity_physics_data()));
+            }
+            auto& data = m_physics_data->bodies[e];
+
+            auto& rb = e.get_component<rigid_body_component>();
+            auto& transform = e.get_component<transform_component>();
+
+            if (!data.body) {
+                b2BodyDef body_def;
+                body_def.type = rigid_body_type_to_box2d_body(rb.type);
+                body_def.position.Set(transform.translation.x, transform.translation.y);
+                body_def.angle = glm::radians(transform.rotation);
+                body_def.fixedRotation = rb.fixed_rotation;
+
+                data.body = m_physics_data->world->CreateBody(&body_def);
+            } else {
+                b2Vec2 position;
+                position.x = transform.translation.x;
+                position.y = transform.translation.y;
+
+                data.body->SetTransform(position, glm::radians(transform.rotation));
+                data.body->SetFixedRotation(rb.fixed_rotation);
+                data.body->SetType(rigid_body_type_to_box2d_body(rb.type));
+            }
+
+            std::optional<collider_type> type;
+            if (e.has_all<box_collider_component>()) {
+                type = collider_type::box;
+            }
+
+            if (type.has_value()) {
+                switch (type.value()) {
+                case collider_type::box: {
+                    auto& bc = e.get_component<box_collider_component>();
+                    glm::vec2 collider_size = bc.size * transform.scale;
+
+                    bool create_fixture =
+                        (data.fixture == nullptr) || (data._collider_type != collider_type::box);
+                    if (data.current_box_size.has_value()) {
+                        create_fixture |= (data.current_box_size.value() != collider_size);
+                    }
+
+                    if (create_fixture) {
+                        b2PolygonShape shape;
+                        shape.SetAsBox(collider_size.x, collider_size.y);
+
+                        b2FixtureDef fixture_def;
+                        fixture_def.shape = &shape;
+                        fixture_def.density = bc.density;
+                        fixture_def.friction = bc.friction;
+                        fixture_def.restitution = bc.restitution;
+                        fixture_def.restitutionThreshold = bc.restitution_threashold;
+                        fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
+
+                        data.fixture = data.body->CreateFixture(&fixture_def);
+                        data.current_box_size = collider_size;
+                        data._collider_type = collider_type::box;
+                    } else {
+                        data.fixture->SetDensity(bc.density);
+                        data.fixture->SetFriction(bc.friction);
+                        data.fixture->SetRestitution(bc.restitution);
+                        data.fixture->SetRestitutionThreshold(bc.restitution_threashold);
+                    }
+                } break;
+                default:
+                    throw std::runtime_error("invalid collider type!");
+                }
+            } else if (data.fixture != nullptr) {
+                data.body->DestroyFixture(data.fixture);
+                data.fixture = nullptr;
+            }
+        } else if (m_physics_data->bodies.find(e) != m_physics_data->bodies.end()) {
+            b2Body* body = m_physics_data->bodies[e].body;
+            if (body != nullptr) {
+                m_physics_data->world->DestroyBody(body);
+            }
+
+            m_physics_data->bodies.erase(e);
+        }
+    }
+
     entity scene::find_guid(guid id) {
         entity found;
 
@@ -301,40 +399,6 @@ namespace sge {
             m_physics_data->world = new b2World(b2Vec2(0.f, -9.8f));
             m_physics_data->listener = scene_contact_listener::create(this);
             m_physics_data->world->SetContactListener(m_physics_data->listener.get());
-
-            auto view = m_registry.view<rigid_body_component>();
-            for (auto id : view) {
-                entity e(id, this);
-                auto& transform = e.get_component<transform_component>();
-                auto& rb = e.get_component<rigid_body_component>();
-
-                b2BodyDef body_def;
-                body_def.type = rigid_body_type_to_box2d_body(rb.type);
-                body_def.position.Set(transform.translation.x, transform.translation.y);
-                body_def.angle = glm::radians(transform.rotation);
-                b2Body* body = m_physics_data->world->CreateBody(&body_def);
-                body->SetFixedRotation(rb.fixed_rotation);
-                rb.runtime_body = body;
-
-                if (e.has_all<box_collider_component>()) {
-                    auto& bc = e.get_component<box_collider_component>();
-
-                    b2PolygonShape box_shape;
-                    box_shape.SetAsBox(bc.size.x * transform.scale.x,
-                                       bc.size.y * transform.scale.y);
-
-                    b2FixtureDef fixture_def;
-                    fixture_def.shape = &box_shape;
-                    fixture_def.density = bc.density;
-                    fixture_def.friction = bc.friction;
-                    fixture_def.restitution = bc.restitution;
-                    fixture_def.restitutionThreshold = bc.restitution_threashold;
-                    fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
-
-                    auto fixture = body->CreateFixture(&fixture_def);
-                    bc.runtime_fixture = fixture;
-                }
-            }
         }
 
         // Call OnStart method, if it exists
@@ -427,30 +491,23 @@ namespace sge {
 
         // Physics
         {
+            // update physics data for every entity in the scene
+            for_each([this](entity e) {
+                update_physics_data(e);
+            });
+
+            // update physics world
             static constexpr int32_t velocity_iterations = 6;
             static constexpr int32_t position_iterations = 2;
+            m_physics_data->world->Step(ts.count(), velocity_iterations, position_iterations);
 
+            // sync position data
             auto view = m_registry.view<transform_component, rigid_body_component>();
             for (entt::entity id : view) {
                 entity e(id, this);
-                const auto& transform = e.get_component<transform_component>();
-                auto& rb = e.get_component<rigid_body_component>();
-
-                b2Body* body = (b2Body*)rb.runtime_body;
-                b2Vec2 position;
-                position.x = transform.translation.x;
-                position.y = transform.translation.y;
-                body->SetTransform(position, glm::radians(transform.rotation));
-            }
-
-            m_physics_data->world->Step(ts.count(), velocity_iterations, position_iterations);
-
-            for (entt::entity id : view) {
-                entity e(id, this);
                 auto& transform = e.get_component<transform_component>();
-                auto& rb = e.get_component<rigid_body_component>();
 
-                b2Body* body = (b2Body*)rb.runtime_body;
+                b2Body* body = m_physics_data->bodies[e].body;
                 const auto& position = body->GetPosition();
                 transform.translation.x = position.x;
                 transform.translation.y = position.y;
