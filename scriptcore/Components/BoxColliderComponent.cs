@@ -29,31 +29,31 @@ namespace SGE.Components
                 InternalCalls.GetSize(mAddress, out size);
                 return size;
             }
-            set => InternalCalls.SetSize(mAddress, value);
+            set => InternalCalls.SetSize(mAddress, mParent, value);
         }
 
         public float Density
         {
             get => InternalCalls.GetDensity(mAddress);
-            set => InternalCalls.SetDensity(mAddress, value);
+            set => InternalCalls.SetDensity(mAddress, mParent, value);
         }
 
         public float Friction
         {
             get => InternalCalls.GetFriction(mAddress);
-            set => InternalCalls.SetFriction(mAddress, value);
+            set => InternalCalls.SetFriction(mAddress, mParent, value);
         }
 
         public float Restitution
         {
             get => InternalCalls.GetRestitution(mAddress);
-            set => InternalCalls.SetRestitution(mAddress, value);
+            set => InternalCalls.SetRestitution(mAddress, mParent, value);
         }
 
         public float RestitutionThreashold
         {
             get => InternalCalls.GetRestitutionThreashold(mAddress);
-            set => InternalCalls.SetRestitutionThreashold(mAddress, value);
+            set => InternalCalls.SetRestitutionThreashold(mAddress, mParent, value);
         }
     }
 }

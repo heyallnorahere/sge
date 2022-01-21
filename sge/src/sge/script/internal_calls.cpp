@@ -17,6 +17,7 @@
 #include "sgepch.h"
 #include "sge/script/internal_calls.h"
 #include "sge/script/script_engine.h"
+#include "sge/script/script_helpers.h"
 #include "sge/scene/scene.h"
 #include "sge/scene/entity.h"
 #include "sge/scene/components.h"
@@ -104,29 +105,24 @@ namespace sge {
             return false;
         }
 
-        static bool HasComponent(void* componentType, uint32_t entityID, void* _scene) {
+        static bool HasComponent(void* componentType, void* _entity) {
             verify_component_type_validity(componentType);
-
-            auto scene_ptr = (scene*)_scene;
-            entity e((entt::entity)entityID, scene_ptr);
+            entity e = script_helpers::get_entity_from_object(_entity);
 
             const auto& callbacks = internal_script_call_data.component_callbacks[componentType];
             return callbacks.has(e);
         }
 
-        static void* GetComponent(void* componentType, uint32_t entityID, void* _scene) {
+        static void* GetComponent(void* componentType, void* _entity) {
             verify_component_type_validity(componentType);
-
-            auto scene_ptr = (scene*)_scene;
-            entity e((entt::entity)entityID, scene_ptr);
+            entity e = script_helpers::get_entity_from_object(_entity);
 
             const auto& callbacks = internal_script_call_data.component_callbacks[componentType];
             return callbacks.get(e);
         }
 
-        static guid GetGUID(uint32_t entityID, void* _scene) {
-            auto scene_ptr = (scene*)_scene;
-            entity e((entt::entity)entityID, scene_ptr);
+        static guid GetGUID(void* _entity) {
+            entity e = script_helpers::get_entity_from_object(_entity);
             return e.get_guid();
         }
 
@@ -223,40 +219,69 @@ namespace sge {
             return rb->type;
         }
 
-        static void SetBodyType(rigid_body_component* rb, rigid_body_component::body_type type) {
+        static void SetBodyType(rigid_body_component* rb, void* _entity,
+                                rigid_body_component::body_type type) {
             rb->type = type;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            // todo: update body
         }
 
         static bool GetFixedRotation(rigid_body_component* rb) { return rb->fixed_rotation; }
 
-        static void SetFixedRotation(rigid_body_component* rb, bool fixed_rotation) {
+        static void SetFixedRotation(rigid_body_component* rb, void* _entity, bool fixed_rotation) {
             rb->fixed_rotation = fixed_rotation;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            // todo: update body
         }
 
         static void GetSize(box_collider_component* bc, glm::vec2* size) { *size = bc->size; }
-        static void SetSize(box_collider_component* bc, glm::vec2 size) { bc->size = size; }
+
+        static void SetSize(box_collider_component* bc, void* _entity, glm::vec2 size) {
+            bc->size = size;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            // todo: update body
+        }
 
         static float GetDensity(box_collider_component* bc) { return bc->density; }
-        static void SetDensity(box_collider_component* bc, float density) { bc->density = density; }
+
+        static void SetDensity(box_collider_component* bc, void* _entity, float density) {
+            bc->density = density;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            // todo: update body
+        }
 
         static float GetFriction(box_collider_component* bc) { return bc->friction; }
 
-        static void SetFriction(box_collider_component* bc, float friction) {
+        static void SetFriction(box_collider_component* bc, void* _entity, float friction) {
             bc->friction = friction;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            // todo: update body
         }
 
         static float GetRestitution(box_collider_component* bc) { return bc->restitution; }
 
-        static void SetRestitution(box_collider_component* bc, float restitution) {
+        static void SetRestitution(box_collider_component* bc, void* _entity, float restitution) {
             bc->restitution = restitution;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            // todo: update body
         }
 
         static float GetRestitutionThreashold(box_collider_component* bc) {
             return bc->restitution_threashold;
         }
 
-        static void SetRestitutionThreashold(box_collider_component* bc, float threashold) {
+        static void SetRestitutionThreashold(box_collider_component* bc, void* _entity,
+                                             float threashold) {
             bc->restitution_threashold = threashold;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            // todo: update body
         }
 
         static void LogDebug(void* message) {

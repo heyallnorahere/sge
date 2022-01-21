@@ -31,13 +31,13 @@ namespace SGE.Components
         public BodyType BodyType
         {
             get => InternalCalls.GetBodyType(mAddress);
-            set => InternalCalls.SetBodyType(mAddress, value);
+            set => InternalCalls.SetBodyType(mAddress, mParent, value);
         }
 
         public bool FixedRotation
         {
             get => InternalCalls.GetFixedRotation(mAddress);
-            set => InternalCalls.SetFixedRotation(mAddress, value);
+            set => InternalCalls.SetFixedRotation(mAddress, mParent, value);
         }
     }
 }

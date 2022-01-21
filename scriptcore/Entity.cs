@@ -35,7 +35,7 @@ namespace SGE
         /// </summary>
         /// <typeparam name="T">A type of a component.</typeparam>
         /// <returns>See above.</returns>
-        public bool HasComponent<T>() => InternalCalls.HasComponent(typeof(T), mID, mScene.mNativeAddress);
+        public bool HasComponent<T>() => InternalCalls.HasComponent(typeof(T), this);
 
         /// <summary>
         /// Retrieves a component of the specified type.
@@ -44,7 +44,7 @@ namespace SGE
         /// <returns>The component.</returns>
         public T GetComponent<T>() where T : Component<T>, new()
         {
-            IntPtr address = InternalCalls.GetComponent(typeof(T), mID, mScene.mNativeAddress);
+            IntPtr address = InternalCalls.GetComponent(typeof(T), this);
 
             var component = new T();
             component.SetInternalData(address, this);
@@ -54,7 +54,7 @@ namespace SGE
         /// <summary>
         /// The <see cref="SGE.GUID"/> of this entity.
         /// </summary>
-        public GUID GUID => InternalCalls.GetGUID(mID, mScene.mNativeAddress);
+        public GUID GUID => InternalCalls.GetGUID(this);
 
         /// <summary>
         /// The ID of this entity within the scene.
