@@ -35,6 +35,8 @@ namespace sge {
         void regenerate();
 
         operator uint64_t() const { return m_guid; }
+        bool operator==(const guid& other) const { return m_guid == other.m_guid; }
+        bool operator!=(const guid& other) const { return !(*this == other); }
 
     private:
         uint64_t m_guid;

@@ -101,7 +101,7 @@ namespace sge {
     void vulkan_shader::reload() {
         destroy();
         create();
-        renderer::on_shader_reloaded(this);
+        renderer::on_shader_reloaded(id);
     }
 
     void vulkan_shader::create() {

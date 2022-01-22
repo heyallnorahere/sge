@@ -15,11 +15,14 @@
 */
 
 #pragma once
+#include "sge/core/guid.h"
 namespace sge {
     enum class asset_type { shader, texture_2d };
 
     class asset : public ref_counted {
     public:
+        guid id;
+
         virtual ~asset() = default;
 
         virtual asset_type get_asset_type() = 0;

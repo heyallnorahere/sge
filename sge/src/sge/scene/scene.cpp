@@ -287,7 +287,8 @@ namespace sge {
                     bool create_fixture =
                         (data.fixture == nullptr) || (data._collider_type != collider_type::box);
                     if (data.current_box_size.has_value()) {
-                        create_fixture |= (data.current_box_size.value() != collider_size);
+                        create_fixture |=
+                            (glm::length(data.current_box_size.value() - collider_size) > 0.0001f);
                     }
 
                     if (create_fixture) {
@@ -492,9 +493,7 @@ namespace sge {
         // Physics
         {
             // update physics data for every entity in the scene
-            for_each([this](entity e) {
-                update_physics_data(e);
-            });
+            for_each([this](entity e) { update_physics_data(e); });
 
             // update physics world
             static constexpr int32_t velocity_iterations = 6;

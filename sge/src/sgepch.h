@@ -47,6 +47,7 @@ namespace fs = std::filesystem;
 namespace fs = std::experimental::filesystem;
 #define SGE_EXPERIMENTAL_FILESYSTEM
 #endif
+
 #include <spdlog/spdlog.h>
 
 #define GLM_FORCE_RADIANS
@@ -59,6 +60,16 @@ namespace fs = std::experimental::filesystem;
 #include <misc/cpp/imgui_stdlib.h>
 
 #include "sge/ref.h"
+
+namespace std {
+    template <>
+    struct hash<fs::path> {
+        size_t operator()(const fs::path& path) const {
+            hash<string> hasher;
+            return hasher(path.string());
+        }
+    };
+} // namespace std
 
 namespace sge {
     using timestep = std::chrono::duration<double>;

@@ -73,19 +73,18 @@ namespace sge {
         return nullptr;
     }
 
-    static const std::unordered_map<std::string, shader_language> language_map = {
+    static const std::unordered_map<fs::path, shader_language> language_map = {
         { ".hlsl", shader_language::hlsl }, { ".glsl", shader_language::glsl }
     };
 
     ref<shader> shader::create(const fs::path& path) {
         fs::path extension = path.extension();
-        auto it = language_map.find(extension.string());
-        if (it == language_map.end()) {
+        if (language_map.find(extension) == language_map.end()) {
             throw std::runtime_error("cannot determine language from extension: " +
                                      extension.string());
         }
 
-        shader_language language = it->second;
+        shader_language language = language_map.at(extension);
         return create(path, language);
     }
 
