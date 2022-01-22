@@ -15,6 +15,7 @@
 */
 
 #pragma once
+#include "sge/core/guid.h"
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
@@ -35,3 +36,8 @@ namespace SGE_FILESYSTEM_NAMESPACE {
     void to_json(json& data, const path& path_data);
     void from_json(const json& data, path& path_data);
 } // namespace SGE_FILESYSTEM_NAMESPACE
+
+namespace sge {
+    void to_json(json& data, const guid& id);
+    void from_json(const json& data, guid& id);
+} // namespace sge

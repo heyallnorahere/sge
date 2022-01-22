@@ -30,9 +30,6 @@ namespace sge {
     };
     static std::unique_ptr<serialization_data> current_serialization;
 
-    void to_json(json& data, const guid& id) { data = (uint64_t)id; }
-    void from_json(const json& data, guid& id) { id = data.get<uint64_t>(); }
-
     void to_json(json& data, const id_component& comp) { data = comp.id; }
     void from_json(const json& data, id_component& comp) { comp.id = data.get<guid>(); }
 

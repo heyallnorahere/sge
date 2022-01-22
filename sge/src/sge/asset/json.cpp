@@ -64,3 +64,8 @@ namespace SGE_FILESYSTEM_NAMESPACE {
 
     void from_json(const json& data, path& path_data) { path_data = data.get<std::string>(); }
 } // namespace SGE_FILESYSTEM_NAMESPACE
+
+namespace sge {
+    void to_json(json& data, const guid& id) { data = (uint64_t)id; }
+    void from_json(const json& data, guid& id) { id = data.get<uint64_t>(); }
+} // namespace sge
