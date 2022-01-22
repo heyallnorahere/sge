@@ -20,12 +20,6 @@ namespace sge {
     class asset_manager;
     class asset_registry {
     public:
-        struct asset_desc {
-            std::optional<guid> id;
-            fs::path path;
-            std::optional<asset_type> type;
-        };
-
         asset_registry() = default;
         asset_registry(const fs::path& path) { set_path(path); }
         ~asset_registry();

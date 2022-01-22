@@ -8,7 +8,7 @@
     "configurePresets": [
         {
             "name": "default",
-            "displayName": "default",
+            "displayName": "Default (Release) configuration",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "GLFW_BUILD_EXAMPLES": "OFF",
@@ -27,7 +27,7 @@
                 "BOX2D_BUILD_DOCS": "OFF",
                 "BOX2D_BUILD_UNIT_TESTS": "OFF",
                 "BOX2D_BUILD_TESTBED": "OFF",
-                "CMAKE_OSX_ARCHITECTURES": "x86_64"
+                "CMAKE_BUILD_TYPE": "Release"
             },
             "warnings": {
                 "dev": false
@@ -54,12 +54,8 @@
         },
         {
             "name": "debug",
-            "configurePreset": "debug",
-            "jobs": 8,
-            "targets": [
-                "sgm",
-                "sandbox"
-            ]
+            "inherits": "default",
+            "configurePreset": "debug"
         }
     ]
 }

@@ -18,7 +18,7 @@
 #include "sge/asset/asset_registry.h"
 #include "sge/asset/json.h"
 namespace sge {
-    void to_json(json& data, const asset_registry::asset_desc& desc) {
+    void to_json(json& data, const asset_desc& desc) {
         data["guid"] = nullptr;
         data["path"] = desc.path;
         data["type"] = nullptr;
@@ -48,7 +48,7 @@ namespace sge {
         { "shader", asset_type::shader }, { "texture_2d", asset_type::texture_2d }
     };
 
-    void from_json(const json& data, asset_registry::asset_desc& desc) {
+    void from_json(const json& data, asset_desc& desc) {
         auto id_node = data["guid"];
         if (!id_node.is_null()) {
             desc.id = id_node.get<guid>();
@@ -219,7 +219,7 @@ namespace sge {
         }
     }
 
-    asset_registry::asset_desc asset_registry::operator[](const fs::path& path) {
+    asset_desc asset_registry::operator[](const fs::path& path) {
         m_mutex.lock();
         if (m_assets.find(path) == m_assets.end()) {
             m_mutex.unlock();

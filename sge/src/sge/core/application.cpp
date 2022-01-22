@@ -20,6 +20,7 @@
 #include "sge/core/input.h"
 #include "sge/imgui/imgui_layer.h"
 #include "sge/script/script_engine.h"
+#include "sge/asset/asset_serializers.h"
 
 extern sge::application* create_app_instance();
 namespace sge {
@@ -68,6 +69,7 @@ namespace sge {
         renderer::init();
         m_swapchain = swapchain::create(m_window);
 
+        asset_serializer::init();
         script_engine::init();
 
         m_imgui_layer = new imgui_layer;

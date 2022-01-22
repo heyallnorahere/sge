@@ -30,4 +30,10 @@ namespace sge {
 
         virtual void reload() = 0;
     };
+
+    struct asset_desc {
+        std::optional<guid> id;
+        fs::path path;
+        std::optional<asset_type> type;
+    };
 } // namespace sge
