@@ -275,15 +275,9 @@ namespace sgm {
                         fs::path path = std::string((const char*)payload->Data,
                                                     payload->DataSize / sizeof(char) - 1);
 
-                        auto img_data = image_data::load(path);
-                        if (img_data) {
-                            component.texture_path = path;
-
-                            texture_spec spec;
-                            spec.filter = texture_filter::linear;
-                            spec.wrap = texture_wrap::repeat;
-                            spec.image = image_2d::create(img_data, image_usage_none);
-                            component.texture = texture_2d::create(spec);
+                        auto texture = texture_2d::load(path);
+                        if (texture) {
+                            component.texture = texture;
                         } else {
                             spdlog::warn("could not load image: {0}", path.string());
                         }
@@ -297,7 +291,6 @@ namespace sgm {
                 if (can_reset) {
                     if (ImGui::Button("Remove Texture")) {
                         component.texture.reset();
-                        component.texture_path.clear();
                     }
                 }
             });

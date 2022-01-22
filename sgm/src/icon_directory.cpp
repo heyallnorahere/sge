@@ -35,18 +35,12 @@ namespace sgm {
                 continue;
             }
 
-            auto img_data = image_data::load(path);
-            if (!img_data) {
+            auto icon = texture_2d::load(path);
+            if (!icon) {
                 spdlog::warn("failed to load {0} - skipping", path.string());
                 continue;
             }
-
-            texture_spec spec;
-            spec.wrap = texture_wrap::repeat;
-            spec.filter = texture_filter::linear;
-            spec.image = image_2d::create(img_data, image_usage_none);
-
-            auto icon = texture_2d::create(spec);
+            
             icon_library.insert(std::make_pair(name, icon));
         }
     }

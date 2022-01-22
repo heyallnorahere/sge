@@ -93,11 +93,14 @@ namespace sge {
 
     void to_json(json& data, const sprite_renderer_component& comp) {
         data["color"] = comp.color;
+        data["texture"] = nullptr;
 
-        if (!comp.texture_path.empty()) {
-            data["texture"] = comp.texture_path;
-        } else {
-            data["texture"] = nullptr;
+        if (comp.texture) {
+            fs::path path = comp.texture->get_path();
+
+            if (!path.empty()) {
+                data["texture"] = path;
+            }
         }
     }
 
@@ -107,18 +110,13 @@ namespace sge {
         if (!data["texture"].is_null()) {
             fs::path path = data["texture"].get<fs::path>();
 
-            auto img_data = image_data::load(path);
-            if (!img_data) {
+            auto texture = texture_2d::load(path);
+            if (!texture) {
                 throw std::runtime_error("could not load sprite texture: " + path.string());
             }
 
-            // again, replace once asset system
-            texture_spec spec;
-            spec.filter = texture_filter::linear;
-            spec.wrap = texture_wrap::repeat;
-            spec.image = image_2d::create(img_data, image_usage_none);
-            comp.texture = texture_2d::create(spec);
-            comp.texture_path = path;
+            // todo: look for asset in registry
+            comp.texture = texture;
         }
     }
 

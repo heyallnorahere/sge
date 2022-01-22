@@ -16,6 +16,7 @@
 
 #pragma once
 #include "sge/renderer/image.h"
+#include "sge/asset/asset.h"
 namespace sge {
     enum class texture_wrap { clamp, repeat };
     enum class texture_filter { linear, nearest };
@@ -24,11 +25,14 @@ namespace sge {
         ref<image_2d> image;
         texture_wrap wrap = texture_wrap::repeat;
         texture_filter filter = texture_filter::linear;
+        fs::path path;
     };
 
-    class texture_2d : public ref_counted {
+    class texture_2d : public asset {
     public:
         static ref<texture_2d> create(const texture_spec& spec);
+        static ref<texture_2d> load(const fs::path& path);
+        static void serialize_settings(ref<texture_2d> texture);
 
         virtual ~texture_2d() = default;
 
@@ -37,5 +41,7 @@ namespace sge {
         virtual texture_filter get_filter() = 0;
 
         virtual ImTextureID get_imgui_id() = 0;
+
+        virtual asset_type get_asset_type() override { return asset_type::texture_2d; }
     };
 } // namespace sge

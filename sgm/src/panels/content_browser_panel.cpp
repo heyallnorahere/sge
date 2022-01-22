@@ -111,14 +111,8 @@ namespace sgm {
                     icon = m_file_textures[string_path];
                 } else {
                     // todo: reload when image changes
-                    auto img_data = image_data::load(path);
-                    if (img_data) {
-                        texture_spec spec;
-                        spec.filter = texture_filter::linear;
-                        spec.wrap = texture_wrap::repeat;
-                        spec.image = image_2d::create(img_data, image_usage_none);
-
-                        icon = texture_2d::create(spec);
+                    icon = texture_2d::load(path);
+                    if (icon) {
                         m_file_textures.insert(std::make_pair(string_path, icon));
                     } else {
                         spdlog::warn("could not load image at path {0} - adding to blacklist",

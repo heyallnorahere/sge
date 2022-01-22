@@ -93,9 +93,6 @@ namespace sge {
         sprite_renderer_component& operator=(const sprite_renderer_component&) = default;
 
         glm::vec4 color = glm::vec4(1.f);
-
-        // todo: when asset system is implemented, change
-        fs::path texture_path;
         ref<texture_2d> texture;
 
         static void meta_register() {
