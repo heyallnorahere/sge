@@ -40,16 +40,19 @@ namespace sge {
         bool register_asset(ref<asset> _asset);
         bool register_asset(const fs::path& path, std::optional<guid> id = std::optional<guid>());
 
+        bool remove_asset(const fs::path& path);
+        bool remove_asset(guid id);
+
         size_t get(const fs::path& path);
         size_t get(guid id);
-
-        size_t size() { return m_assets.size(); }
-        const asset_desc& get(size_t index) { return m_assets[index]; }
+        bool get(size_t index, asset_desc& desc);
 
     private:
+        size_t find_next_available_index();
+
         std::unordered_map<fs::path, size_t> m_path_map;
         std::unordered_map<guid, size_t> m_id_map;
-        std::vector<asset_desc> m_assets;
+        std::unordered_map<size_t, asset_desc> m_assets;
 
         fs::path m_path;
     };
