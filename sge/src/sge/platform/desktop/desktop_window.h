@@ -29,6 +29,7 @@ namespace sge {
         virtual uint32_t get_width() override { return m_data.width; }
         virtual uint32_t get_height() override { return m_data.height; }
 
+        virtual void set_title(const std::string& title) override;
         virtual void set_event_callback(event_callback_t callback) override;
 
         virtual void* get_native_window() override { return m_window; }

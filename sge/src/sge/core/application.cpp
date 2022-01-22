@@ -21,6 +21,7 @@
 #include "sge/imgui/imgui_layer.h"
 #include "sge/script/script_engine.h"
 #include "sge/asset/asset_serializers.h"
+#include "sge/asset/project.h"
 
 extern sge::application* create_app_instance();
 namespace sge {
@@ -63,13 +64,14 @@ namespace sge {
         spdlog::info("initializing application: {0}...", m_title);
 
         input::init();
-        m_window = window::create(m_title, 1600, 900);
+        m_window = window::create(get_window_title(), 1600, 900);
         m_window->set_event_callback(SGE_BIND_EVENT_FUNC(application::on_event));
 
         renderer::init();
         m_swapchain = swapchain::create(m_window);
 
         asset_serializer::init();
+        project::init();
         script_engine::init();
 
         m_imgui_layer = new imgui_layer;
@@ -90,6 +92,7 @@ namespace sge {
         m_imgui_layer = nullptr;
 
         script_engine::shutdown();
+        project::shutdown();
 
         m_swapchain.reset();
         renderer::shutdown();

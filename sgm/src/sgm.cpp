@@ -51,6 +51,8 @@ namespace sgm {
             icon_directory::clear();
         }
 
+        virtual std::string get_window_title() { return "Simple Game Maker {version}"; }
+
         editor_layer* m_editor_layer;
     };
 } // namespace sgm

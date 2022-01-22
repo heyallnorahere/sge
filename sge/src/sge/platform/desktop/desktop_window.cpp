@@ -44,8 +44,8 @@ namespace sge {
         // we are not going to support OpenGL
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        m_window = glfwCreateWindow(m_data.width, m_data.height,
-                                          m_data.title.c_str(), nullptr, nullptr);
+        m_window =
+            glfwCreateWindow(m_data.width, m_data.height, m_data.title.c_str(), nullptr, nullptr);
         if (m_window == nullptr) {
             throw std::runtime_error("could not create glfw window!");
         }
@@ -63,6 +63,10 @@ namespace sge {
     }
 
     void desktop_window::on_update() { glfwPollEvents(); }
+
+    void desktop_window::set_title(const std::string& title) {
+        glfwSetWindowTitle(m_window, title.c_str());
+    }
 
     void desktop_window::set_event_callback(event_callback_t callback) {
         m_data.event_callback = callback;
@@ -98,17 +102,16 @@ namespace sge {
     void desktop_window::setup_event_callbacks() {
         glfwSetWindowUserPointer(m_window, &m_data);
 
-        glfwSetWindowSizeCallback(
-            m_window, [](GLFWwindow* window, int32_t width, int32_t height) {
-                window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
-                wd->width = (uint32_t)width;
-                wd->height = (uint32_t)height;
+        glfwSetWindowSizeCallback(m_window, [](GLFWwindow* window, int32_t width, int32_t height) {
+            window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
+            wd->width = (uint32_t)width;
+            wd->height = (uint32_t)height;
 
-                if (wd->event_callback != nullptr) {
-                    window_resize_event resize_event(wd->width, wd->height);
-                    wd->event_callback(resize_event);
-                }
-            });
+            if (wd->event_callback != nullptr) {
+                window_resize_event resize_event(wd->width, wd->height);
+                wd->event_callback(resize_event);
+            }
+        });
 
         glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
@@ -146,7 +149,7 @@ namespace sge {
             });
 
         glfwSetKeyCallback(m_window, [](GLFWwindow* window, int32_t key, int32_t scancode,
-                                              int32_t action, int32_t mods) {
+                                        int32_t action, int32_t mods) {
             window_data* wd = (window_data*)glfwGetWindowUserPointer(window);
 
             if (wd->event_callback != nullptr) {

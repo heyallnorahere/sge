@@ -41,6 +41,8 @@ namespace sge {
         std::unordered_map<fs::path, asset_desc>::iterator begin() { return m_assets.begin(); }
         std::unordered_map<fs::path, asset_desc>::iterator end() { return m_assets.end(); }
 
+        const fs::path& get_path() { return m_path; }
+
     private:
         enum class registry_action { add, remove, clear };
 

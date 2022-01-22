@@ -16,9 +16,9 @@
 
 #include "sgepch.h"
 #include "sge/asset/asset_manager.h"
+#include "sge/asset/asset_serializers.h"
 namespace sge {
-    asset_manager::asset_manager(const fs::path& registry_path) {
-        registry.set_path(registry_path);
+    asset_manager::asset_manager() {
         registry.set_on_changed_callback(
             [this](asset_registry::registry_action action, const fs::path& path) {
                 switch (action) {
@@ -41,7 +41,19 @@ namespace sge {
 
     ref<asset> asset_manager::get_asset(const fs::path& path) {
         if (m_cache.find(path) == m_cache.end()) {
-            // todo: load
+            if (registry.contains(path)) {
+                const auto& desc = registry[path];
+                if (desc.type.has_value()) {
+                    ref<asset> _asset;
+                    if (asset_serializer::deserialize(desc, _asset)) {
+                        m_cache.insert(std::make_pair(path, _asset));
+                        return _asset;
+                    } else {
+                        m_cache.insert(std::make_pair(path, nullptr));
+                    }
+                }
+            }
+
             return nullptr;
         }
 

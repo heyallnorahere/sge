@@ -17,11 +17,12 @@
 #pragma once
 #include "sge/asset/asset_registry.h"
 namespace sge {
+    class project;
     class asset_manager {
     public:
         asset_registry registry;
 
-        asset_manager(const fs::path& registry_path);
+        asset_manager();
         ~asset_manager() = default;
 
         asset_manager(const asset_manager&) = delete;
@@ -30,8 +31,10 @@ namespace sge {
         ref<asset> get_asset(const fs::path& path);
 
     private:
+        void set_path(const fs::path& path) { registry.set_path(path); }
+
         std::unordered_map<fs::path, ref<asset>> m_cache;
 
-        // todo: serializers
+        friend class project;
     };
 } // namespace sge

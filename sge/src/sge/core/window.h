@@ -36,13 +36,14 @@ namespace sge {
         virtual uint32_t get_width() = 0;
         virtual uint32_t get_height() = 0;
 
+        virtual void set_title(const std::string& title) {}
         virtual void set_event_callback(event_callback_t callback) = 0;
 
         virtual void* get_native_window() = 0;
         virtual void* create_render_surface(void* params) = 0;
         virtual void get_vulkan_extensions(std::set<std::string>& extensions) = 0;
 
-        virtual std::optional<fs::path> file_dialog(dialog_mode mode,
-                                                    const std::vector<dialog_file_filter>& filters) = 0;
+        virtual std::optional<fs::path> file_dialog(
+            dialog_mode mode, const std::vector<dialog_file_filter>& filters) = 0;
     };
 }; // namespace sge

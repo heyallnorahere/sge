@@ -48,7 +48,7 @@ namespace sge {
         try {
             auto& serializer = asset_serializers[_asset->get_asset_type()];
             return serializer->serialize_impl(_asset);
-        } catch (const std::runtime_error& exc) {
+        } catch (const std::exception& exc) {
             spdlog::warn("error serializing asset at {0}: {1}", _asset->get_path().string(),
                          exc.what());
             return false;
@@ -65,7 +65,7 @@ namespace sge {
         try {
             auto& serializer = asset_serializers[desc.type.value()];
             succeeded = serializer->deserialize_impl(desc.path, _asset);
-        } catch (const std::runtime_error& exc) {
+        } catch (const std::exception& exc) {
             spdlog::warn("error deserializing asset at {0}: {1}", desc.path.string(), exc.what());
         }
 

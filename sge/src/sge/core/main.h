@@ -29,7 +29,7 @@ int32_t main(int32_t argc, const char** argv) {
         sge::application::destroy();
         return 0;
 #ifndef SGE_DEBUG
-    } catch (const std::runtime_error& exc) {
+    } catch (const std::exception& exc) {
         spdlog::error(exc.what());
         return 1;
     }

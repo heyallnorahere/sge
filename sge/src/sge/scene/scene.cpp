@@ -255,7 +255,7 @@ namespace sge {
             auto& rb = e.get_component<rigid_body_component>();
             auto& transform = e.get_component<transform_component>();
 
-            if (!data.body) {
+            if (data.body == nullptr) {
                 b2BodyDef body_def;
                 body_def.type = rigid_body_type_to_box2d_body(rb.type);
                 body_def.position.Set(transform.translation.x, transform.translation.y);

@@ -75,9 +75,9 @@ namespace sge {
     }
 
     void asset_registry::load() {
-        m_mutex.lock();
-        m_assets.clear();
+        clear();
 
+        m_mutex.lock();
         if (!fs::exists(m_path)) {
             spdlog::warn("attempted to load a nonexistent registry!");
 
