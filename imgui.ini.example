@@ -1,0 +1,56 @@
+[Window][Debug##Default]
+Pos=60,60
+Size=400,400
+Collapsed=0
+
+[Window][Sandbox]
+Pos=165,72
+Size=209,262
+Collapsed=0
+
+[Window][Main SGM window]
+Pos=0,0
+Size=1600,900
+Collapsed=0
+
+[Window][Renderer Info]
+Pos=1309,61
+Size=291,498
+Collapsed=0
+DockId=0x00000006,0
+
+[Window][Viewport]
+Pos=368,61
+Size=939,498
+Collapsed=0
+DockId=0x00000003,0
+
+[Window][Scene Hierarchy]
+Pos=0,61
+Size=366,162
+Collapsed=0
+DockId=0x00000004,0
+
+[Window][Content Browser]
+Pos=0,561
+Size=1600,339
+Collapsed=0
+DockId=0x00000008,0
+
+[Window][Editor]
+Pos=0,225
+Size=366,334
+Collapsed=0
+DockId=0x00000005,0
+
+[Docking][Data]
+DockSpace         ID=0x69CFA706 Window=0x91BE61E5 Pos=920,236 Size=1600,839 Split=Y
+  DockNode        ID=0x00000007 Parent=0x69CFA706 SizeRef=1600,498 Split=X
+    DockNode      ID=0x00000001 Parent=0x00000007 SizeRef=1307,839 Split=X
+      DockNode    ID=0x00000002 Parent=0x00000001 SizeRef=366,839 Split=Y Selected=0x9A68760C
+        DockNode  ID=0x00000004 Parent=0x00000002 SizeRef=291,162 Selected=0x9A68760C
+        DockNode  ID=0x00000005 Parent=0x00000002 SizeRef=291,334 Selected=0xCB5DF48C
+      DockNode    ID=0x00000003 Parent=0x00000001 SizeRef=939,839 CentralNode=1 Selected=0x995B0CF8
+    DockNode      ID=0x00000006 Parent=0x00000007 SizeRef=291,839 Selected=0xE026356B
+  DockNode        ID=0x00000008 Parent=0x69CFA706 SizeRef=1600,339 Selected=0x371352B7
+
