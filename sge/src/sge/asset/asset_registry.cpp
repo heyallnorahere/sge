@@ -68,18 +68,20 @@ namespace sge {
         }
     }
 
-    asset_registry::asset_registry(const fs::path& path) {
-        m_path = path;
-
-        load();
+    asset_registry::~asset_registry() {
+        if (!m_path.empty()) {
+            save();
+        }
     }
 
     void asset_registry::load() {
-        m_path_map.clear();
-        m_id_map.clear();
+        m_mutex.lock();
+        m_assets.clear();
 
         if (!fs::exists(m_path)) {
             spdlog::warn("attempted to load a nonexistent registry!");
+
+            m_mutex.unlock();
             return;
         }
 
@@ -91,9 +93,7 @@ namespace sge {
 
         for (json node : data) {
             auto desc = node.get<asset_desc>();
-            size_t index = find_next_available_index();
-
-            if (m_path_map.find(desc.path) != m_path_map.end()) {
+            if (m_assets.find(desc.path) != m_assets.end()) {
                 spdlog::warn("path {0} is registered twice!", desc.path.string());
                 continue;
             }
@@ -103,23 +103,15 @@ namespace sge {
                 continue;
             }
 
-            if (desc.id.has_value()) {
-                guid id = desc.id.value();
-
-                if (m_id_map.find(id) != m_id_map.end()) {
-                    spdlog::warn("id {0} is registered twice!", (uint64_t)id);
-                    continue;
-                } else {
-                    m_id_map.insert(std::make_pair(id, index));
-                }
-            }
-
-            m_assets.insert(std::make_pair(index, desc));
-            m_path_map.insert(std::make_pair(desc.path, index));
+            m_assets.insert(std::make_pair(desc.path, desc));
         }
+
+        m_mutex.unlock();
     }
 
     void asset_registry::save() {
+        m_mutex.lock();
+
         json data = "[]"_json;
         for (const auto& desc : m_assets) {
             data.push_back(desc);
@@ -128,21 +120,15 @@ namespace sge {
         std::ofstream stream(m_path);
         stream << data.dump(4) << std::flush;
         stream.close();
-    }
 
-    bool asset_registry::contains(const fs::path& path) {
-        return m_path_map.find(path) != m_path_map.end();
+        m_mutex.unlock();
     }
-
-    bool asset_registry::contains(guid id) { return m_id_map.find(id) != m_id_map.end(); }
 
     bool asset_registry::register_asset(ref<asset> _asset) {
+        m_mutex.lock();
         fs::path path = _asset->get_path();
-        if (path.empty() || (m_path_map.find(path) != m_path_map.end())) {
-            return false;
-        }
-
-        if (m_id_map.find(_asset->id) != m_id_map.end()) {
+        if (path.empty() || (m_assets.find(path) != m_assets.end())) {
+            m_mutex.unlock();
             return false;
         }
 
@@ -150,100 +136,113 @@ namespace sge {
         desc.path = path;
         desc.id = _asset->id;
         desc.type = _asset->get_asset_type();
+        m_assets.insert(std::make_pair(desc.path, desc));
 
-        size_t index = find_next_available_index();
-        m_assets.insert(std::make_pair(index, desc));
+        on_changed_callback callback;
+        if (m_on_changed_callback) {
+            callback = m_on_changed_callback;
+        }
 
-        m_path_map.insert(std::make_pair(path, index));
-        m_id_map.insert(std::make_pair(_asset->id, index));
+        m_mutex.unlock();
+        save();
+
+        if (callback) {
+            callback(registry_action::add, path);
+        }
 
         return true;
     }
 
-    bool asset_registry::register_asset(const fs::path& path, std::optional<guid> id) {
-        if (m_path_map.find(path) != m_path_map.end()) {
+    bool asset_registry::register_asset(const fs::path& path) {
+        m_mutex.lock();
+        if (path.empty() || (m_assets.find(path) != m_assets.end())) {
+            m_mutex.unlock();
             return false;
         }
 
         asset_desc desc;
         desc.path = path;
+        m_assets.insert(std::make_pair(path, desc));
 
-        if (id.has_value()) {
-            guid id_value = id.value();
-
-            if (m_id_map.find(id_value) != m_id_map.end()) {
-                return false;
-            } else {
-                desc.id = id_value;
-            }
+        on_changed_callback callback;
+        if (m_on_changed_callback) {
+            callback = m_on_changed_callback;
         }
 
-        size_t index = find_next_available_index();
-        m_assets.insert(std::make_pair(index, desc));
-        m_path_map.insert(std::make_pair(path, index));
+        m_mutex.unlock();
+        save();
 
-        if (id.has_value()) {
-            m_id_map.insert(std::make_pair(id.value(), index));
+        if (callback) {
+            callback(registry_action::add, path);
         }
 
         return true;
     }
 
     bool asset_registry::remove_asset(const fs::path& path) {
-        if (m_path_map.find(path) == m_path_map.end()) {
+        m_mutex.lock();
+        if (m_assets.find(path) == m_assets.end()) {
+            m_mutex.unlock();
             return false;
         }
 
-        size_t index = m_path_map[path];
-        m_path_map.erase(path);
-
-        auto desc = m_assets[index];
-        m_assets.erase(index);
-
-        if (desc.id.has_value()) {
-            m_id_map.erase(desc.id.value());
+        on_changed_callback callback;
+        if (m_on_changed_callback) {
+            callback = m_on_changed_callback;
         }
 
+        m_assets.erase(path);
+        m_mutex.unlock();
+
+        save();
+
+        if (callback) {
+            callback(registry_action::remove, path);
+        }
         return true;
     }
 
-    bool asset_registry::remove_asset(guid id) {
-        if (m_id_map.find(id) == m_id_map.end()) {
-            return false;
+    void asset_registry::clear() {
+        m_mutex.lock();
+        m_assets.clear();
+
+        on_changed_callback callback;
+        if (m_on_changed_callback) {
+            callback = m_on_changed_callback;
         }
 
-        size_t index = m_id_map[id];
-        m_id_map.erase(id);
+        m_mutex.unlock();
+        save();
 
-        auto desc = m_assets[index];
-        m_assets.erase(index);
-
-        m_path_map.erase(desc.path);
-        return true;
+        if (callback) {
+            callback(registry_action::clear, m_path);
+        }
     }
 
-    size_t asset_registry::get(const fs::path& path) {
-        if (m_path_map.find(path) == m_path_map.end()) {
-            return (size_t)-1;
+    asset_registry::asset_desc asset_registry::operator[](const fs::path& path) {
+        m_mutex.lock();
+        if (m_assets.find(path) == m_assets.end()) {
+            m_mutex.unlock();
+            throw std::runtime_error("path " + path.string() + " is not registered!");
         }
 
-        return m_path_map[path];
+        auto desc = m_assets[path];
+        m_mutex.unlock();
+
+        return desc;
     }
 
-    size_t asset_registry::get(guid id) {
-        if (m_id_map.find(id) == m_id_map.end()) {
-            return (size_t)-1;
-        }
+    void asset_registry::set_path(const fs::path& path) {
+        m_mutex.lock();
+        m_path = path;
+        m_mutex.unlock();
 
-        return m_id_map[id];
+        load();
     }
 
-    bool asset_registry::get(size_t index, asset_desc& desc) {
-        if (m_assets.find(index) == m_assets.end()) {
-            return false;
-        }
-
-        desc = m_assets[index];
-        return true;
+    void asset_registry::set_on_changed_callback(on_changed_callback callback) {
+        m_mutex.lock();
+        m_on_changed_callback = callback;
+        m_mutex.unlock();
     }
 } // namespace sge

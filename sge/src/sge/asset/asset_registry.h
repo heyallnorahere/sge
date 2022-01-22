@@ -17,6 +17,7 @@
 #pragma once
 #include "sge/asset/asset.h"
 namespace sge {
+    class asset_manager;
     class asset_registry {
     public:
         struct asset_desc {
@@ -25,8 +26,9 @@ namespace sge {
             std::optional<asset_type> type;
         };
 
-        asset_registry(const fs::path& path);
-        ~asset_registry() { save(); }
+        asset_registry() = default;
+        asset_registry(const fs::path& path) { set_path(path); }
+        ~asset_registry();
 
         asset_registry(const asset_registry&) = delete;
         asset_registry& operator=(const asset_registry&) = delete;
@@ -34,26 +36,31 @@ namespace sge {
         void load();
         void save();
 
-        bool contains(const fs::path& path);
-        bool contains(guid id);
-
         bool register_asset(ref<asset> _asset);
-        bool register_asset(const fs::path& path, std::optional<guid> id = std::optional<guid>());
-
+        bool register_asset(const fs::path& path);
         bool remove_asset(const fs::path& path);
-        bool remove_asset(guid id);
+        void clear();
 
-        size_t get(const fs::path& path);
-        size_t get(guid id);
-        bool get(size_t index, asset_desc& desc);
+        bool contains(const fs::path& path) { return m_assets.find(path) != m_assets.end(); }
+        asset_desc operator[](const fs::path& path);
+
+        std::unordered_map<fs::path, asset_desc>::iterator begin() { return m_assets.begin(); }
+        std::unordered_map<fs::path, asset_desc>::iterator end() { return m_assets.end(); }
 
     private:
-        size_t find_next_available_index();
+        enum class registry_action { add, remove, clear };
 
-        std::unordered_map<fs::path, size_t> m_path_map;
-        std::unordered_map<guid, size_t> m_id_map;
-        std::unordered_map<size_t, asset_desc> m_assets;
+        using on_changed_callback = std::function<void(registry_action, fs::path)>;
 
+        void set_path(const fs::path& path);
+        void set_on_changed_callback(on_changed_callback callback);
+
+        std::mutex m_mutex;
+        std::unordered_map<fs::path, asset_desc> m_assets;
+
+        on_changed_callback m_on_changed_callback;
         fs::path m_path;
+
+        friend class asset_manager;
     };
 } // namespace sge
