@@ -113,7 +113,7 @@ namespace sge {
         m_mutex.lock();
 
         json data = "[]"_json;
-        for (const auto& desc : m_assets) {
+        for (const auto& [path, desc] : m_assets) {
             data.push_back(desc);
         }
 
