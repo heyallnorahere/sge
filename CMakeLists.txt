@@ -61,7 +61,6 @@ endmacro()
 add_subdirectory("scriptcore")
 add_subdirectory("sge")
 add_subdirectory("sgm")
-add_subdirectory("sandbox")
 add_subdirectory("example-scripts")
 
 if(MSVC)

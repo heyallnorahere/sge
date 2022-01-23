@@ -22,7 +22,6 @@ namespace sgm {
     static std::unordered_set<std::string> image_extensions = { ".png", ".jpg", ".jpeg" };
 
     content_browser_panel::content_browser_panel() {
-        // todo: take from project
         m_current = m_root = project::get().get_asset_dir();
         m_padding = 16.f;
         m_icon_size = 128.f;
