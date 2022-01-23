@@ -46,7 +46,6 @@ namespace sgm {
         void invalidate_texture();
 
         ref<texture_2d> m_current_texture;
-        std::vector<ref<texture_2d>> m_old_textures;
         std::optional<glm::uvec2> m_new_size;
     };
 
@@ -85,12 +84,18 @@ namespace sgm {
         virtual panel_id get_id() override { return panel_id::content_browser; }
 
     private:
-        ref<texture_2d> get_icon(const fs::path& path);
+        struct asset_extension_data {
+            std::string drag_drop_id;
+            std::string icon_name;
+            std::optional<asset_type> type;
+        };
 
-        std::unordered_set<std::string> m_image_icon_blacklist;
-        std::unordered_map<std::string, ref<texture_2d>> m_file_textures;
+        void build_extension_data();
+        ref<texture_2d> get_icon(const fs::path& path);
+        std::string get_drag_drop_id(const fs::path& path);
 
         fs::path m_root, m_current;
         float m_padding, m_icon_size;
+        std::unordered_map<fs::path, asset_extension_data> m_extension_data;
     };
 } // namespace sgm

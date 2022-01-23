@@ -50,12 +50,12 @@ namespace sgm {
         ImGui::Image(m_current_texture->get_imgui_id(), content_region);
 
         if (ImGui::BeginDragDropTarget()) {
-            if (const ImGuiPayload* payload =
-                    ImGui::AcceptDragDropPayload("content-browser-file")) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("scene")) {
                 fs::path path =
                     std::string((const char*)payload->Data, payload->DataSize / sizeof(char) - 1);
-                
-                editor_scene::load(path);
+
+                fs::path asset_dir = project::get().get_asset_dir();
+                editor_scene::load(asset_dir / path);
             }
 
             ImGui::EndDragDropTarget();
@@ -92,12 +92,6 @@ namespace sgm {
 
         swapchain& swap_chain = application::get().get_swapchain();
         size_t current_image = swap_chain.get_current_image_index();
-
-        if (m_old_textures.empty()) {
-            size_t image_count = swap_chain.get_image_count();
-            m_old_textures.resize(image_count);
-        }
-        m_old_textures[current_image] = m_current_texture;
 
         texture_spec spec;
         spec.image = attachment;

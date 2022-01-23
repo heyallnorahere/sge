@@ -71,12 +71,12 @@ namespace sge {
         m_swapchain = swapchain::create(m_window);
 
         asset_serializer::init();
-        project::init();
         script_engine::init();
 
         m_imgui_layer = new imgui_layer;
         push_overlay(m_imgui_layer);
 
+        project::init();
         on_init();
     }
 
@@ -86,13 +86,13 @@ namespace sge {
         renderer::clear_render_data();
 
         on_shutdown();
+        project::shutdown();
 
         pop_overlay(m_imgui_layer);
         delete m_imgui_layer;
         m_imgui_layer = nullptr;
 
         script_engine::shutdown();
-        project::shutdown();
 
         m_swapchain.reset();
         renderer::shutdown();

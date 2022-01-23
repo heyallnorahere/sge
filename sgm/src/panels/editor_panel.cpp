@@ -266,20 +266,18 @@ namespace sgm {
                 ImGuiID id = ImGui::GetID("sprite-texture");
                 ImGui::PushID(id);
 
+                static constexpr float image_size = 100.f;
                 texture_cache::add_texture(texture);
-                ImGui::Image(texture->get_imgui_id(), ImVec2(100.f, 100.f));
+                ImGui::Image(texture->get_imgui_id(), ImVec2(image_size, image_size));
 
                 if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload =
-                            ImGui::AcceptDragDropPayload("content-browser-file")) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_2d")) {
                         fs::path path = std::string((const char*)payload->Data,
                                                     payload->DataSize / sizeof(char) - 1);
 
-                        auto texture = texture_2d::load(path);
-                        if (texture) {
-                            component.texture = texture;
-                        } else {
-                            spdlog::warn("could not load image: {0}", path.string());
+                        auto _asset = project::get().get_asset_manager().get_asset(path);
+                        if (_asset) {
+                            component.texture = _asset.as<texture_2d>();
                         }
                     }
 
@@ -289,9 +287,21 @@ namespace sgm {
                 ImGui::PopID();
 
                 if (can_reset) {
-                    if (ImGui::Button("Remove Texture")) {
+                    auto& style = ImGui::GetStyle();
+
+                    static const char* button_text = "X";
+                    static float text_height = ImGui::CalcTextSize(button_text).y;
+
+                    ImVec2 padding = style.FramePadding;
+                    padding.y += (image_size - text_height) / 2.f;
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, padding);
+
+                    ImGui::SameLine();
+                    if (ImGui::Button("X", ImVec2(0.f, image_size))) {
                         component.texture.reset();
                     }
+
+                    ImGui::PopStyleVar();
                 }
             });
 

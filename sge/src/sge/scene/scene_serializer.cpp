@@ -418,9 +418,16 @@ namespace sge {
         current_serialization->_scene = m_scene;
 
         json data;
-        std::ifstream stream(path);
-        stream >> data;
-        stream.close();
+        try {
+            std::ifstream stream(path);
+            stream >> data;
+            stream.close();
+        } catch (const std::exception& exc) {
+            spdlog::warn("error while reading scene {0}: {1}", path.string(), exc.what());
+            
+            current_serialization.reset();
+            return;
+        }
 
         m_scene->clear();
 
