@@ -36,8 +36,7 @@ endif()
 
 # graphics api
 if(SGE_USE_VULKAN)
-    list(APPEND SGE_INCLUDES ${Vulkan_INCLUDE_DIR})
-    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator)
+    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator Vulkan-Headers)
     list(APPEND SGE_DEFINES SGE_USE_VULKAN)
     list(APPEND ENABLED_PLATFORMS vulkan)
 endif()
