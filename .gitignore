@@ -5,4 +5,8 @@ build/
 obj/
 bin/
 assemblies/
-mono_crash.*.json
+mono_crash*.json
+vendor/nvidia-aftermath
+*.nvdbg
+*.nv-gpudmp
+*gpudmp.json

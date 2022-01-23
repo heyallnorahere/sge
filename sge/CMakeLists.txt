@@ -7,6 +7,12 @@ set(SGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(SGE_INCLUDES ${SGE_DIR} ${Mono_INCLUDE_DIR} "${VENDOR_DIR}/glm")
 set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${Mono_LIBRARY})
 
+# nvidia nsight aftermath
+if(SGE_USE_AFTERMATH)
+    list(APPEND SGE_LIBS sge-aftermath-helpers)
+    list(APPEND SGE_DEFINES SGE_AFTERMATH_LINKED)
+endif()
+
 # platform detection
 if(SGE_PLATFORM_DESKTOP)
     list(APPEND SGE_DEFINES SGE_PLATFORM_DESKTOP)

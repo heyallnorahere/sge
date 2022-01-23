@@ -25,11 +25,13 @@ set(SGE_PLATFORM_DESKTOP ${SGE_PLATFORM_WINDOWS} OR ${SGE_PLATFORM_LINUX} OR ${S
 # find packages
 find_package(Vulkan)
 find_package(Mono REQUIRED)
+find_package(Aftermath)
 
 # options
 include(CMakeDependentOption)
 
 option(SGE_BUILD_SCRIPTCORE "Build SGE script core." ON)
+cmake_dependent_option(SGE_USE_AFTERMATH "Use the NVIDIA Nsight Aftermath SDK" OFF "Aftermath_FOUND" OFF)
 cmake_dependent_option(SGE_USE_VULKAN "Use the Vulkan graphics api." ON "SGE_PLATFORM_DESKTOP AND Vulkan_FOUND" OFF)
 
 # dependencies
@@ -38,8 +40,15 @@ add_subdirectory("vendor")
 # mono DLL macro
 macro(copy_required_dlls target_name)
     if(WIN32)
-        add_custom_command(TARGET ${target_name} POST_BUILD COMMAND
-            ${CMAKE_COMMAND} -E copy_if_different ${Mono_DLL} $<TARGET_FILE_DIR:${target_name}>)
+        set(DLLS_TO_COPY ${Mono_DLL})
+        if(SGE_USE_AFTERMATH)
+            list(APPEND DLLS_TO_COPY ${Aftermath_DLLS})
+        endif()
+
+        foreach(DLL ${DLLS_TO_COPY})
+            add_custom_command(TARGET ${target_name} POST_BUILD
+                               COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DLL} $<TARGET_FILE_DIR:${target_name}>)
+        endforeach()
     endif()
 endmacro()
 
