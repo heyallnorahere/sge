@@ -20,11 +20,12 @@
 #include "texture_cache.h"
 namespace sgm {
     content_browser_panel::content_browser_panel() {
-        build_extension_data();
-
         m_current = m_root = project::get().get_asset_dir();
         m_padding = 16.f;
         m_icon_size = 128.f;
+
+        build_extension_data();
+        build_directory_data(m_root, m_root_data);
     }
 
     void content_browser_panel::render() {
@@ -46,17 +47,33 @@ namespace sgm {
         ImGui::Columns(column_count, nullptr, false);
 
         for (const auto& entry : fs::directory_iterator(m_current)) {
-            auto path = fs::absolute(entry.path());
+            fs::path path = fs::absolute(entry.path());
+            fs::path asset_path = path.lexically_relative(m_root);
 
-            std::string filename = path.filename().string();
-            ImGui::PushID(filename.c_str());
+            bool irrelevant_asset = false;
+            const auto& directory_data = get_directory_data(m_current);
+
+            fs::path filename = path.filename();
+            if (entry.is_directory()) {
+                irrelevant_asset =
+                    (directory_data.directories.find(filename) == directory_data.directories.end());
+            } else {
+                irrelevant_asset =
+                    (directory_data.files.find(filename) == directory_data.files.end());
+            }
+
+            if (irrelevant_asset) {
+                continue;
+            }
+
+            std::string filename_string = filename.string();
+            ImGui::PushID(filename_string.c_str());
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
 
             auto icon = get_icon(path);
             ImGui::ImageButton(icon->get_imgui_id(), ImVec2(m_icon_size, m_icon_size));
 
             if (ImGui::BeginDragDropSource()) {
-                fs::path asset_path = path.lexically_relative(m_root);
                 std::string payload_path = asset_path.string();
                 const char* c_str = payload_path.c_str();
 
@@ -64,7 +81,7 @@ namespace sgm {
                 ImGui::SetDragDropPayload(drag_drop_id.c_str(), c_str,
                                           (payload_path.length() + 1) * sizeof(char));
 
-                ImGui::Text("%s", filename.c_str());
+                ImGui::Text("%s", filename_string.c_str());
                 ImGui::EndDragDropSource();
             }
 
@@ -78,7 +95,7 @@ namespace sgm {
             }
 
             {
-                float text_width = ImGui::CalcTextSize(filename.c_str()).x;
+                float text_width = ImGui::CalcTextSize(filename_string.c_str()).x;
 
                 float indentation = (m_icon_size - text_width) / 2.f;
                 if (indentation < 0.f) {
@@ -88,7 +105,7 @@ namespace sgm {
                 ImGui::Indent(indentation);
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (m_icon_size - indentation));
 
-                ImGui::TextWrapped("%s", filename.c_str());
+                ImGui::TextWrapped("%s", filename_string.c_str());
 
                 ImGui::PopTextWrapPos();
                 ImGui::Unindent(indentation);
@@ -184,5 +201,66 @@ namespace sgm {
         }
 
         return "file";
+    }
+
+    void content_browser_panel::build_directory_data(const fs::path& path,
+                                                     asset_directory_data& data) {
+        data.files.clear();
+        data.directories.clear();
+
+        auto& registry = project::get().get_asset_manager().registry;
+        for (const auto& entry : fs::directory_iterator(path)) {
+            auto entry_path = fs::absolute(entry.path());
+            auto filename = entry_path.filename();
+
+            if (entry.is_directory()) {
+                bool found = false;
+
+                for (const auto& [asset_path, desc] : registry) {
+                    std::string dir_string = entry_path.string();
+                    std::string path_string = (m_root / asset_path).string();
+
+                    if (path_string.substr(0, dir_string.length()) == dir_string) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) {
+                    asset_directory_data subdirectory;
+                    build_directory_data(entry_path, subdirectory);
+
+                    data.directories.insert(std::make_pair(filename, m_subdirectories.size()));
+                    m_subdirectories.push_back(subdirectory);
+                }
+            } else {
+                fs::path asset_path = entry_path.lexically_relative(m_root);
+                if (registry.contains(asset_path)) {
+                    data.files.insert(filename);
+                }
+            }
+        }
+    }
+
+    const content_browser_panel::asset_directory_data& content_browser_panel::get_directory_data(
+        const fs::path& path) {
+        auto asset_path = path.lexically_relative(m_root);
+
+        asset_directory_data* current = &m_root_data;
+        for (const auto& segment : asset_path) {
+            if (segment == ".") {
+                continue;
+            }
+
+            if (current->directories.find(segment) != current->directories.end()) {
+                size_t index = current->directories[segment];
+                current = &m_subdirectories[index];
+            } else {
+                spdlog::warn("directory {0} does not exist!", segment.string());
+                break;
+            }
+        }
+
+        return *current;
     }
 } // namespace sgm

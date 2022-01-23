@@ -90,12 +90,23 @@ namespace sgm {
             std::optional<asset_type> type;
         };
 
+        struct asset_directory_data {
+            std::unordered_set<fs::path> files;
+            std::unordered_map<fs::path, size_t> directories;
+        };
+
         void build_extension_data();
         ref<texture_2d> get_icon(const fs::path& path);
         std::string get_drag_drop_id(const fs::path& path);
 
+        void build_directory_data(const fs::path& path, asset_directory_data& data);
+        const asset_directory_data& get_directory_data(const fs::path& path);
+
         fs::path m_root, m_current;
         float m_padding, m_icon_size;
         std::unordered_map<fs::path, asset_extension_data> m_extension_data;
+
+        asset_directory_data m_root_data;
+        std::vector<asset_directory_data> m_subdirectories;
     };
 } // namespace sgm
