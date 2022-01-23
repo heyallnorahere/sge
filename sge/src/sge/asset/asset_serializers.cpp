@@ -18,6 +18,7 @@
 #include "sge/asset/asset_serializers.h"
 #include "sge/renderer/shader.h"
 #include "sge/renderer/texture.h"
+#include "sge/asset/project.h"
 namespace sge {
     static std::unordered_map<asset_type, std::unique_ptr<asset_serializer>> asset_serializers;
 
@@ -45,12 +46,17 @@ namespace sge {
             return false;
         }
 
+        fs::path path = _asset->get_path();
+        if (path.is_relative()) {
+            fs::path asset_dir = project::get().get_asset_dir();
+            path = asset_dir / path;
+        }
+
         try {
             auto& serializer = asset_serializers[_asset->get_asset_type()];
-            return serializer->serialize_impl(_asset);
+            return serializer->serialize_impl(path, _asset);
         } catch (const std::exception& exc) {
-            spdlog::warn("error serializing asset at {0}: {1}", _asset->get_path().string(),
-                         exc.what());
+            spdlog::warn("error serializing asset at {0}: {1}", path.string(), exc.what());
             return false;
         }
     }
@@ -61,12 +67,18 @@ namespace sge {
             return false;
         }
 
+        fs::path path = desc.path;
+        if (path.is_relative()) {
+            fs::path asset_dir = project::get().get_asset_dir();
+            path = asset_dir / path;
+        }
+
         bool succeeded = false;
         try {
             auto& serializer = asset_serializers[desc.type.value()];
-            succeeded = serializer->deserialize_impl(desc.path, _asset);
+            succeeded = serializer->deserialize_impl(path, _asset);
         } catch (const std::exception& exc) {
-            spdlog::warn("error deserializing asset at {0}: {1}", desc.path.string(), exc.what());
+            spdlog::warn("error deserializing asset at {0}: {1}", path.string(), exc.what());
         }
 
         if (succeeded && desc.id.has_value()) {
@@ -85,9 +97,9 @@ namespace sge {
         return true;
     }
 
-    bool texture2d_serializer::serialize_impl(ref<asset> _asset) {
+    bool texture2d_serializer::serialize_impl(const fs::path& path, ref<asset> _asset) {
         auto texture = _asset.as<texture_2d>();
-        texture_2d::serialize_settings(texture);
+        texture_2d::serialize_settings(texture, path);
 
         return true;
     }

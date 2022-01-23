@@ -22,6 +22,7 @@
 #include "sge/script/script_helpers.h"
 #include "sge/script/garbage_collector.h"
 #include "sge/asset/json.h"
+#include "sge/asset/project.h"
 namespace sge {
     struct serialization_data {
         std::queue<std::function<void()>> post_deserialize;
@@ -93,9 +94,17 @@ namespace sge {
         data["texture"] = nullptr;
 
         if (comp.texture) {
-            fs::path path = comp.texture->get_path();
+            if (!project::loaded()) {
+                throw std::runtime_error("cannot serialize assets without a project loaded!");
+            }
 
+            fs::path path = comp.texture->get_path();
             if (!path.empty()) {
+                if (path.is_absolute()) {
+                    fs::path asset_dir = project::get().get_asset_dir();
+                    path = path.lexically_relative(asset_dir);
+                }
+
                 data["texture"] = path;
             }
         }
@@ -105,15 +114,16 @@ namespace sge {
         comp.color = data["color"].get<glm::vec4>();
 
         if (!data["texture"].is_null()) {
-            fs::path path = data["texture"].get<fs::path>();
-
-            auto texture = texture_2d::load(path);
-            if (!texture) {
-                throw std::runtime_error("could not load sprite texture: " + path.string());
+            if (!project::loaded()) {
+                throw std::runtime_error("cannot deserialize assets without a project loaded!");
             }
 
-            // todo: look for asset in registry
-            comp.texture = texture;
+            fs::path path = data["texture"].get<fs::path>();
+            auto _asset = project::get().get_asset_manager().get_asset(path);
+
+            if (_asset) {
+                comp.texture = _asset.as<texture_2d>();
+            }
         }
     }
 
@@ -200,8 +210,8 @@ namespace sge {
         }
 
         data["script_name"] = component.class_name;
-
         data["properties"] = nullptr;
+
         if (component.gc_handle != 0) {
             void* instance = garbage_collector::get_ref_data(component.gc_handle);
 

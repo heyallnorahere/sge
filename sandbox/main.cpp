@@ -83,14 +83,7 @@ namespace sandbox {
         sandbox_layer() : layer("Sandbox Layer") {}
 
         virtual void on_attach() override {
-            auto image_data = image_data::load("assets/images/tux.png");
-            auto img = image_2d::create(image_data, image_usage_texture);
-
-            texture_spec tex_spec;
-            tex_spec.image = img;
-            tex_spec.filter = texture_filter::linear;
-            tex_spec.wrap = texture_wrap::repeat;
-            m_tux = texture_2d::create(tex_spec);
+            m_tux = texture_2d::load("sandbox-project/assets/images/tux.png");
 
             auto window = application::get().get_window();
             uint32_t width = window->get_width();

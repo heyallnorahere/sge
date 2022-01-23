@@ -20,6 +20,10 @@
 // precompiled header
 #include "sgepch.h"
 
+// assets
+#include "sge/asset/asset.h"
+#include "sge/asset/project.h"
+
 // core
 #include "sge/core/application.h"
 #include "sge/core/window.h"

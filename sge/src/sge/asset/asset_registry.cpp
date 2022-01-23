@@ -17,6 +17,7 @@
 #include "sgepch.h"
 #include "sge/asset/asset_registry.h"
 #include "sge/asset/json.h"
+#include "sge/asset/project.h"
 namespace sge {
     void to_json(json& data, const asset_desc& desc) {
         data["guid"] = nullptr;
@@ -75,9 +76,9 @@ namespace sge {
     }
 
     void asset_registry::load() {
-        clear();
-
         m_mutex.lock();
+        m_assets.clear();
+
         if (!fs::exists(m_path)) {
             spdlog::warn("attempted to load a nonexistent registry!");
 
@@ -86,7 +87,6 @@ namespace sge {
         }
 
         json data;
-
         std::ifstream stream(m_path);
         stream >> data;
         stream.close();
@@ -98,15 +98,29 @@ namespace sge {
                 continue;
             }
 
-            if (!fs::exists(desc.path)) {
-                spdlog::warn("path {0} does not exist!", desc.path.string());
+            fs::path asset_dir = project::get().get_asset_dir();
+            fs::path abs_path = desc.path;
+            if (abs_path.is_relative()) {
+                abs_path = asset_dir / abs_path;
+            }
+
+            if (!fs::exists(abs_path)) {
+                spdlog::warn("path {0} does not exist!", abs_path.string());
                 continue;
             }
 
             m_assets.insert(std::make_pair(desc.path, desc));
         }
 
+        on_changed_callback callback;
+        if (m_on_changed_callback) {
+            callback = m_on_changed_callback;
+        }
+
         m_mutex.unlock();
+        if (callback) {
+            callback(registry_action::clear, m_path);
+        }
     }
 
     void asset_registry::save() {
@@ -126,7 +140,13 @@ namespace sge {
 
     bool asset_registry::register_asset(ref<asset> _asset) {
         m_mutex.lock();
+
         fs::path path = _asset->get_path();
+        if (path.is_absolute()) {
+            fs::path asset_dir = project::get().get_asset_dir();
+            path = path.lexically_relative(asset_dir);
+        }
+
         if (path.empty() || (m_assets.find(path) != m_assets.end())) {
             m_mutex.unlock();
             return false;
@@ -136,7 +156,7 @@ namespace sge {
         desc.path = path;
         desc.id = _asset->id;
         desc.type = _asset->get_asset_type();
-        m_assets.insert(std::make_pair(desc.path, desc));
+        m_assets.insert(std::make_pair(path, desc));
 
         on_changed_callback callback;
         if (m_on_changed_callback) {
@@ -155,14 +175,21 @@ namespace sge {
 
     bool asset_registry::register_asset(const fs::path& path) {
         m_mutex.lock();
-        if (path.empty() || (m_assets.find(path) != m_assets.end())) {
+
+        fs::path asset_path = path;
+        if (asset_path.is_absolute()) {
+            fs::path asset_dir = project::get().get_asset_dir();
+            asset_path = asset_path.lexically_relative(asset_dir);
+        }
+
+        if (asset_path.empty() || (m_assets.find(asset_path) != m_assets.end())) {
             m_mutex.unlock();
             return false;
         }
 
         asset_desc desc;
-        desc.path = path;
-        m_assets.insert(std::make_pair(path, desc));
+        desc.path = asset_path;
+        m_assets.insert(std::make_pair(asset_path, desc));
 
         on_changed_callback callback;
         if (m_on_changed_callback) {
@@ -173,7 +200,7 @@ namespace sge {
         save();
 
         if (callback) {
-            callback(registry_action::add, path);
+            callback(registry_action::add, asset_path);
         }
 
         return true;
@@ -181,7 +208,14 @@ namespace sge {
 
     bool asset_registry::remove_asset(const fs::path& path) {
         m_mutex.lock();
-        if (m_assets.find(path) == m_assets.end()) {
+
+        fs::path asset_path = path;
+        if (asset_path.is_absolute()) {
+            fs::path asset_dir = project::get().get_asset_dir();
+            asset_path = asset_path.lexically_relative(asset_dir);
+        }
+
+        if (m_assets.find(asset_path) == m_assets.end()) {
             m_mutex.unlock();
             return false;
         }
@@ -191,13 +225,13 @@ namespace sge {
             callback = m_on_changed_callback;
         }
 
-        m_assets.erase(path);
+        m_assets.erase(asset_path);
         m_mutex.unlock();
 
         save();
 
         if (callback) {
-            callback(registry_action::remove, path);
+            callback(registry_action::remove, asset_path);
         }
         return true;
     }

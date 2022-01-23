@@ -32,7 +32,7 @@ namespace sge {
     public:
         static ref<texture_2d> create(const texture_spec& spec);
         static ref<texture_2d> load(const fs::path& path);
-        static void serialize_settings(ref<texture_2d> texture);
+        static void serialize_settings(ref<texture_2d> texture, const fs::path& path);
 
         virtual ~texture_2d() = default;
 

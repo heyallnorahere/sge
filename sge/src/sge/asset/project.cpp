@@ -39,12 +39,14 @@ namespace sge {
 
         fs::path directory = global_project->get_directory();
         fs::path registry_path = global_project->m_asset_manager->registry.get_path();
-        fs::path relative_registry_path = registry_path.lexically_relative(directory);
+        if (registry_path.is_absolute()) {
+            registry_path = registry_path.lexically_relative(directory);
+        }
 
         json data;
         data["name"] = global_project->m_name;
-        data["asset_registry"] = relative_registry_path;
         data["asset_directory"] = global_project->m_asset_dir;
+        data["asset_registry"] = registry_path;
         data["start_scene"] = global_project->m_start_scene;
 
         std::ofstream stream(global_project->m_path);
@@ -79,18 +81,17 @@ namespace sge {
         global_project->m_path = project_path;
         fs::path directory = global_project->get_directory();
 
-
-        auto registry_path = data["asset_registry"].get<fs::path>();
-        if (registry_path.is_absolute()) {
-            registry_path = registry_path.lexically_relative(directory);
-        }
-        global_project->m_asset_manager->set_path(registry_path);
-
         auto asset_dir = data["asset_directory"].get<fs::path>();
         if (asset_dir.is_absolute()) {
             asset_dir = asset_dir.lexically_relative(directory);
         }
         global_project->m_asset_dir = asset_dir;
+
+        auto registry_path = data["asset_registry"].get<fs::path>();
+        if (registry_path.is_relative()) {
+            registry_path = directory / registry_path;
+        }
+        global_project->m_asset_manager->set_path(registry_path);
 
         auto start_scene = data["start_scene"].get<fs::path>();
         if (start_scene.is_absolute()) {

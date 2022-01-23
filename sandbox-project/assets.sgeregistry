@@ -1,0 +1,12 @@
+[
+    {
+        "guid": null,
+        "path": "scenes/example.sgescene",
+        "type": null
+    },
+    {
+        "guid": null,
+        "path": "images/tux.png",
+        "type": "texture_2d"
+    }
+]

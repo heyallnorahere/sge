@@ -88,8 +88,7 @@ namespace sge {
         return create(spec);
     }
 
-    void texture_2d::serialize_settings(ref<texture_2d> texture) {
-        fs::path path = texture->get_path();
+    void texture_2d::serialize_settings(ref<texture_2d> texture, const fs::path& path) {
         if (path.empty()) {
             spdlog::warn("attempted to serialize to a nonexistent path!");
             return;

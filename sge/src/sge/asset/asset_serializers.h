@@ -24,19 +24,19 @@ namespace sge {
         static bool deserialize(const asset_desc& desc, ref<asset>& _asset);
 
     protected:
-        virtual bool serialize_impl(ref<asset> _asset) = 0;
+        virtual bool serialize_impl(const fs::path& path, ref<asset> _asset) = 0;
         virtual bool deserialize_impl(const fs::path& path, ref<asset>& _asset) = 0;
     };
 
     class shader_serializer : public asset_serializer {
     protected:
-        virtual bool serialize_impl(ref<asset> _asset) override { return true; }
+        virtual bool serialize_impl(const fs::path& path, ref<asset> _asset) override { return true; }
         virtual bool deserialize_impl(const fs::path& path, ref<asset>& _asset) override;
     };
 
     class texture2d_serializer : public asset_serializer {
     protected:
-        virtual bool serialize_impl(ref<asset> _asset) override;
+        virtual bool serialize_impl(const fs::path& path, ref<asset> _asset) override;
         virtual bool deserialize_impl(const fs::path& path, ref<asset>& _asset) override;
     };
 } // namespace sge

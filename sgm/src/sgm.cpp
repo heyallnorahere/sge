@@ -22,12 +22,20 @@
 #include "icon_directory.h"
 #include "texture_cache.h"
 namespace sgm {
+    static std::string sgm_title = "Simple Game Maker {version}";
+
     class sgm_app : public application {
     public:
         sgm_app() : application("SGM") {}
     
     protected:
         virtual void on_init() override {
+            // todo: take from command line argument?
+            project::load("sandbox-project/sandbox.sgeproject");
+            
+            project& _project = project::get();
+            m_window->set_title(sgm_title + " - " + _project.get_name());
+
             icon_directory::load();
             editor_scene::create();
             texture_cache::init();
@@ -51,7 +59,7 @@ namespace sgm {
             icon_directory::clear();
         }
 
-        virtual std::string get_window_title() { return "Simple Game Maker {version}"; }
+        virtual std::string get_window_title() { return sgm_title; }
 
         editor_layer* m_editor_layer;
     };
