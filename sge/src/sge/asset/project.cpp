@@ -23,16 +23,33 @@
 #include <Windows.h>
 #endif
 namespace sge {
-    static std::unique_ptr<project> global_project;
+    struct project_data_t {
+        std::unique_ptr<project> instance;
+        bool editor;
+    };
+    static std::unique_ptr<project_data_t> project_data;
 
-    void project::init() {
+    void project::init(bool editor) {
+        if (project_data) {
+            spdlog::warn("projects have already been initialized");
+            return;
+        }
+
         auto instance = new project;
         instance->m_asset_manager = std::make_unique<asset_manager>();
 
-        global_project = std::unique_ptr<project>(instance);
+        project_data = std::make_unique<project_data_t>();
+        project_data->instance = std::unique_ptr<project>(instance);
+        project_data->editor = editor;
     }
 
-    void project::shutdown() { global_project.reset(); }
+    void project::shutdown() {
+        if (!project_data) {
+            spdlog::warn("projects have not been initalized!");
+        }
+
+        project_data.reset();
+    }
 
     std::string project::get_config() {
 #ifdef SGE_DEBUG
@@ -42,31 +59,32 @@ namespace sge {
 #endif
     }
 
-    bool project::loaded() { return !global_project->m_path.empty(); }
-    project& project::get() { return *global_project; }
+    bool project::loaded() { return !project_data->instance->m_path.empty(); }
+    project& project::get() { return *project_data->instance; }
 
     bool project::save() {
         if (!loaded()) {
             return false;
         }
 
-        fs::path directory = global_project->get_directory();
-        fs::path registry_path = global_project->m_asset_manager->registry.get_path();
+        auto& instance = get();
+        fs::path directory = instance.get_directory();
+        fs::path registry_path = instance.m_asset_manager->registry.get_path();
         if (registry_path.is_absolute()) {
             registry_path = registry_path.lexically_relative(directory);
         }
 
         json data;
-        data["name"] = global_project->m_name;
-        data["asset_directory"] = global_project->m_asset_dir;
+        data["name"] = instance.m_name;
+        data["asset_directory"] = instance.m_asset_dir;
         data["asset_registry"] = registry_path;
-        data["start_scene"] = global_project->m_start_scene;
+        data["start_scene"] = instance.m_start_scene;
 
-        std::ofstream stream(global_project->m_path);
+        std::ofstream stream(instance.m_path);
         stream << data.dump(4) << std::flush;
         stream.close();
 
-        global_project->m_asset_manager->registry.save();
+        instance.m_asset_manager->registry.save();
         return true;
     }
 
@@ -90,27 +108,28 @@ namespace sge {
             return false;
         }
 
-        global_project->m_name = data["name"].get<std::string>();
-        global_project->m_path = project_path;
-        fs::path directory = global_project->get_directory();
+        auto& instance = get();
+        instance.m_name = data["name"].get<std::string>();
+        instance.m_path = project_path;
+        fs::path directory = instance.get_directory();
 
         auto asset_dir = data["asset_directory"].get<fs::path>();
         if (asset_dir.is_absolute()) {
             asset_dir = asset_dir.lexically_relative(directory);
         }
-        global_project->m_asset_dir = asset_dir;
+        instance.m_asset_dir = asset_dir;
 
         auto registry_path = data["asset_registry"].get<fs::path>();
         if (registry_path.is_relative()) {
             registry_path = directory / registry_path;
         }
-        global_project->m_asset_manager->set_path(registry_path);
+        instance.m_asset_manager->set_path(registry_path);
 
         auto start_scene = data["start_scene"].get<fs::path>();
         if (start_scene.is_absolute()) {
             start_scene = start_scene.lexically_relative(asset_dir);
         }
-        global_project->m_start_scene = start_scene;
+        instance.m_start_scene = start_scene;
 
         reload_assembly();
         return true;
@@ -208,10 +227,16 @@ namespace sge {
     std::optional<size_t> project::reload_assembly() {
         std::optional<size_t> new_index;
 
-        if (compile_app_assembly()) {
-            fs::path current_path = global_project->get_assembly_path();
-            if (global_project->m_assembly_index.has_value()) {
-                size_t old_index = global_project->m_assembly_index.value();
+        bool load = true;
+        if (project_data->editor) {
+            load = compile_app_assembly();
+        }
+
+        auto& instance = get();
+        if (load) {
+            fs::path current_path = instance.get_assembly_path();
+            if (instance.m_assembly_index.has_value()) {
+                size_t old_index = instance.m_assembly_index.value();
 
                 if (script_engine::get_assembly_path(old_index) != current_path) {
                     script_engine::unload_assembly(old_index);
@@ -224,12 +249,12 @@ namespace sge {
             }
         }
 
-        if (global_project->m_assembly_index.has_value() && !new_index.has_value()) {
-            size_t index = global_project->m_assembly_index.value();
+        if (instance.m_assembly_index.has_value() && !new_index.has_value()) {
+            size_t index = instance.m_assembly_index.value();
             script_engine::unload_assembly(index);
         }
 
-        global_project->m_assembly_index = new_index;
+        instance.m_assembly_index = new_index;
         return new_index;
     }
 } // namespace sge

@@ -33,6 +33,8 @@ namespace sgm {
 
     class viewport_panel : public panel {
     public:
+        viewport_panel(const std::function<void(const fs::path&)>& load_scene_callback);
+
         virtual void update(timestep ts) override;
 
         virtual void begin(const char* title, bool* open) override;
@@ -47,6 +49,7 @@ namespace sgm {
 
         ref<texture_2d> m_current_texture;
         std::optional<glm::uvec2> m_new_size;
+        std::function<void(const fs::path&)> m_load_scene_callback;
     };
 
     class scene_hierarchy_panel : public panel {

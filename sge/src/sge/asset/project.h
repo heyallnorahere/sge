@@ -19,7 +19,7 @@
 namespace sge {
     class project {
     public:
-        static void init();
+        static void init(bool editor);
         static void shutdown();
         static std::string get_config();
 

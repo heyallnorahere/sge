@@ -19,6 +19,11 @@
 #include "editor_scene.h"
 #include <sge/renderer/renderer.h>
 namespace sgm {
+    viewport_panel::viewport_panel(
+        const std::function<void(const fs::path&)>& load_scene_callback) {
+        m_load_scene_callback = load_scene_callback;
+    }
+
     void viewport_panel::update(timestep ts) {
         if (m_new_size.has_value()) {
             renderer::wait();
@@ -55,7 +60,12 @@ namespace sgm {
                     std::string((const char*)payload->Data, payload->DataSize / sizeof(char) - 1);
 
                 fs::path asset_dir = project::get().get_asset_dir();
-                editor_scene::load(asset_dir / path);
+                fs::path asset_path = asset_dir / path;
+                editor_scene::load(asset_path);
+
+                if (m_load_scene_callback) {
+                    m_load_scene_callback(asset_path);
+                }
             }
 
             ImGui::EndDragDropTarget();

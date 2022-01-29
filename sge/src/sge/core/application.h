@@ -50,7 +50,9 @@ namespace sge {
     protected:
         virtual void on_init() {}
         virtual void on_shutdown() {}
+
         virtual std::string get_window_title() { return m_title; }
+        virtual bool is_editor() { return false; }
 
         layer_stack m_layer_stack;
         std::string m_title;

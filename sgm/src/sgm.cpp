@@ -17,12 +17,11 @@
 #include "sgmpch.h"
 #include <sge/core/main.h>
 #include "editor_layer.h"
-#include "panels/panels.h"
 #include "editor_scene.h"
 #include "icon_directory.h"
 #include "texture_cache.h"
 namespace sgm {
-    static std::string sgm_title = "Simple Game Maker {version}";
+    static const std::string sgm_title = "Simple Game Maker {version}";
 
     class sgm_app : public application {
     public:
@@ -42,12 +41,6 @@ namespace sgm {
 
             m_editor_layer = new editor_layer;
             push_layer(m_editor_layer);
-
-            m_editor_layer->add_panel<renderer_info_panel>();
-            m_editor_layer->add_panel<viewport_panel>();
-            m_editor_layer->add_panel<scene_hierarchy_panel>();
-            m_editor_layer->add_panel<editor_panel>();
-            m_editor_layer->add_panel<content_browser_panel>();
         }
 
         virtual void on_shutdown() override {
@@ -59,7 +52,8 @@ namespace sgm {
             icon_directory::clear();
         }
 
-        virtual std::string get_window_title() { return sgm_title; }
+        virtual std::string get_window_title() override { return sgm_title; }
+        virtual bool is_editor() override { return true; }
 
         editor_layer* m_editor_layer;
     };

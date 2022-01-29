@@ -21,23 +21,32 @@ namespace sgm {
     public:
         editor_layer() : layer("Editor Layer") {}
 
+        virtual void on_attach() override;
         virtual void on_update(timestep ts) override;
         virtual void on_event(event& e) override;
         virtual void on_imgui_render() override;
 
-        template <typename T>
-        void add_panel() {
+    private:
+        template <typename T, typename... Args>
+        void add_panel(Args&&... args) {
             static_assert(std::is_base_of_v<panel, T>, "T must be derived from panel!");
 
-            panel* instance = (panel*)new T;
+            panel* instance = (panel*)new T(std::forward<Args>(args)...);
             m_panels.push_back(std::unique_ptr<panel>(instance));
         }
 
-    private:
+        bool on_key(key_pressed_event& e);
+
         void update_dockspace();
         void update_toolbar();
         void update_menu_bar();
 
+        void new_scene();
+        void open();
+        void save_as();
+        void save();
+
         std::vector<std::unique_ptr<panel>> m_panels;
+        std::optional<fs::path> m_scene_path;
     };
 } // namespace sgm

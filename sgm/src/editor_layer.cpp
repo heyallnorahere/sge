@@ -19,8 +19,17 @@
 #include "editor_scene.h"
 #include "texture_cache.h"
 #include "icon_directory.h"
+#include "panels/panels.h"
 #include <sge/scene/scene_serializer.h>
 namespace sgm {
+    void editor_layer::on_attach() {
+        add_panel<renderer_info_panel>();
+        add_panel<viewport_panel>([this](const fs::path& path) { m_scene_path = path; });
+        add_panel<scene_hierarchy_panel>();
+        add_panel<editor_panel>();
+        add_panel<content_browser_panel>();
+    }
+
     void editor_layer::on_update(timestep ts) {
         for (auto& _panel : m_panels) {
             _panel->update(ts);
@@ -31,8 +40,7 @@ namespace sgm {
 
     void editor_layer::on_event(event& e) {
         event_dispatcher dispatcher(e);
-
-        // todo: on_key event for keyboard shortcuts
+        dispatcher.dispatch<key_pressed_event>(SGE_BIND_EVENT_FUNC(editor_layer::on_key));
 
         if (!e.handled) {
             editor_scene::on_event(e);
@@ -64,6 +72,54 @@ namespace sgm {
                 ImGui::End();
             }
         }
+    }
+
+    bool editor_layer::on_key(key_pressed_event& e) {
+        if (e.get_repeat_count() > 0) {
+            return false;
+        }
+
+        bool control =
+            input::get_key(key_code::LEFT_CONTROL) || input::get_key(key_code::RIGHT_CONTROL);
+        bool shift = input::get_key(key_code::LEFT_SHIFT) || input::get_key(key_code::RIGHT_SHIFT);
+
+        switch (e.get_key()) {
+        case key_code::N:
+            if (control) {
+                new_scene();
+                return true;
+            }
+
+            break;
+        case key_code::O:
+            if (control) {
+                open();
+                return true;
+            }
+
+            break;
+        case key_code::S:
+            if (control) {
+                if (shift) {
+                    save_as();
+                } else {
+                    save();
+                }
+
+                return true;
+            }
+
+            break;
+        case key_code::Q:
+            if (control) {
+                application::get().quit();
+                return true;
+            }
+
+            break;
+        }
+
+        return false;
     }
 
     void editor_layer::update_dockspace() {
@@ -100,7 +156,8 @@ namespace sgm {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.f, 0.f));
 
         ImGuiID window_id = ImGui::GetID("toolbar");
-        ImGui::BeginChild(window_id, ImVec2(0.f, toolbar_height), false, ImGuiWindowFlags_NoScrollbar);
+        ImGui::BeginChild(window_id, ImVec2(0.f, toolbar_height), false,
+                          ImGuiWindowFlags_NoScrollbar);
 
         ImGui::PopStyleVar(2);
 
@@ -137,32 +194,26 @@ namespace sgm {
     void editor_layer::update_menu_bar() {
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                auto& app = application::get();
-                {
-                    auto _window = app.get_window();
-                    static const std::vector<dialog_file_filter> filters = {
-                        { "SGE scene (*.sgescene)", "*.sgescene" }
-                    };
+                if (ImGui::MenuItem("New Scene", "Ctrl+N")) {
+                    new_scene();
+                }
 
-                    if (ImGui::MenuItem("Open...", "Ctrl+O")) {
-                        auto path = _window->file_dialog(dialog_mode::open, filters);
-                        if (path.has_value()) {
-                            editor_scene::load(path.value());
-                        }
-                    }
+                if (ImGui::MenuItem("Open...", "Ctrl+O")) {
+                    open();
+                }
 
-                    if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
-                        auto path = _window->file_dialog(dialog_mode::save, filters);
-                        if (path.has_value()) {
-                            editor_scene::save(path.value());
-                        }
-                    }
+                if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
+                    save_as();
+                }
+
+                if (ImGui::MenuItem("Save", "Ctrl+S")) {
+                    save();
                 }
 
                 ImGui::Separator();
 
                 if (ImGui::MenuItem("Quit", "Ctrl+Q")) {
-                    app.quit();
+                    application::get().quit();
                 }
 
                 ImGui::EndMenu();
@@ -178,6 +229,52 @@ namespace sgm {
             }
 
             ImGui::EndMenuBar();
+        }
+    }
+
+    void editor_layer::new_scene() {
+        // todo(nora): if edited, confirm load
+
+        if (editor_scene::running()) {
+            editor_scene::stop();
+        }
+
+        auto _scene = editor_scene::get_scene();
+        _scene->clear();
+
+        m_scene_path.reset();
+        garbage_collector::collect();
+    }
+
+    static const dialog_file_filter scene_filter = { "SGE scene (*.sgescene)", "*.sgescene" };
+
+    void editor_layer::open() {
+        // todo(nora): if edited, confirm load
+
+        auto _window = application::get().get_window();
+        auto path = _window->file_dialog(dialog_mode::open, { scene_filter });
+
+        if (path.has_value()) {
+            editor_scene::load(path.value());
+            m_scene_path = path;
+        }
+    }
+
+    void editor_layer::save_as() {
+        auto _window = application::get().get_window();
+        auto path = _window->file_dialog(dialog_mode::save, { scene_filter });
+
+        if (path.has_value()) {
+            editor_scene::save(path.value());
+            m_scene_path = path;
+        }
+    }
+
+    void editor_layer::save() {
+        if (m_scene_path.has_value()) {
+            editor_scene::save(m_scene_path.value());
+        } else {
+            save_as();
         }
     }
 } // namespace sgm

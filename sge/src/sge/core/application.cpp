@@ -76,7 +76,7 @@ namespace sge {
         m_imgui_layer = new imgui_layer;
         push_overlay(m_imgui_layer);
 
-        project::init();
+        project::init(is_editor());
         on_init();
     }
 
