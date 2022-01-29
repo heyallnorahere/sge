@@ -51,20 +51,6 @@ macro(copy_required_dlls target_name)
     endif()
 endmacro()
 
-# managed (c#) target macro
-macro(managed_target target_name project_file)
-    if(SGE_BUILD_SCRIPTCORE)
-        if(MSVC)
-            include_external_msproject(${target_name} ${project_file})
-        else()
-            add_custom_target(${target_name} ALL
-                COMMAND mono ${Mono_MSBUILD} -noLogo -v:q -p:Configuration=$<CONFIG> ${project_file})
-        endif()
-    else()
-        add_custom_target(${target_name} ALL COMMAND echo "SGE_BUILD_SCRIPTORE was disabled.")
-    endif()
-endmacro()
-
 # sge targets
 add_subdirectory("sge")
 add_subdirectory("sgm")

@@ -20,7 +20,6 @@ namespace SGE.Setup.Tasks
 {
     [Task("setup-ci")]
     [TaskDependency("install-vulkan", "--ci")]
-    [TaskDependency("install-mono", "--ci")]
     internal class SetupCI : Task
     {
         public override string Description => "Setup all required dependencies for a CI build";
