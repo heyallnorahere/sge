@@ -52,16 +52,13 @@ namespace sge {
                 continue;
             }
 
-            tpa_list += fs::absolute(entry.path()).string() + separator;
+            if (!tpa_list.empty()) {
+                tpa_list += separator;
+            }
+
+            tpa_list += fs::absolute(entry.path()).string();
         }
 
-#ifdef SGE_DEBUG
-        static const fs::path corlib_dir = "debug";
-#else
-        static const fs::path corlib_dir = "release";
-#endif
-
-        tpa_list += fs::absolute(assembly_dir / corlib_dir / "System.Private.CoreLib.dll").string();
         return tpa_list;
     }
 
