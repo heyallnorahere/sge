@@ -21,12 +21,14 @@ namespace sge {
     public:
         static void init();
         static void shutdown();
+        static std::string get_config();
 
         static bool loaded();
         static project& get();
 
         static bool save();
         static bool load(const fs::path& path);
+        static std::optional<size_t> reload_assembly();
 
         project(const project&) = delete;
         project& operator=(const project&) = delete;
@@ -39,6 +41,13 @@ namespace sge {
         fs::path get_directory() { return m_path.parent_path(); }
         fs::path get_asset_dir() { return get_directory() / m_asset_dir; }
         fs::path get_start_scene() { return get_asset_dir() / m_start_scene; }
+        fs::path get_script_project_path() { return get_directory() / "ScriptAssembly.csproj"; }
+
+        fs::path get_assembly_path() {
+            return get_directory() / "bin" / get_config() / "net6.0" / "ScriptAssembly.dll";
+        }
+
+        std::optional<size_t> get_assembly_index() { return m_assembly_index; }
 
     private:
         project() = default;
@@ -46,5 +55,6 @@ namespace sge {
         std::unique_ptr<asset_manager> m_asset_manager;
         fs::path m_path, m_asset_dir, m_start_scene;
         std::string m_name;
+        std::optional<size_t> m_assembly_index;
     };
 } // namespace sge

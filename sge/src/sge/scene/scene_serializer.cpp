@@ -325,12 +325,17 @@ namespace sge {
     void from_json(const json& data, script_component& component) {
         component.class_name = data["script_name"].get<std::string>();
 
-        // todo: make this more dynamic
-        void* app_assembly = script_engine::get_assembly(1);
+        std::optional<size_t> assembly_index = project::get().get_assembly_index();
+        if (!assembly_index.has_value()) {
+            spdlog::warn("there is no app assembly loaded!");
+            return;
+        }
+
+        void* app_assembly = script_engine::get_assembly(assembly_index.value());
         component._class = script_engine::get_class(app_assembly, component.class_name);
 
         json property_data = data["properties"];
-        if (!property_data.is_null()) {
+        if (!property_data.is_null() && component._class != nullptr) {
             script_deserializer deserializer;
             deserializer(property_data, component);
         }

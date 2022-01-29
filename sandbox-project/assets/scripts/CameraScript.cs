@@ -17,16 +17,22 @@
 using SGE;
 using SGE.Components;
 
-namespace ExampleScripts
+namespace Sandbox
 {
-    public sealed class CollisionListener : Script
+    public sealed class CameraScript : Script
     {
-        public void OnCollision(Entity other)
+        public void OnUpdate(Timestep ts)
         {
-            var tag = GetComponent<TagComponent>().Tag;
-            var otherTag = other.GetComponent<TagComponent>().Tag;
+            if (Target is null)
+            {
+                return;
+            }
 
-            Log.Info("{0}: collided with {1}", tag, otherTag);
+            var targetTransform = Target.GetComponent<TransformComponent>();
+            var transform = GetComponent<TransformComponent>();
+            transform.Translation = targetTransform.Translation;
         }
+        
+        public Entity Target { get; set; } = null;
     }
 }

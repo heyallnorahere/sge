@@ -328,9 +328,14 @@ namespace sgm {
         draw_component<script_component>(
             "Script", selection, [this, selection](script_component& component) {
                 // todo: script cache
-                size_t assembly_index = editor_scene::get_assembly_index();
-                void* assembly = script_engine::get_assembly(assembly_index);
+                std::optional<size_t> assembly_index = project::get().get_assembly_index();
+                if (!assembly_index.has_value()) {
+                    ImGui::TextColored(ImVec4(0.9, 0.f, 0.f, 1.f),
+                                       "The project script assembly failed compilation.");
+                    return;
+                }
 
+                void* assembly = script_engine::get_assembly(assembly_index.value());
                 auto is_class_valid = [assembly](const std::string& name) mutable {
                     void* _class = script_engine::get_class(assembly, name);
                     return _class != nullptr;

@@ -58,14 +58,8 @@ add_subdirectory("sgm")
 # managed code
 if(SGE_BUILD_SCRIPTCORE)
     if(MSVC)
-        set(MANAGED_TARGET_NAMES scriptcore example-scripts)
-        foreach(MANAGED_PROJECT ${MANAGED_TARGET_NAMES})
-            include_external_msproject(${MANAGED_PROJECT}
-                "${CMAKE_SOURCE_DIR}/${MANAGED_PROJECT}/${MANAGED_PROJECT}.csproj")
-        endforeach()
-
+        include_external_msproject(scriptcore "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj")
         set_target_properties(scriptcore PROPERTIES FOLDER "core")
-        set_target_properties(example-scripts PROPERTIES FOLDER "examples")
     else()
         find_program(dotnet_EXECUTABLE NAMES dotnet
                      PATHS "/usr/share" "/usr/local/share"
@@ -73,16 +67,14 @@ if(SGE_BUILD_SCRIPTCORE)
                      PATH_SUFFIXES dotnet)
         
         if(NOT ${dotnet_EXECUTABLE} STREQUAL "dotnet_EXECUTABLE-NOTFOUND")
-            add_custom_target(managed-code ALL
+            add_custom_target(scriptcore ALL
                 COMMAND ${dotnet_EXECUTABLE} build -nologo -v:m -c $<CONFIG>
-                "${CMAKE_SOURCE_DIR}/SGECore.sln")
-
-            set(MANAGED_TARGET_NAMES managed-code)
+                "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj")
         endif()
     endif()
 
-    if(DEFINED MANAGED_TARGET_NAMES)
-        add_dependencies(sge ${MANAGED_TARGET_NAMES})
+    if(TARGET scriptcore)
+        add_dependencies(sge scriptcore)
     endif()
 endif()
 

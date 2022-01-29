@@ -18,7 +18,6 @@
 #include "sge/script/script_engine.h"
 #include "sge/script/mono_include.h"
 #include "sge/script/garbage_collector.h"
-#include "sge/script/internal_calls.h"
 #include "sge/script/script_helpers.h"
 
 // todo(nora): don't use mono-private-unstable.h
@@ -125,7 +124,7 @@ namespace sge {
         return index;
     }
 
-    size_t script_engine::load_assembly(const fs::path& path) {
+    std::optional<size_t> script_engine::load_assembly(const fs::path& path) {
         std::string string_path = path.string();
         for (size_t i = 0; i < script_engine_data->assemblies.size(); i++) {
             if (script_engine_data->assemblies[i].path == path) {
@@ -134,34 +133,78 @@ namespace sge {
             }
         }
 
+        std::optional<size_t> assembly_index;
         if (!fs::exists(path)) {
-            throw std::runtime_error("assembly does not exist: " + string_path);
-        }
-
-        assembly_t assembly;
-        MonoImageOpenStatus status;
-
-        assembly.assembly = mono_assembly_open_full(string_path.c_str(), &status, false);
-        assembly.image = mono_assembly_get_image(assembly.assembly);
-
-        if (status != MONO_IMAGE_OK) {
-            std::string error_message = mono_image_strerror(status);
-            throw std::runtime_error("could not open " + string_path + ": " + error_message);
-        }
-
-        auto found_index = find_viable_assembly_index();
-        if (found_index.has_value()) {
-            size_t index = found_index.value();
-            script_engine_data->assemblies[index] = assembly;
-            return index;
+            spdlog::warn("assembly does not exist: {0}", string_path);
         } else {
-            size_t index = script_engine_data->assemblies.size();
-            script_engine_data->assemblies.push_back(assembly);
-            return index;
+            assembly_t assembly;
+            MonoImageOpenStatus status;
+
+            assembly.assembly = mono_assembly_open_full(string_path.c_str(), &status, false);
+            assembly.image = mono_assembly_get_image(assembly.assembly);
+
+            if (status != MONO_IMAGE_OK) {
+                std::string error_message = mono_image_strerror(status);
+                spdlog::warn("could not open {0}: ", string_path, error_message);
+            } else {
+                auto found_index = find_viable_assembly_index();
+                if (found_index.has_value()) {
+                    size_t index = found_index.value();
+                    script_engine_data->assemblies[index] = assembly;
+                    return index;
+                } else {
+                    size_t index = script_engine_data->assemblies.size();
+                    script_engine_data->assemblies.push_back(assembly);
+                    return index;
+                }
+            }
         }
+
+        return assembly_index;
+    }
+
+    bool script_engine::unload_assembly(size_t index) {
+        if (index < script_engine_data->assemblies.size()) {
+            auto& data = script_engine_data->assemblies[index];
+
+            if (data.assembly != nullptr) {
+                garbage_collector::collect();
+                data.assembly = nullptr;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    std::optional<size_t> script_engine::reload_assembly(size_t index) {
+        std::optional<size_t> new_index;
+
+        if (index < script_engine_data->assemblies.size()) {
+            auto& data = script_engine_data->assemblies[index];
+
+            if (data.assembly != nullptr && !data.path.empty()) {
+                fs::path path = data.path;
+                unload_assembly(index);
+
+                new_index = load_assembly(path);
+            }
+        }
+
+        return new_index;
     }
 
     size_t script_engine::get_assembly_count() { return script_engine_data->assemblies.size(); }
+
+    fs::path script_engine::get_assembly_path(size_t index) {
+        fs::path assembly_path;
+
+        if (index < script_engine_data->assemblies.size()) {
+            assembly_path = script_engine_data->assemblies[index].path;
+        }
+
+        return assembly_path;
+    }
 
     void* script_engine::get_assembly(size_t index) {
         if (index >= script_engine_data->assemblies.size()) {
@@ -215,8 +258,7 @@ namespace sge {
 
     void* script_engine::get_class(void* assembly, const class_name_t& name) {
         auto image = (MonoImage*)assembly;
-        return mono_class_from_name(image, name.namespace_name.c_str(),
-                                    name.class_name.c_str());
+        return mono_class_from_name(image, name.namespace_name.c_str(), name.class_name.c_str());
     }
 
     void* script_engine::get_class_from_object(void* object) {
@@ -506,7 +548,7 @@ namespace sge {
     void* script_engine::to_reflection_property(void* property) {
         auto mono_property = (MonoProperty*)property;
         auto mono_class = mono_property_get_parent(mono_property);
-        
+
         return mono_property_get_object(script_engine_data->root_domain, mono_class, mono_property);
     }
 

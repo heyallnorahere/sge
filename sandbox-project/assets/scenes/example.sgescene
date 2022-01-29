@@ -19,7 +19,7 @@
             },
             "script": {
                 "properties": null,
-                "script_name": "ExampleScripts.CollisionListener"
+                "script_name": "Sandbox.CollisionListener"
             },
             "sprite": {
                 "color": [
@@ -98,7 +98,7 @@
                 "properties": {
                     "Target": 638124786110313657
                 },
-                "script_name": "ExampleScripts.CameraScript"
+                "script_name": "Sandbox.CameraScript"
             },
             "sprite": null,
             "tag": "Camera",

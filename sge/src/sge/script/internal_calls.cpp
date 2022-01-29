@@ -15,7 +15,6 @@
 */
 
 #include "sgepch.h"
-#include "sge/script/internal_calls.h"
 #include "sge/script/script_engine.h"
 #include "sge/script/script_helpers.h"
 #include "sge/scene/scene.h"
@@ -305,12 +304,11 @@ namespace sge {
         }
     } // namespace internal_script_calls
 
-    void register_internal_script_calls() {
+    void script_engine::register_internal_script_calls() {
         register_component_types();
 
 #define REGISTER_CALL(name)                                                                        \
-    script_engine::register_internal_call("SGE.InternalCalls::" #name,                             \
-                                          (void*)internal_script_calls::name)
+    register_internal_call("SGE.InternalCalls::" #name, (void*)internal_script_calls::name)
 
         // scene
         REGISTER_CALL(CreateEntity);
