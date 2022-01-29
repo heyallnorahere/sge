@@ -24,7 +24,8 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y mesa-common-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev cmake build-essential
+          sudo apt-get install -y mesa-common-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev cmake build-essential libc-dev-bin
       - name: install dependencies (macos)
         if: ${{ matrix.os-name == 'macos-latest' }}
         shell: bash
