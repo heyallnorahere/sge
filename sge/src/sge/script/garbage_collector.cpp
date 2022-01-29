@@ -44,7 +44,6 @@ namespace sge {
             }
         }
 
-        collect(true);
         gc_data.reset();
     }
 
