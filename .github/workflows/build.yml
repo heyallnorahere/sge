@@ -41,5 +41,6 @@ jobs:
       - name: build
         shell: bash
         run: |
+          dotnet restore SGECore.sln
           cmake --preset default -DCMAKE_BUILD_TYPE=Release
           cmake --build --preset default

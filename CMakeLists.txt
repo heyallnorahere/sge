@@ -57,26 +57,20 @@ add_subdirectory("sgm")
 
 # managed code
 if(SGE_BUILD_SCRIPTCORE)
-    find_program(dotnet_EXECUTABLE NAMES dotnet
-                 PATHS "/usr/share" "/usr/local/share"
-                       "C:\\Program Files" "C:\\Program Files (x86)"
-                 PATH_SUFFIXES dotnet)
-                 
     if(MSVC)
-        add_custom_target(nuget-restore ALL COMMAND ${dotnet_EXECUTABLE} restore
-            -v:m "${CMAKE_SOURCE_DIR}/SGECore.sln")
-        set_target_properties(nuget-restore PROPERTIES FOLDER "dependencies")
-
         set(MANAGED_TARGET_NAMES scriptcore example-scripts)
         foreach(MANAGED_PROJECT ${MANAGED_TARGET_NAMES})
             include_external_msproject(${MANAGED_PROJECT}
                 "${CMAKE_SOURCE_DIR}/${MANAGED_PROJECT}/${MANAGED_PROJECT}.csproj")
-            add_dependencies(${MANAGED_PROJECT} nuget-restore)
         endforeach()
 
         set_target_properties(scriptcore PROPERTIES FOLDER "core")
         set_target_properties(example-scripts PROPERTIES FOLDER "examples")
     else()
+        find_program(dotnet_EXECUTABLE NAMES dotnet
+                     PATHS "/usr/share" "/usr/local/share"
+                           "C:\\Program Files" "C:\\Program Files (x86)"
+                     PATH_SUFFIXES dotnet)
         
         if(NOT ${dotnet_EXECUTABLE} STREQUAL "dotnet_EXECUTABLE-NOTFOUND")
             add_custom_target(managed-code ALL
