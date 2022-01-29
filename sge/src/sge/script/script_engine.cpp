@@ -20,6 +20,10 @@
 #include "sge/script/garbage_collector.h"
 #include "sge/script/internal_calls.h"
 #include "sge/script/script_helpers.h"
+
+// todo(nora): don't use mono-private-unstable.h
+#include <mono/jit/mono-private-unstable.h>
+
 namespace sge {
     struct assembly_t {
         MonoAssembly* assembly = nullptr;
@@ -33,16 +37,54 @@ namespace sge {
     };
     static std::unique_ptr<script_engine_data_t> script_engine_data;
 
+    static std::string build_tpa_list() {
+        fs::path assembly_dir = fs::absolute(fs::current_path() / "assets" / "dotnet");
+        std::string tpa_list;
+
+#ifdef SGE_PLATFORM_WINDOWS
+        static constexpr char separator = ';';
+#else
+        static constexpr char separator = ':';
+#endif
+
+        for (const auto& entry : fs::directory_iterator(assembly_dir)) {
+            if (entry.is_directory() || entry.path().extension() != ".dll") {
+                continue;
+            }
+
+            tpa_list += fs::absolute(entry.path()).string() + separator;
+        }
+
+#ifdef SGE_DEBUG
+        static const fs::path corlib_dir = "debug";
+#else
+        static const fs::path corlib_dir = "release";
+#endif
+
+        tpa_list += fs::absolute(assembly_dir / corlib_dir / "System.Private.CoreLib.dll").string();
+        return tpa_list;
+    }
+
     void script_engine::init() {
         if (script_engine_data) {
             throw std::runtime_error("the script engine has already been initialized!");
         }
         script_engine_data = std::make_unique<script_engine_data_t>();
-        mono_config_parse(nullptr);
 
-        // todo(nora): build tpa list of .net 6 assemblies
-        auto assembly_path = (fs::current_path() / "assets").string();
-        mono_set_assemblies_path(assembly_path.c_str());
+        {
+            std::unordered_map<std::string, std::string> properties;
+            properties["TRUSTED_PLATFORM_ASSEMBLIES"] = build_tpa_list();
+
+            std::vector<const char*> keys, values;
+            for (const auto& [key, value] : properties) {
+                keys.push_back(key.c_str());
+                values.push_back(value.c_str());
+            }
+
+            if (monovm_initialize(properties.size(), keys.data(), values.data()) != 0) {
+                throw std::runtime_error("could not initialize the mono VM!");
+            }
+        }
 
         script_engine_data->root_domain = mono_jit_init("SGE");
         garbage_collector::init();

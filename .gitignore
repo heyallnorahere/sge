@@ -4,6 +4,7 @@ build/
 .vs/
 obj/
 bin/
+!vendor/**/bin
 assemblies/
 mono_crash*.json
 vendor/nvidia-aftermath

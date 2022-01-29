@@ -24,7 +24,6 @@ set(SGE_PLATFORM_DESKTOP ${SGE_PLATFORM_WINDOWS} OR ${SGE_PLATFORM_LINUX} OR ${S
 
 # find packages
 find_package(Vulkan)
-find_package(Mono REQUIRED)
 find_package(Aftermath)
 
 # options
@@ -40,7 +39,7 @@ add_subdirectory("vendor")
 # mono DLL macro
 macro(copy_required_dlls target_name)
     if(WIN32)
-        set(DLLS_TO_COPY ${Mono_DLL})
+        set(DLLS_TO_COPY "${CMAKE_SOURCE_DIR}/vendor/mono/bin/windows/coreclr.dll")
         if(SGE_USE_AFTERMATH)
             list(APPEND DLLS_TO_COPY ${Aftermath_DLLS})
         endif()
@@ -67,10 +66,39 @@ macro(managed_target target_name project_file)
 endmacro()
 
 # sge targets
-add_subdirectory("scriptcore")
 add_subdirectory("sge")
 add_subdirectory("sgm")
-add_subdirectory("example-scripts")
+
+# managed code
+if(SGE_BUILD_SCRIPTCORE)
+    if(MSVC)
+        set(MANAGED_TARGET_NAMES scriptcore example-scripts)
+        foreach(MANAGED_PROJECT ${MANAGED_TARGET_NAMES})
+            include_external_msproject(${MANAGED_PROJECT}
+                "${CMAKE_SOURCE_DIR}/${MANAGED_PROJECT}/${MANAGED_PROJECT}.csproj")
+        endforeach()
+
+        set_target_properties(scriptcore PROPERTIES FOLDER "core")
+        set_target_properties(example-scripts PROPERTIES FOLDER "examples")
+    else()
+        find_program(dotnet_EXECUTABLE NAMES dotnet
+                     PATHS "/usr/share" "/usr/local/share"
+                           "C:\\Program Files" "C:\\Program Files (x86)"
+                     PATH_SUFFIXES dotnet)
+        
+        if(NOT ${dotnet_EXECUTABLE} STREQUAL "dotnet_EXECUTABLE-NOTFOUND")
+            add_custom_target(managed-code ALL
+                COMMAND ${dotnet_EXECUTABLE} build -nologo -v:m -c $<CONFIG>
+                "${CMAKE_SOURCE_DIR}/SGECore.sln")
+
+            set(MANAGED_TARGET_NAMES managed-code)
+        endif()
+    endif()
+
+    if(DEFINED MANAGED_TARGET_NAMES)
+        add_dependencies(sge ${MANAGED_TARGET_NAMES})
+    endif()
+endif()
 
 if(MSVC)
     set_directory_properties(PROPERTIES VS_STARTUP_PROJECT sgm)

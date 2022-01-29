@@ -4,8 +4,20 @@ cmake_minimum_required(VERSION 3.10)
 set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor")
 set(ASSET_DIR "${CMAKE_SOURCE_DIR}/assets")
 set(SGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-set(SGE_INCLUDES ${SGE_DIR} ${Mono_INCLUDE_DIR} "${VENDOR_DIR}/glm")
-set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${Mono_LIBRARY})
+
+# find mono libs
+if(SGE_PLATFORM_WINDOWS)
+    set(MONO_PLATFORM windows)
+elseif(SGE_PLATFORM_MACOSX)
+    set(MONO_PLATFORM osx)
+elseif(SGE_PLATFORM_LINUX)
+    set(MONO_PLATFORM linux)
+endif()
+file(GLOB MONO_LIBS CONFIGURE_DEPENDS "${VENDOR_DIR}/mono/lib/${MONO_PLATFORM}/*")
+
+# base lists
+set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/mono/include" "${VENDOR_DIR}/glm" "${VENDOR_DIR}/include")
+set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${MONO_LIBS})
 
 # nvidia nsight aftermath
 if(SGE_USE_AFTERMATH)
