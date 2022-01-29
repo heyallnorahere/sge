@@ -16,7 +16,7 @@ endif()
 file(GLOB MONO_LIBS CONFIGURE_DEPENDS "${VENDOR_DIR}/mono/lib/${MONO_PLATFORM}/*")
 
 # base lists
-set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/mono/include" "${VENDOR_DIR}/glm" "${VENDOR_DIR}/include")
+set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/mono/include" "${VENDOR_DIR}/glm")
 set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${MONO_LIBS})
 
 # nvidia nsight aftermath
