@@ -2,10 +2,10 @@ name: build
 on: [ push ]
 jobs:
   build:
-    runs-on: ${{ matrix.os-name }}-latest
+    runs-on: ${{ matrix.os-name }}
     strategy:
       matrix:
-        os-name: [ ubuntu, windows, macos ]
+        os-name: [ ubuntu-latest, windows-2022, macos-latest ]
     steps:
       - name: checkout
         uses: actions/checkout@v2
