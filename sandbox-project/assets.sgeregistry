@@ -1,12 +1,12 @@
 [
     {
-        "guid": 14449034182777507228,
-        "path": "images/tux.png",
-        "type": "texture_2d"
-    },
-    {
         "guid": null,
         "path": "scenes/example.sgescene",
         "type": null
+    },
+    {
+        "guid": 14449034182777507228,
+        "path": "images/tux.png",
+        "type": "texture_2d"
     }
 ]
