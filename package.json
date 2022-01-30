@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@entrostat/get-project-version": "^1.0.1"
+  }
+}

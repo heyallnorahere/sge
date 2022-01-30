@@ -24,7 +24,7 @@ endif()
 # base lists
 set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/mono/include" "${VENDOR_DIR}/glm")
 set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${MONO_LIBS})
-set(SGE_DEFINES SGE_CPU_ARCHITECTURE="${SGE_CPU_ARCHITECTURE}")
+set(SGE_DEFINES SGE_VERSION="${SGE_VERSION}" SGE_CPU_ARCHITECTURE="${SGE_CPU_ARCHITECTURE}")
 
 # nvidia nsight aftermath
 if(SGE_USE_AFTERMATH)

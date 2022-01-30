@@ -25,6 +25,8 @@
 
 extern sge::application* create_app_instance();
 namespace sge {
+    std::string application::get_engine_version() { return SGE_VERSION; }
+
     static std::unique_ptr<application> app_instance;
 
     void application::create() {
@@ -61,6 +63,7 @@ namespace sge {
     }
 
     void application::init() {
+        spdlog::info("using SGE v{0}", get_engine_version());
         spdlog::info("initializing application: {0}...", m_title);
 
         input::init();

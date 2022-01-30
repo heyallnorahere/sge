@@ -24,6 +24,8 @@ namespace sge {
     class imgui_layer;
     class application {
     public:
+        static std::string get_engine_version();
+
         static void create();
         static void destroy();
         static application& get();

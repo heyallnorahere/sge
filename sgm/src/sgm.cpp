@@ -21,7 +21,7 @@
 #include "icon_directory.h"
 #include "texture_cache.h"
 namespace sgm {
-    static const std::string sgm_title = "Simple Game Maker {version}";
+    static const std::string sgm_title = "Simple Game Maker v" + application::get_engine_version();
 
     class sgm_app : public application {
     public:

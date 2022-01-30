@@ -146,15 +146,12 @@ namespace sgm {
                 ImGui::CloseCurrentPopup();
             }
 
-            static const std::string version_string = "SGE version " + std::string("{version}");
+            static const std::string version_string = "SGE v" + application::get_engine_version();
             float version_text_width = ImGui::CalcTextSize(version_string.c_str()).x;
 
-            float offset =
-                about_popup_width -
-                ((style.FramePadding.x + style.WindowPadding.x) * 2.f + version_text_width);
-            ImGui::SameLine(offset);
-
+            ImGui::SameLine(about_popup_width - (style.FramePadding.x * 2.f + version_text_width));
             ImGui::TextColored(ImVec4(0.3f, 0.3f, 0.3f, 1.f), "%s", version_string.c_str());
+
             ImGui::EndPopup();
         }
     }

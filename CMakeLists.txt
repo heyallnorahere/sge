@@ -4,12 +4,15 @@ if(NOT ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     message(FATAL_ERROR "SGE must be built as a standalone project!")
 endif()
 
+# todo: from git tag
+set(SGE_VERSION 0.0.1)
+
 set(SGE_LANGUAGES C CXX)
 if(APPLE AND ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
     list(APPEND SGE_LANGUAGES OBJC OBJCXX)
 endif()
 
-project(sge LANGUAGES ${SGE_LANGUAGES})
+project(sge VERSION ${SGE_VERSION} LANGUAGES ${SGE_LANGUAGES})
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # platform detection

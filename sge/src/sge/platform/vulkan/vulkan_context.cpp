@@ -74,8 +74,14 @@ namespace sge {
         auto app_info = vk_init<VkApplicationInfo>(VK_STRUCTURE_TYPE_APPLICATION_INFO);
         app_info.apiVersion = data->vulkan_version;
 
+        uint32_t major, minor, patch;
+        std::string version_string = application::get_engine_version();
+        if (sscanf(version_string.c_str(), "%u.%u.%u", &major, &minor, &patch) <= 0) {
+            throw std::runtime_error("invalid version string!");
+        }
+
         app_info.pEngineName = "sge";
-        app_info.engineVersion = VK_MAKE_VERSION(0, 0, 1); // todo: cmake version
+        app_info.engineVersion = VK_MAKE_VERSION(major, minor, patch); // todo: cmake version
 
         auto& app = application::get();
         app_info.pApplicationName = app.get_title().c_str();
