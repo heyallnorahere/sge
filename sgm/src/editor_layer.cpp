@@ -57,6 +57,7 @@ namespace sgm {
         }
 
         texture_cache::new_frame();
+        update_popups();
         update_dockspace();
 
         for (auto& _panel : m_panels) {
@@ -120,6 +121,54 @@ namespace sgm {
         }
 
         return false;
+    }
+
+    void editor_layer::update_popups() {
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        auto setup_popup = [](float width = 0.f, float height = 0.f) {
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_Appearing);
+        };
+
+        static constexpr float about_popup_width = 600.f;
+        setup_popup(about_popup_width);
+        if (begin_popup("About")) {
+            ImGui::TextWrapped(
+                "Simple Game Engine is an open source 2D game engine focused on easy and "
+                "streamlined development of video games.");
+
+            ImGui::TextWrapped("Please report issues to "
+                               "https://github.com/yodasoda1219/sge/issues");
+
+            if (ImGui::Button("Close")) {
+                ImGui::CloseCurrentPopup();
+            }
+
+            static const std::string version_string = "SGE version " + std::string("{version}");
+            float version_text_width = ImGui::CalcTextSize(version_string.c_str()).x;
+
+            float offset =
+                about_popup_width -
+                ((style.FramePadding.x + style.WindowPadding.x) * 2.f + version_text_width);
+            ImGui::SameLine(offset);
+
+            ImGui::TextColored(ImVec4(0.3f, 0.3f, 0.3f, 1.f), "%s", version_string.c_str());
+            ImGui::EndPopup();
+        }
+    }
+
+    void editor_layer::open_popup(const std::string& id) { m_opened_popups.insert(id); }
+
+    bool editor_layer::begin_popup(const std::string& id) {
+        if (m_opened_popups.find(id) != m_opened_popups.end()) {
+            m_opened_popups.erase(id);
+
+            ImGui::OpenPopup(id.c_str());
+        }
+
+        return ImGui::BeginPopup(id.c_str());
     }
 
     void editor_layer::update_dockspace() {
@@ -223,6 +272,14 @@ namespace sgm {
                 for (auto& _panel : m_panels) {
                     std::string title = _panel->get_title();
                     ImGui::MenuItem(title.c_str(), nullptr, &_panel->open());
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Help")) {
+                if (ImGui::MenuItem("About")) {
+                    open_popup("About");
                 }
 
                 ImGui::EndMenu();

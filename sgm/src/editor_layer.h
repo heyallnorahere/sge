@@ -37,6 +37,10 @@ namespace sgm {
 
         bool on_key(key_pressed_event& e);
 
+        void update_popups();
+        void open_popup(const std::string& id);
+        bool begin_popup(const std::string& id);
+
         void update_dockspace();
         void update_toolbar();
         void update_menu_bar();
@@ -48,5 +52,6 @@ namespace sgm {
 
         std::vector<std::unique_ptr<panel>> m_panels;
         std::optional<fs::path> m_scene_path;
+        std::unordered_set<std::string> m_opened_popups;
     };
 } // namespace sgm
