@@ -564,20 +564,94 @@ namespace sge {
         renderer::end_scene();
     }
 
+    static void create_event_class_map(std::unordered_map<event_id, void*>& map) {
+        static const std::unordered_map<event_id, std::string> names = {
+            { event_id::window_close, "WindowClose" },
+            { event_id::window_resize, "WindowResize" },
+            { event_id::key_pressed, "KeyPressed" },
+            { event_id::key_released, "KeyReleased" },
+            { event_id::key_typed, "KeyTyped" },
+            { event_id::mouse_moved, "MouseMoved" },
+            { event_id::mouse_scrolled, "MouseScrolled" },
+            { event_id::mouse_button, "MouseButton" }
+        };
+
+        class_name_t name_data;
+        name_data.namespace_name = "SGE.Events";
+
+        void* core = script_engine::get_assembly(0);
+        for (const auto& [id, name] : names) {
+            name_data.class_name = name + "Event";
+            void* _class = script_engine::get_class(core, name_data);
+            
+            if (_class != nullptr) {
+                map.insert(std::make_pair(id, _class));
+            }
+        }
+    }
+
     void scene::on_event(event& e) {
-        event_dispatcher dispatcher(e);
+        // native scripts
+        {
+            auto view = m_registry.view<native_script_component>();
+            for (auto entt_entity : view) {
+                if (e.handled) {
+                    break;
+                }
 
-        auto view = m_registry.view<native_script_component>();
-        for (auto entt_entity : view) {
-            entity entity(entt_entity, this);
-            auto& nsc = entity.get_component<native_script_component>();
+                entity entity(entt_entity, this);
+                auto& nsc = entity.get_component<native_script_component>();
 
-            if (nsc.script == nullptr && nsc.instantiate != nullptr) {
-                nsc.instantiate(&nsc, entity);
+                if (nsc.script == nullptr && nsc.instantiate != nullptr) {
+                    nsc.instantiate(&nsc, entity);
+                }
+
+                if (nsc.script != nullptr) {
+                    nsc.script->on_event(e);
+                }
+            }
+        }
+
+        // managed scripts
+        {
+            uint32_t event_handle = 0;
+
+            auto view = m_registry.view<script_component>();
+            for (entt::entity id : view) {
+                if (e.handled) {
+                    continue;
+                }
+
+                entity current(id, this);
+                auto& sc = current.get_component<script_component>();
+                if (sc._class == nullptr) {
+                    continue;
+                }
+
+                static const std::string event_name = "OnEvent(Event)";
+                void* OnEvent = script_engine::get_method(sc._class, event_name);
+                if (OnEvent == nullptr) {
+                    continue;
+                }
+
+                if (event_handle == 0) {
+                    void* event_instance = script_helpers::create_event_object(e);
+                    if (event_instance == nullptr) {
+                        break;
+                    }
+
+                    event_handle = garbage_collector::create_ref(event_instance);
+                }
+
+                verify_script(current);
+                void* script_instance = garbage_collector::get_ref_data(sc.gc_handle);
+
+                void* event_instance = garbage_collector::get_ref_data(event_handle);
+                script_engine::call_method(script_instance, OnEvent, event_instance);
             }
 
-            if (nsc.script != nullptr) {
-                nsc.script->on_event(e);
+            if (event_handle != 0) {
+                garbage_collector::destroy_ref(event_handle);
             }
         }
     }

@@ -51,12 +51,17 @@ namespace sge {
                 continue;
             }
 
-            if (!tpa_list.empty()) {
-                tpa_list += separator;
-            }
-
-            tpa_list += fs::absolute(entry.path()).string();
+            tpa_list += fs::absolute(entry.path()).string() + separator;
         }
+
+#ifdef SGE_PLATFORM_WINDOWS
+        static const fs::path corlib_platform = "windows";
+#else
+        static const fs::path corlib_platform = "unix";
+#endif
+
+        fs::path corlib_path = assembly_dir / corlib_platform / "System.Private.CoreLib.dll";
+        tpa_list += fs::absolute(corlib_path).string();
 
         return tpa_list;
     }
@@ -266,6 +271,16 @@ namespace sge {
         return mono_object_get_class(mono_object);
     }
 
+    bool script_engine::is_value_type(void* _class) {
+        auto mono_class = (MonoClass*)_class;
+        return mono_class_is_valuetype(mono_class);
+    }
+
+    size_t script_engine::get_type_size(void* _class) {
+        auto mono_class = (MonoClass*)_class;
+        return (size_t)mono_class_data_size(mono_class);
+    }
+
     void* script_engine::alloc_object(void* _class) {
         auto mono_class = (MonoClass*)_class;
 
@@ -275,6 +290,14 @@ namespace sge {
         }
 
         return object;
+    }
+
+    void* script_engine::clone_object(void* original) {
+        if (original == nullptr) {
+            return nullptr;
+        }
+
+        return mono_object_clone((MonoObject*)original);
     }
 
     void script_engine::init_object(void* object) {

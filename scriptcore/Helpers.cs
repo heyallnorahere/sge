@@ -15,16 +15,78 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace SGE
 {
-    internal static class Helpers
+    public static class Helpers
     {
-        public static bool PropertyHasAttribute(PropertyInfo property, Type attributeType)
+        static Helpers()
+        {
+            mEventTypes = new Dictionary<EventID, Type>();
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes())
+                {
+                    var attribute = type.GetCustomAttribute<EventIDAttribute>();
+                    if (attribute != null && type.Extends(typeof(Event)))
+                    {
+                        if (mEventTypes.ContainsKey(attribute.ID))
+                        {
+                            continue;
+                        }
+
+                        mEventTypes.Add(attribute.ID, type);
+                    }
+                }
+            }
+        }
+
+        public static bool Extends(this Type derived, Type baseType)
+        {
+            Type currentBaseType = derived.BaseType;
+            if (currentBaseType == baseType)
+            {
+                return true;
+            }
+            else if (currentBaseType != null)
+            {
+                return currentBaseType.Extends(baseType);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        internal static bool PropertyHasAttribute(PropertyInfo property, Type attributeType)
         {
             Attribute attribute = property.GetCustomAttribute(attributeType);
             return attribute != null;
         }
+
+        internal static Event CreateEvent(IntPtr address, EventID id)
+        {
+            if (!mEventTypes.ContainsKey(id))
+            {
+                Log.Error("Couldn't find the object type for an event of type: {0}", id);
+                return null;
+            }
+
+            Type type = mEventTypes[id];
+            ConstructorInfo constructor = type.GetConstructor(Array.Empty<Type>());
+            if (constructor == null)
+            {
+                Log.Error("Couldn't find the constructor for type: {0}", type.FullName);
+                return null;
+            }
+
+            var @event = (Event)constructor.Invoke(null);
+            @event.mAddress = address;
+            return @event;
+        }
+
+        private static readonly Dictionary<EventID, Type> mEventTypes;
     }
 }

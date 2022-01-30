@@ -66,7 +66,11 @@ namespace sge {
         static void* get_class(void* assembly, const class_name_t& name);
         static void* get_class_from_object(void* object);
 
+        static bool is_value_type(void* _class);
+        static size_t get_type_size(void* _class);
+
         static void* alloc_object(void* _class);
+        static void* clone_object(void* original);
         static void init_object(void* object);
         static const void* unbox_object(void* object);
 

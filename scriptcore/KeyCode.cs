@@ -1,4 +1,4 @@
-/*
+﻿/*
    Copyright 2022 Nora Beda and SGE contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +14,10 @@
    limitations under the License.
 */
 
-#pragma once
-namespace sge {
-    enum class key_code : int32_t {
+namespace SGE
+{
+    public enum KeyCode : int
+    {
         SPACE = 0,
         APOSTROPHE,
         COMMA,
@@ -106,7 +107,10 @@ namespace sge {
         RIGHT_SHIFT,
         RIGHT_CONTROL,
         RIGHT_ALT
-    };
+    }
 
-    enum class mouse_button : int32_t { left = 0, right, middle };
-} // namespace sge
+    public enum MouseButton : int
+    {
+        Left = 0, Right, Middle
+    }
+}

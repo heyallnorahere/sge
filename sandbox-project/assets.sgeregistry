@@ -1,8 +1,8 @@
 [
     {
-        "guid": 14449034182777507228,
-        "path": "images/tux.png",
-        "type": "texture_2d"
+        "guid": null,
+        "path": "scripts/CameraScript.cs",
+        "type": null
     },
     {
         "guid": null,
@@ -10,9 +10,9 @@
         "type": null
     },
     {
-        "guid": null,
-        "path": "scripts/CameraScript.cs",
-        "type": null
+        "guid": 14449034182777507228,
+        "path": "images/tux.png",
+        "type": "texture_2d"
     },
     {
         "guid": null,

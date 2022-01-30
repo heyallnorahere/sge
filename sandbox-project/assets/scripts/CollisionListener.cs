@@ -16,6 +16,7 @@
 
 using SGE;
 using SGE.Components;
+using SGE.Events;
 
 namespace Sandbox
 {
@@ -27,6 +28,27 @@ namespace Sandbox
             var otherTag = other.GetComponent<TagComponent>().Tag;
 
             Log.Info("{0}: collided with {1}", tag, otherTag);
+            TotalCollisions++;
+            Log.Info("Collided with an object {0} total times.", TotalCollisions);
         }
+
+        public void OnEvent(Event @event)
+        {
+            var dispatcher = new EventDispatcher(@event);
+            dispatcher.Dispatch<KeyPressedEvent>(OnKey);
+        }
+
+        private bool OnKey(KeyPressedEvent @event)
+        {
+            if (@event.RepeatCount > 0 || @event.Key != KeyCode.C)
+            {
+                return false;
+            }
+
+            Log.Info("Collided with an object {0} total times.", TotalCollisions);
+            return true;
+        }
+
+        public int TotalCollisions { get; set; } = 0;
     }
 }

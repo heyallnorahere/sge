@@ -20,6 +20,7 @@
 #include "sge/scene/scene.h"
 #include "sge/scene/entity.h"
 #include "sge/scene/components.h"
+#include "sge/core/input.h"
 namespace sge {
     struct component_callbacks_t {
         std::function<void*(entity)> get;
@@ -302,6 +303,56 @@ namespace sge {
             std::string string = script_engine::from_managed_string(message);
             spdlog::error(string);
         }
+
+        static bool GetKey(key_code key) { return input::get_key(key); }
+        static bool GetMouseButton(mouse_button button) { return input::get_mouse_button(button); }
+
+        static void GetMousePosition(glm::vec2* position) {
+            *position = input::get_mouse_position();
+        }
+
+        static bool IsEventHandled(event* address) { return address->handled; }
+        static void SetEventHandled(event* address, bool handled) { address->handled = handled; }
+
+        static int32_t GetResizeWidth(window_resize_event* address) {
+            return (int32_t)address->get_width();
+        }
+
+        static int32_t GetResizeHeight(window_resize_event* address) {
+            return (int32_t)address->get_height();
+        }
+
+        static void GetPressedEventKey(key_pressed_event* address, key_code* key) {
+            *key = address->get_key();
+        }
+
+        static int32_t GetRepeatCount(key_pressed_event* address) {
+            return (int32_t)address->get_repeat_count();
+        }
+
+        static void GetReleasedEventKey(key_released_event* address, key_code* key) {
+            *key = address->get_key();
+        }
+
+        static void GetTypedEventKey(key_typed_event* address, key_code* key) {
+            *key = address->get_key();
+        }
+
+        static void GetEventMousePosition(mouse_moved_event* address, glm::vec2* position) {
+            *position = address->get_position();
+        }
+
+        static void GetScrollOffset(mouse_scrolled_event* address, glm::vec2* position) {
+            *position = address->get_offset();
+        }
+
+        static void GetEventMouseButton(mouse_button_event* address, mouse_button* button) {
+            *button = address->get_button();
+        }
+
+        static bool GetMouseButtonReleased(mouse_button_event* address) {
+            return address->get_released();
+        }
     } // namespace internal_script_calls
 
     void script_engine::register_internal_script_calls() {
@@ -375,6 +426,25 @@ namespace sge {
         REGISTER_CALL(LogInfo);
         REGISTER_CALL(LogWarn);
         REGISTER_CALL(LogError);
+
+        // input
+        REGISTER_CALL(GetKey);
+        REGISTER_CALL(GetMouseButton);
+        REGISTER_CALL(GetMousePosition);
+
+        // events
+        REGISTER_CALL(IsEventHandled);
+        REGISTER_CALL(SetEventHandled);
+        REGISTER_CALL(GetResizeWidth);
+        REGISTER_CALL(GetResizeHeight);
+        REGISTER_CALL(GetPressedEventKey);
+        REGISTER_CALL(GetRepeatCount);
+        REGISTER_CALL(GetReleasedEventKey);
+        REGISTER_CALL(GetTypedEventKey);
+        REGISTER_CALL(GetEventMousePosition);
+        REGISTER_CALL(GetScrollOffset);
+        REGISTER_CALL(GetEventMouseButton);
+        REGISTER_CALL(GetMouseButtonReleased);
 
 #undef REGISTER_CALL
     }

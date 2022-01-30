@@ -69,12 +69,6 @@ namespace sge {
         }
     }
 
-    asset_registry::~asset_registry() {
-        if (!m_path.empty()) {
-            save();
-        }
-    }
-
     void asset_registry::load() {
         m_mutex.lock();
         m_assets.clear();

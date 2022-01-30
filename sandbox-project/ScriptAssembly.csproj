@@ -5,10 +5,11 @@
         <RootNamespace>Sandbox</RootNamespace>
         <TargetDir>$(ProjectDir)\bin</TargetDir>
         <TargetFramework>net6.0</TargetFramework>
+        <Platforms>x64;ARM64</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\scriptcore\scriptcore.csproj" />
+        <Reference Include="..\assemblies\SGE.Scriptcore.dll" />
     </ItemGroup>
 
 </Project>

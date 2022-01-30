@@ -63,20 +63,28 @@ namespace sge {
                     continue;
                 }
 
+                void* property_type = script_engine::get_property_type(property);
                 void* value = script_engine::get_property_value(src_instance, property);
-                if (script_engine::get_property_type(property) != entity_class ||
-                    value == nullptr) {
-                    script_engine::set_property_value(dst_instance, property, value);
+
+                if (script_engine::is_value_type(property_type)) {
+                    // good enough for now
+                    const void* data = script_engine::unbox_object(value);
+                    script_engine::set_property_value(dst_instance, property, (void*)data);
                 } else {
-                    entity native_entity = script_helpers::get_entity_from_object(value);
+                    if (property_type != entity_class || value == nullptr) {
+                        void* new_value = script_engine::clone_object(value);
+                        script_engine::set_property_value(dst_instance, property, new_value);
+                    } else {
+                        entity native_entity = script_helpers::get_entity_from_object(value);
 
-                    entity found_entity = dst_scene->find_guid(native_entity.get_guid());
-                    if (!found_entity) {
-                        throw std::runtime_error("script_component did not clone correctly!");
+                        entity found_entity = dst_scene->find_guid(native_entity.get_guid());
+                        if (!found_entity) {
+                            throw std::runtime_error("script_component did not clone correctly!");
+                        }
+
+                        void* entity_object = script_helpers::create_entity_object(found_entity);
+                        script_engine::set_property_value(dst_instance, property, entity_object);
                     }
-
-                    void* entity_object = script_helpers::create_entity_object(found_entity);
-                    script_engine::set_property_value(dst_instance, property, entity_object);
                 }
             }
         }

@@ -22,7 +22,7 @@ namespace sge {
     public:
         asset_registry() = default;
         asset_registry(const fs::path& path) { set_path(path); }
-        ~asset_registry();
+        ~asset_registry() = default;
 
         asset_registry(const asset_registry&) = delete;
         asset_registry& operator=(const asset_registry&) = delete;

@@ -1,4 +1,4 @@
-/*
+﻿/*
    Copyright 2022 Nora Beda and SGE contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,29 +14,21 @@
    limitations under the License.
 */
 
-#pragma once
-#include "sge/events/event.h"
-namespace sge {
-    class window_close_event : public event {
-    public:
-        window_close_event() = default;
+namespace SGE
+{
+    public static class Input
+    {
+        public static bool GetKey(KeyCode key) => InternalCalls.GetKey(key);
+        public static bool GetMouseButton(MouseButton button) => InternalCalls.GetMouseButton(button);
 
-        EVENT_ID_DECL(window_close)
-    };
-
-    class window_resize_event : public event {
-    public:
-        window_resize_event(uint32_t width, uint32_t height) {
-            m_width = width;
-            m_height = height;
+        public static Vector2 MousePosition
+        {
+            get
+            {
+                Vector2 position;
+                InternalCalls.GetMousePosition(out position);
+                return position;
+            }
         }
-
-        uint32_t get_width() { return m_width; }
-        uint32_t get_height() { return m_height; }
-
-        EVENT_ID_DECL(window_resize)
-
-    private:
-        uint32_t m_width, m_height;
-    };
-} // namespace sge
+    }
+}

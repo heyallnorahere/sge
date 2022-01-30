@@ -135,5 +135,39 @@ namespace SGE
         public static extern void LogWarn(string message);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void LogError(string message);
+
+        // input
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetKey(KeyCode key);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetMouseButton(MouseButton button);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetMousePosition(out Vector2 position);
+
+        // events
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool IsEventHandled(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetEventHandled(IntPtr address, bool handled);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetResizeWidth(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetResizeHeight(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetPressedEventKey(IntPtr address, out KeyCode key);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetRepeatCount(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetReleasedEventKey(IntPtr address, out KeyCode key);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetTypedEventKey(IntPtr address, out KeyCode key);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetEventMousePosition(IntPtr address, out Vector2 position);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetScrollOffset(IntPtr address, out Vector2 offset);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetEventMouseButton(IntPtr address, out MouseButton button);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetMouseButtonReleased(IntPtr address);
     }
 }
