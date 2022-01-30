@@ -29,7 +29,6 @@ namespace Sandbox
 
             Log.Info("{0}: collided with {1}", tag, otherTag);
             TotalCollisions++;
-            Log.Info("Collided with an object {0} total times.", TotalCollisions);
         }
 
         public void OnEvent(Event @event)
@@ -45,7 +44,9 @@ namespace Sandbox
                 return false;
             }
 
-            Log.Info("Collided with an object {0} total times.", TotalCollisions);
+            string tag = GetComponent<TagComponent>().Tag;
+            Log.Info("{0}: collided with an object {1} total times.", tag, TotalCollisions);
+
             return true;
         }
 

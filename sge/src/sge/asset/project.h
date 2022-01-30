@@ -21,7 +21,9 @@ namespace sge {
     public:
         static void init(bool editor);
         static void shutdown();
+
         static std::string get_config();
+        static std::string get_cpu_architecture();
 
         static bool loaded();
         static project& get();

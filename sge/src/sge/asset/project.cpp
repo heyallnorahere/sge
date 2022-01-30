@@ -59,6 +59,8 @@ namespace sge {
 #endif
     }
 
+    std::string project::get_cpu_architecture() { return SGE_CPU_ARCHITECTURE; }
+
     bool project::loaded() { return !project_data->instance->m_path.empty(); }
     project& project::get() { return *project_data->instance; }
 
