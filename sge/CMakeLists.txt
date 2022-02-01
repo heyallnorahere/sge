@@ -11,7 +11,25 @@ if(SGE_PLATFORM_WINDOWS)
 elseif(SGE_PLATFORM_MACOSX)
     set(MONO_PLATFORM osx)
 elseif(SGE_PLATFORM_LINUX)
-    set(MONO_PLATFORM linux)
+    include(glibc)
+    CHECK_GLIBC_VERSION()
+
+    set(CURRENT_GLIBC_VERSION 0.0)
+    file(GLOB AVAILABLE_GLIBC_VERSIONS "${VENDOR_DIR}/mono/lib/linux/*")
+    foreach(DIR ${AVAILABLE_GLIBC_VERSIONS})
+        get_filename_component(CURRENT_VERSION ${DIR} NAME)
+        if(${CURRENT_VERSION} VERSION_GREATER_EQUAL ${CURRENT_GLIBC_VERSION} AND
+           ${GLIBC_VERSION} VERSION_GREATER_EQUAL ${CURRENT_VERSION})
+            set(CURRENT_GLIBC_VERSION ${CURRENT_VERSION})
+        endif()
+    endforeach()
+
+    if(${CURRENT_GLIBC_VERSION} STREQUAL 0.0)
+        message(FATAL_ERROR "No applicable mono binaries! Please compile them yourself.")
+    endif()
+
+    message(STATUS "Using mono binaries for GLIBC version ${CURRENT_GLIBC_VERSION}.")
+    set(MONO_PLATFORM linux/${CURRENT_GLIBC_VERSION})
 endif()
 file(GLOB MONO_LIBS CONFIGURE_DEPENDS "${VENDOR_DIR}/mono/lib/${MONO_PLATFORM}/${CMAKE_SYSTEM_PROCESSOR}/*")
 

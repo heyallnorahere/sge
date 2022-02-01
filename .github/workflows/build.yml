@@ -26,19 +26,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mesa-common-dev libxrandr-dev libxinerama-dev \
             libxcursor-dev libxi-dev cmake
-      - name: build dotnet (ubuntu)
-        if: ${{ matrix.os-name == 'ubuntu-latest' }}
-        shell: bash
-        run: |
-          echo Compiling .NET 6 native runtime due to glibc conflicts
-          git clone --no-checkout https://github.com/dotnet/runtime.git dotnet-runtime
-          cd dotnet-runtime
-          git checkout v6.0.1
-          dotnet build src/mono/mono.proj -c Release
-          cp -f artifacts/obj/mono/Linux.x64.Release/out/lib/libcoreclr.so ../vendor/mono/lib/linux/x86_64
-          cp -f artifacts/obj/mono/Linux.x64.Release/out/lib/libmonosgen-2.0.a ../vendor/mono/lib/linux/x86_64
-          cd ..
-          rm -rf dotnet-runtime
       - name: install dependencies (macos)
         if: ${{ matrix.os-name == 'macos-latest' }}
         shell: bash
