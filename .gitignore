@@ -6,7 +6,7 @@ obj/
 bin/
 !vendor/**/bin
 assemblies/
-mono_crash*.json
+mono_crash*
 vendor/nvidia-aftermath
 *.nvdbg
 *.nv-gpudmp

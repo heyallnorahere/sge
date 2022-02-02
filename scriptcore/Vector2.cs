@@ -36,28 +36,43 @@ namespace SGE
             X = Y = scalar;
         }
 
+        public Vector2(Vector3 vector)
+        {
+            X = vector.X;
+            Y = vector.Y;
+        }
+
+        public Vector2(Vector4 vector)
+        {
+            X = vector.X;
+            Y = vector.Y;
+        }
+
         public float X, Y;
 
         public float Length
         {
             get
             {
-                double x2 = Math.Pow(X, 2);
-                double y2 = Math.Pow(Y, 2);
-                return (float)Math.Sqrt(x2 + y2);
+                float x2 = MathF.Pow(X, 2);
+                float y2 = MathF.Pow(Y, 2);
+                return MathF.Sqrt(x2 + y2);
             }
         }
 
         public Vector2 Normalized => this / Length;
 
-        public static Vector2 operator +(Vector2 lhs, Vector2 rhs) => new Vector2(lhs.X + rhs.X, lhs.Y + rhs.Y);
+        public static Vector2 operator +(Vector2 lhs, Vector2 rhs) => (lhs.X + rhs.X, lhs.Y + rhs.Y);
         public static Vector2 operator +(Vector2 lhs, float rhs) => lhs + new Vector2(rhs);
-        public static Vector2 operator -(Vector2 vector) => new Vector2(-vector.X, -vector.Y);
+        public static Vector2 operator -(Vector2 vector) => (-vector.X, -vector.Y);
         public static Vector2 operator -(Vector2 lhs, Vector2 rhs) => lhs + -rhs;
         public static Vector2 operator -(Vector2 lhs, float rhs) => lhs + -rhs;
-        public static Vector2 operator *(Vector2 lhs, Vector2 rhs) => new Vector2(lhs.X * rhs.X, lhs.Y * rhs.Y);
+        public static Vector2 operator *(Vector2 lhs, Vector2 rhs) => (lhs.X * rhs.X, lhs.Y * rhs.Y);
         public static Vector2 operator *(Vector2 lhs, float rhs) => lhs * new Vector2(rhs);
-        public static Vector2 operator /(Vector2 lhs, Vector2 rhs) => new Vector2(lhs.X / rhs.X, lhs.Y / rhs.Y);
+        public static Vector2 operator /(Vector2 lhs, Vector2 rhs) => (lhs.X / rhs.X, lhs.Y / rhs.Y);
         public static Vector2 operator /(Vector2 lhs, float rhs) => lhs / new Vector2(rhs);
+
+        public static implicit operator Vector2((float x, float y) tuple) => new Vector2(tuple.x, tuple.y);
+        public static implicit operator Vector2(Vector3 vector) => new Vector2(vector);
     }
 }
