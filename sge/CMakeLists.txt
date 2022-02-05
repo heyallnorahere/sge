@@ -94,12 +94,23 @@ if(MSVC)
     set_source_files_properties(${SGE_SHADERS} PROPERTIES VS_TOOL_OVERRIDE "None")
 endif()
 
+# type face directory generation
+set(TYPE_FACE_DIRECTORY_FILE "${CMAKE_CURRENT_BINARY_DIR}/type_face_directory.cpp")
+add_custom_command(OUTPUT ${TYPE_FACE_DIRECTORY_FILE}
+    COMMAND embed_type_faces
+    "${CMAKE_SOURCE_DIR}/assets/fonts"
+    ${TYPE_FACE_DIRECTORY_FILE}
+    "${CMAKE_SOURCE_DIR}/LICENSE:190"
+    COMMENT "Generating SGE type face directory"
+    DEPENDS "${CMAKE_SOURCE_DIR}/assets/fonts")
+
 # add target
-add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS})
+add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS} ${TYPE_FACE_DIRECTORY_FILE})
 target_link_libraries(sge PUBLIC ${SGE_LIBS})
 target_include_directories(sge PUBLIC ${SGE_INCLUDES})
 target_compile_definitions(sge PUBLIC ${SGE_DEFINES} $<$<CONFIG:Debug>:SGE_DEBUG>)
 set_target_properties(sge PROPERTIES CXX_STANDARD 17 FOLDER "core")
+
 
 # setup pch
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)

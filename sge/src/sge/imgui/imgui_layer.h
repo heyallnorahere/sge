@@ -30,9 +30,13 @@ namespace sge {
         void begin();
         void end(command_list& cmdlist);
 
+        bool has_font(const fs::path& path);
+        ImFont* get_font(const fs::path& path);
+
     private:
         void set_style();
 
         std::unique_ptr<imgui_backend> m_platform, m_renderer;
+        std::unordered_map<fs::path, ImFont*> m_fonts;
     };
 } // namespace sge

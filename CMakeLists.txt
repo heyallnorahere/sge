@@ -39,6 +39,9 @@ cmake_dependent_option(SGE_USE_VULKAN "Use the Vulkan graphics api." ON "SGE_PLA
 # dependencies
 add_subdirectory("vendor")
 
+# tools
+add_subdirectory("tools")
+
 # mono DLL macro
 macro(copy_required_dlls target_name)
     if(WIN32)
