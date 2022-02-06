@@ -45,6 +45,9 @@ namespace sge {
 
         void on_event(event& e);
 
+        void set_application_args(const std::vector<std::string>& args) { m_args = args; }
+        void get_application_args(std::vector<std::string>& args) { args = m_args; }
+
         const std::string& get_title() { return m_title; }
         ref<window> get_window() { return m_window; }
         swapchain& get_swapchain() { return *m_swapchain; }
@@ -58,10 +61,14 @@ namespace sge {
 
         layer_stack m_layer_stack;
         std::string m_title;
+
         ref<window> m_window;
         std::unique_ptr<swapchain> m_swapchain;
+
         bool m_running, m_minimized;
         imgui_layer* m_imgui_layer = nullptr;
+
+        std::vector<std::string> m_args;
 
     private:
         bool on_window_resize(window_resize_event& e);

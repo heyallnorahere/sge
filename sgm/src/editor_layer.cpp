@@ -23,6 +23,14 @@
 #include <sge/scene/scene_serializer.h>
 namespace sgm {
     void editor_layer::on_attach() {
+        fs::path scene_path = project::get().get_start_scene();
+        if (fs::exists(scene_path)) {
+            editor_scene::load(scene_path);
+            m_scene_path = scene_path;
+        } else {
+            spdlog::warn("attempted to load nonexistent start scene: {0}", scene_path.string());
+        }
+
         add_panel<renderer_info_panel>();
         add_panel<viewport_panel>([this](const fs::path& path) { m_scene_path = path; });
         add_panel<scene_hierarchy_panel>();

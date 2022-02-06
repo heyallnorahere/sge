@@ -1,0 +1,200 @@
+{
+    "entities": [
+        {
+            "box_collider": {
+                "density": 1.0,
+                "friction": 0.5,
+                "restitution": 0.0,
+                "restitution_threashold": 0.5,
+                "size": [
+                    0.5,
+                    0.5
+                ]
+            },
+            "camera": null,
+            "guid": 5635730081402554290,
+            "rigid_body": {
+                "fixed_rotation": false,
+                "type": "static"
+            },
+            "script": null,
+            "sprite": {
+                "color": [
+                    0.3137255012989044,
+                    0.686274528503418,
+                    0.0,
+                    1.0
+                ],
+                "texture": null
+            },
+            "tag": "Arm R",
+            "transform": {
+                "rotation": 41.0,
+                "scale": [
+                    20.0,
+                    1.0
+                ],
+                "translation": [
+                    31.75,
+                    5.25
+                ]
+            }
+        },
+        {
+            "box_collider": {
+                "density": 1.0,
+                "friction": 0.5,
+                "restitution": 0.0,
+                "restitution_threashold": 0.5,
+                "size": [
+                    0.5,
+                    0.5
+                ]
+            },
+            "camera": null,
+            "guid": 3394147300400136489,
+            "rigid_body": {
+                "fixed_rotation": false,
+                "type": "static"
+            },
+            "script": null,
+            "sprite": {
+                "color": [
+                    0.3137255012989044,
+                    0.686274528503418,
+                    0.0,
+                    1.0
+                ],
+                "texture": null
+            },
+            "tag": "Arm L",
+            "transform": {
+                "rotation": -41.0,
+                "scale": [
+                    20.0,
+                    1.0
+                ],
+                "translation": [
+                    -31.75,
+                    5.25
+                ]
+            }
+        },
+        {
+            "box_collider": {
+                "density": 1.0,
+                "friction": 0.5,
+                "restitution": 0.0,
+                "restitution_threashold": 0.5,
+                "size": [
+                    0.5,
+                    0.5
+                ]
+            },
+            "camera": null,
+            "guid": 18157140401367065728,
+            "rigid_body": {
+                "fixed_rotation": false,
+                "type": "static"
+            },
+            "script": null,
+            "sprite": {
+                "color": [
+                    0.31341132521629333,
+                    0.6877636909484863,
+                    0.0,
+                    1.0
+                ],
+                "texture": null
+            },
+            "tag": "Ground",
+            "transform": {
+                "rotation": 0.0,
+                "scale": [
+                    50.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    -1.0
+                ]
+            }
+        },
+        {
+            "box_collider": {
+                "density": 1.0,
+                "friction": 0.0,
+                "restitution": 0.0,
+                "restitution_threashold": 0.5,
+                "size": [
+                    0.5,
+                    0.5
+                ]
+            },
+            "camera": null,
+            "guid": 3059179188644698116,
+            "rigid_body": {
+                "fixed_rotation": false,
+                "type": "dynamic"
+            },
+            "script": {
+                "properties": {
+                    "Speed": 500.0
+                },
+                "script_name": "Template.Assets.Scripts.ExampleScript"
+            },
+            "sprite": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "texture": "Textures/Tux.png"
+            },
+            "tag": "Tux",
+            "transform": {
+                "rotation": 0.0,
+                "scale": [
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "box_collider": null,
+            "camera": {
+                "far_clip": 1.0,
+                "near_clip": -1.0,
+                "primary": true,
+                "vertical_fov": null,
+                "view_size": 10.0
+            },
+            "guid": 3870644523294331669,
+            "rigid_body": null,
+            "script": {
+                "properties": {
+                    "Target": 3059179188644698116
+                },
+                "script_name": "Template.Assets.Scripts.CameraScript"
+            },
+            "sprite": null,
+            "tag": "Camera",
+            "transform": {
+                "rotation": 0.0,
+                "scale": [
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0
+                ]
+            }
+        }
+    ]
+}

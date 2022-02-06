@@ -29,8 +29,17 @@ namespace sgm {
     
     protected:
         virtual void on_init() override {
-            // todo: take from command line argument?
-            project::load("sandbox-project/sandbox.sgeproject");
+            // defaults to sandbox project
+            fs::path project_path = "sandbox-project/sandbox.sgeproject";
+
+            std::vector<std::string> args;
+            get_application_args(args);
+
+            if (args.size() >= 2) {
+                project_path = args[1];
+            }
+
+            project::load(fs::absolute(project_path));
             
             project& _project = project::get();
             m_window->set_title(sgm_title + " - " + _project.get_name());

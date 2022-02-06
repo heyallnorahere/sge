@@ -2,12 +2,14 @@
 
     <PropertyGroup>
         <LangVersion>latest</LangVersion>
-        <RootNamespace>Sandbox</RootNamespace>
+        <RootNamespace>Template</RootNamespace>
         <TargetFramework>net6.0</TargetFramework>
+
+        <SGE_DIR Condition="'$(SGE_DIR)' == ''">$(ProjectDir)..\..\</SGE_DIR>
     </PropertyGroup>
 
     <ItemGroup>
-        <Reference Include="..\assemblies\SGE.Scriptcore.dll" />
+        <Reference Include="$(SGE_DIR)assemblies\SGE.Scriptcore.dll" />
     </ItemGroup>
 
 </Project>
