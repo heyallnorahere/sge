@@ -103,6 +103,8 @@ namespace SGE
         public static extern bool GetFixedRotation(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetFixedRotation(IntPtr component, Entity entity, bool fixedRotation);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool AddForce(Entity entity, Vector2 force, bool wake);
 
         // box collider component
         [MethodImpl(MethodImplOptions.InternalCall)]

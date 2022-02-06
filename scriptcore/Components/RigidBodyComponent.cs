@@ -39,5 +39,10 @@ namespace SGE.Components
             get => InternalCalls.GetFixedRotation(mAddress);
             set => InternalCalls.SetFixedRotation(mAddress, mParent, value);
         }
+
+        public void AddForce(Vector2 force, bool wake = true)
+        {
+            InternalCalls.AddForce(mParent, force, wake);
+        }
     }
 }

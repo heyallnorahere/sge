@@ -36,34 +36,47 @@ namespace sge {
     };
     static std::unique_ptr<script_engine_data_t> script_engine_data;
 
+#ifdef SGE_PLATFORM_WINDOWS
+#define NATIVE_DOTNET_DIRNAME "windows"
+#define DOTNET_LIST_SEPARATOR ';'
+#else
+#define NATIVE_DOTNET_DIRNAME "unix"
+#define DOTNET_LIST_SEPARATOR ':'
+#endif
+
     static std::string build_tpa_list() {
         fs::path assembly_dir = fs::absolute(fs::current_path() / "assets" / "dotnet");
         std::string tpa_list;
-
-#ifdef SGE_PLATFORM_WINDOWS
-        static constexpr char separator = ';';
-#else
-        static constexpr char separator = ':';
-#endif
 
         for (const auto& entry : fs::directory_iterator(assembly_dir)) {
             if (entry.is_directory() || entry.path().extension() != ".dll") {
                 continue;
             }
 
-            tpa_list += fs::absolute(entry.path()).string() + separator;
+            tpa_list += fs::absolute(entry.path()).string() + DOTNET_LIST_SEPARATOR;
         }
 
-#ifdef SGE_PLATFORM_WINDOWS
-        static const fs::path corlib_platform = "windows";
-#else
-        static const fs::path corlib_platform = "unix";
-#endif
-
-        fs::path corlib_path = assembly_dir / corlib_platform / "System.Private.CoreLib.dll";
+        fs::path corlib_path = assembly_dir / NATIVE_DOTNET_DIRNAME / "System.Private.CoreLib.dll";
         tpa_list += fs::absolute(corlib_path).string();
 
         return tpa_list;
+    }
+
+    static std::string build_native_library_search_paths() {
+        const std::vector<fs::path> paths = { fs::absolute(fs::current_path() / "assets" /
+                                                           "dotnet" / NATIVE_DOTNET_DIRNAME /
+                                                           SGE_CPU_ARCHITECTURE) };
+
+        std::string list;
+        for (const auto& path : paths) {
+            if (!list.empty()) {
+                list += DOTNET_LIST_SEPARATOR;
+            }
+
+            list += path.string();
+        }
+
+        return list;
     }
 
     void script_engine::init() {
@@ -75,6 +88,7 @@ namespace sge {
         {
             std::unordered_map<std::string, std::string> properties;
             properties["TRUSTED_PLATFORM_ASSEMBLIES"] = build_tpa_list();
+            properties["NATIVE_DLL_SEARCH_DIRECTORIES"] = build_native_library_search_paths();
 
             std::vector<const char*> keys, values;
             for (const auto& [key, value] : properties) {

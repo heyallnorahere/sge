@@ -236,6 +236,13 @@ namespace sge {
             e.get_scene()->update_physics_data(e);
         }
 
+        static bool AddForce(void* _entity, glm::vec2 force, bool wake) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            return _scene->add_force(e, force, wake);
+        }
+
         static void GetSize(box_collider_component* bc, glm::vec2* size) { *size = bc->size; }
 
         static void SetSize(box_collider_component* bc, void* _entity, glm::vec2 size) {
@@ -408,6 +415,7 @@ namespace sge {
         REGISTER_CALL(SetBodyType);
         REGISTER_CALL(GetFixedRotation);
         REGISTER_CALL(SetFixedRotation);
+        REGISTER_CALL(AddForce);
 
         // box collider component
         REGISTER_CALL(GetSize);

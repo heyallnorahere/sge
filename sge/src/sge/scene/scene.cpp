@@ -330,6 +330,21 @@ namespace sge {
         }
     }
 
+    bool scene::add_force(entity e, glm::vec2 force, bool wake) {
+        if (!e.has_all<rigid_body_component>()) {
+            return false;
+        }
+
+        // verify that the given entity has a b2Body attached
+        update_physics_data(e);
+
+        // add the force
+        b2Vec2 b2_force(force.x, force.y);
+        m_physics_data->bodies[e].body->ApplyForceToCenter(b2_force, wake);
+
+        return true;
+    }
+
     entity scene::find_guid(guid id) {
         entity found;
 

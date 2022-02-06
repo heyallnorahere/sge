@@ -89,10 +89,8 @@
                 "type": "dynamic"
             },
             "script": {
-                "properties": {
-                    "TotalCollisions": 0
-                },
-                "script_name": "Sandbox.CollisionListener"
+                "properties": null,
+                "script_name": "Sandbox.PenguinScript"
             },
             "sprite": {
                 "color": [

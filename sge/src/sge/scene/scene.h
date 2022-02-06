@@ -48,6 +48,7 @@ namespace sge {
         void verify_script(entity e);
 
         void update_physics_data(entity e);
+        bool add_force(entity e, glm::vec2 force, bool wake = true);
 
         entity find_guid(guid id);
         ref<scene> copy();

@@ -16,7 +16,7 @@
     },
     {
         "guid": null,
-        "path": "scripts/CollisionListener.cs",
+        "path": "scripts/PenguinScript.cs",
         "type": null
     }
 ]
