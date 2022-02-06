@@ -17,7 +17,9 @@
 #include "sgepch.h"
 #include "sge/imgui/imgui_layer.h"
 
+// generated in build/sge/type_face_directory.cpp by tools/embed_type_faces.cpp
 extern std::unordered_map<std::string, std::vector<uint32_t>> generated_type_face_directory;
+
 namespace sge {
     void imgui_layer::on_attach() {
         IMGUI_CHECKVERSION();
@@ -32,15 +34,23 @@ namespace sge {
 #endif
 
         static constexpr float font_size = 16.f;
-        for (auto& [key, data] : generated_type_face_directory) {
-            ImFont* font = io.Fonts->AddFontFromMemoryTTF(
-                data.data(), (int32_t)(data.size() * sizeof(uint32_t)), font_size);
+        for (const auto& [key, data] : generated_type_face_directory) {
+            // memory will be freed by ImGui
+            size_t size = data.size() * sizeof(uint32_t);
+            void* font_data = malloc(size);
+
+            if (font_data == nullptr) {
+                throw std::runtime_error("could not allocate memory to load font: " + key);
+            }
+
+            memcpy(font_data, data.data(), size);
+            ImFont* font = io.Fonts->AddFontFromMemoryTTF(font_data, (int32_t)size, font_size);
 
             fs::path path = key;
             if (m_fonts.find(path) == m_fonts.end()) {
                 m_fonts.insert(std::make_pair(path, font));
             } else {
-                spdlog::warn("font \"{0}\" already present - replacing", key);
+                spdlog::warn("font \"{0}}\" already present - replacing", key);
                 m_fonts[path] = font;
             }
         }

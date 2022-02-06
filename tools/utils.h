@@ -20,7 +20,7 @@ inline bool read_file(const fs::path& path, std::string* text,
     bool binary = (data != nullptr);
     if (text != nullptr || binary) {
         if (text != nullptr && binary) {
-            spdlog::warn("both text and binary requested - using text");
+            std::cout << "both text and binary requested - using text" << std::endl;
             binary = false;
         }
 
@@ -34,8 +34,11 @@ inline bool read_file(const fs::path& path, std::string* text,
 
         if (file.is_open()) {
             if (binary) {
-                *data = std::vector<uint32_t>(std::istreambuf_iterator<char>(file),
-                                              std::istreambuf_iterator<char>());
+                auto file_data = std::vector<char>(std::istreambuf_iterator<char>(file),
+                                                   std::istreambuf_iterator<char>());
+
+                *data = std::vector<uint32_t>(file_data.size() / 4);
+                std::copy(file_data.begin(), file_data.end(), (char*)data->data());
             } else {
                 std::stringstream stream;
                 std::string line;
@@ -101,14 +104,14 @@ inline std::optional<std::string> embed_license(const std::string& desc) {
 
                 std::string start_pos = range.substr(0, hyphon_pos);
                 if (start_pos.empty()) {
-                    spdlog::warn("no start pos specified!");
+                    std::cout << "no start pos specified!" << std::endl;
                     valid_range = false;
                 }
 
                 if (valid_range) {
                     int32_t start_line = atoi(start_pos.c_str());
                     if (start_line <= 0) {
-                        spdlog::error("the start line must be greater than 0!");
+                        std::cout << "the start line must be greater than 0!" << std::endl;
                         valid_range = false;
                     }
 
@@ -139,7 +142,7 @@ inline std::optional<std::string> embed_license(const std::string& desc) {
             }
 
             if (!valid_range) {
-                spdlog::warn("invalid range - embedding entire license");
+                std::cout << "invalid range - embedding entire license" << std::endl;
             }
         }
 
@@ -175,7 +178,7 @@ inline std::optional<std::string> embed_license(const std::string& desc) {
     }
 
     if (!result.has_value()) {
-        spdlog::warn("{0} - failed to embed license", license_path.string());
+        std::cout << license_path.string() << " - failed to embed license" << std::endl;
     }
 
     return result;

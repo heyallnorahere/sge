@@ -102,7 +102,7 @@ add_custom_command(OUTPUT ${TYPE_FACE_DIRECTORY_FILE}
     ${TYPE_FACE_DIRECTORY_FILE}
     "${CMAKE_SOURCE_DIR}/LICENSE:190"
     COMMENT "Generating embedded SGE type face directory"
-    DEPENDS "${CMAKE_SOURCE_DIR}/assets/fonts")
+    DEPENDS "${CMAKE_SOURCE_DIR}/assets/fonts" embed_type_faces)
 
 # add target
 add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS} ${TYPE_FACE_DIRECTORY_FILE})

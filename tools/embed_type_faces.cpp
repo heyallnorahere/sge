@@ -19,7 +19,7 @@
 
 int32_t main(int32_t argc, const char** argv) {
     if (argc < 3) {
-        spdlog::error("please provide at least 2 arguments!");
+        std::cerr << "please provide at least 2 arguments!" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -27,7 +27,7 @@ int32_t main(int32_t argc, const char** argv) {
     fs::path output = fs::absolute(argv[2]);
 
     if (!fs::is_directory(dir)) {
-        spdlog::error("{0} - not a directory", dir.string());
+        std::cerr << dir.string() << " is not a directory" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -47,6 +47,7 @@ int32_t main(int32_t argc, const char** argv) {
 
     output_source << "std::unordered_map<std::string, std::vector<uint32_t>> "
                      "generated_type_face_directory = {\n";
+
     for (const auto& entry : fs::recursive_directory_iterator(dir)) {
         fs::path filepath = fs::absolute(entry.path());
 
@@ -60,13 +61,13 @@ int32_t main(int32_t argc, const char** argv) {
 
         fs::path extension = path.extension();
         if (extension != ".ttf" && extension != ".otf") {
-            spdlog::warn("{0} - not a type face, skipping", path.string());
+            std::cout << path.string() << " - not a type face, skipping" << std::endl;
             continue;
         }
 
         std::vector<uint32_t> data;
         if (!read_file(filepath, nullptr, &data)) {
-            spdlog::error("could not read file: {0}", filepath.string());
+            std::cerr << "could not read file: " << filepath.string() << std::endl;
             return EXIT_FAILURE;
         }
 
@@ -78,13 +79,13 @@ int32_t main(int32_t argc, const char** argv) {
     std::string file_data = output_source.str();
 
     std::string output_path_string = output.string();
-    spdlog::info("writing data to source file {0}...", output_path_string);
+    std::cout << "writing data to source file " << output_path_string << "..." << std::endl;
 
     if (!write_file(output, file_data)) {
-        spdlog::error("could not write to file: {0}", output_path_string);
+        std::cerr << "could not write to file: " << output_path_string << std::endl;
         return EXIT_FAILURE;
     }
 
-    spdlog::info("wrote type face directory to file: {0}", output_path_string);
+    std::cout << "wrote type face directory to file: " << output_path_string << std::endl;
     return EXIT_SUCCESS;
 }

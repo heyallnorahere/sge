@@ -13,6 +13,6 @@ foreach(TOOL_SOURCE ${TOOL_SOURCES})
         CXX_STANDARD 17)
 
     if(UNIX AND NOT APPLE)
-        target_link_libraries(${TOOL_NAME} PRIVATE pthread stdc++fs spdlog)
+        target_link_libraries(${TOOL_NAME} PRIVATE pthread stdc++fs)
     endif()
 endforeach()

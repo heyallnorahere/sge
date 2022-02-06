@@ -23,6 +23,7 @@
 #include <sstream>
 #include <optional>
 #include <vector>
+#include <iostream>
 
 #if __has_include(<filesystem>)
 #include <filesystem>
@@ -31,5 +32,3 @@ namespace fs = std::filesystem;
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #endif
-
-#include <spdlog/spdlog.h>
