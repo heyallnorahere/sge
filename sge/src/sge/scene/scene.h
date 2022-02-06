@@ -50,6 +50,9 @@ namespace sge {
         void update_physics_data(entity e);
         bool add_force(entity e, glm::vec2 force, bool wake = true);
 
+        std::optional<float> get_angular_velocity(entity e);
+        bool set_angular_velocity(entity e, float velocity);
+
         entity find_guid(guid id);
         ref<scene> copy();
 

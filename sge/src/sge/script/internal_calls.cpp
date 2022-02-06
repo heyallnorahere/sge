@@ -236,6 +236,27 @@ namespace sge {
             e.get_scene()->update_physics_data(e);
         }
 
+        static bool GetAngularVelocity(void* _entity, float* velocity) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            std::optional<float> value = _scene->get_angular_velocity(e);
+
+            if (value.has_value()) {
+                *velocity = value.value();
+                return true;
+            }
+
+            return false;
+        }
+
+        static bool SetAngularVelocity(void* _entity, float velocity) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            return _scene->set_angular_velocity(e, velocity);
+        }
+
         static bool AddForce(void* _entity, glm::vec2 force, bool wake) {
             entity e = script_helpers::get_entity_from_object(_entity);
 
@@ -415,6 +436,8 @@ namespace sge {
         REGISTER_CALL(SetBodyType);
         REGISTER_CALL(GetFixedRotation);
         REGISTER_CALL(SetFixedRotation);
+        REGISTER_CALL(GetAngularVelocity);
+        REGISTER_CALL(SetAngularVelocity);
         REGISTER_CALL(AddForce);
 
         // box collider component

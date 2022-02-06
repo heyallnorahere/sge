@@ -345,6 +345,32 @@ namespace sge {
         return true;
     }
 
+    std::optional<float> scene::get_angular_velocity(entity e) {
+        std::optional<float> velocity;
+
+        if (e.has_all<rigid_body_component>()) {
+            update_physics_data(e);
+
+            b2Body* body = m_physics_data->bodies[e].body;
+            velocity = body->GetAngularVelocity();
+        }
+
+        return velocity;
+    }
+
+    bool scene::set_angular_velocity(entity e, float velocity) {
+        if (e.has_all<rigid_body_component>()) {
+            update_physics_data(e);
+
+            b2Body* body = m_physics_data->bodies[e].body;
+            body->SetAngularVelocity(velocity);
+
+            return true;
+        }
+
+        return false;
+    }
+
     entity scene::find_guid(guid id) {
         entity found;
 

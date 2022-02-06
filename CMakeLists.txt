@@ -75,7 +75,10 @@ if(SGE_BUILD_SCRIPTCORE)
         if(NOT ${dotnet_EXECUTABLE} STREQUAL "dotnet_EXECUTABLE-NOTFOUND")
             add_custom_target(scriptcore ALL
                 COMMAND ${dotnet_EXECUTABLE} build -nologo -v:m -c $<CONFIG>
-                "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj")
+                "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj"
+                COMMENT "Building SGE.Scriptcore.dll")
+        else()
+            message(STATUS "Could not find the .NET Core executable - skipping build target")
         endif()
     endif()
 

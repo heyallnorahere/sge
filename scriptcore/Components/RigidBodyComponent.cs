@@ -40,6 +40,17 @@ namespace SGE.Components
             set => InternalCalls.SetFixedRotation(mAddress, mParent, value);
         }
 
+        public float AngularVelocity
+        {
+            get
+            {
+                float velocity = 0f;
+                InternalCalls.GetAngularVelocity(mParent, out velocity);
+                return velocity;
+            }
+            set => InternalCalls.SetAngularVelocity(mParent, value);
+        }
+
         public void AddForce(Vector2 force, bool wake = true)
         {
             InternalCalls.AddForce(mParent, force, wake);
