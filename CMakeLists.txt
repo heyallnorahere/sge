@@ -14,6 +14,7 @@ endif()
 
 project(sge VERSION ${SGE_VERSION} LANGUAGES ${SGE_LANGUAGES})
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # platform detection
 if(${CMAKE_SYSTEM_NAME} STREQUAL Windows)
@@ -60,6 +61,11 @@ endmacro()
 # sge targets
 add_subdirectory("sge")
 add_subdirectory("sgm")
+add_subdirectory("launcher")
+
+# output binaries into ${CMAKE_SOURCE_DIR}/bin, subdirectory if not release
+set_target_properties(sgm launcher PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+    "${CMAKE_SOURCE_DIR}/bin/$<$<NOT:$<CONFIG:Release>>:$<CONFIG>>")
 
 # managed code
 if(SGE_BUILD_SCRIPTCORE)
@@ -88,12 +94,10 @@ if(SGE_BUILD_SCRIPTCORE)
 endif()
 
 if(MSVC)
-    set_directory_properties(PROPERTIES VS_STARTUP_PROJECT sgm)
+    set_directory_properties(PROPERTIES VS_STARTUP_PROJECT launcher)
 endif()
 
-# folders
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
+# add all dependencies to a folder in IDEs
 macro(get_targets DIRECTORY TARGETS)
     get_property(SUBDIRECTORIES DIRECTORY ${DIRECTORY} PROPERTY SUBDIRECTORIES)
     foreach(SUBDIRECTORY ${SUBDIRECTORIES})

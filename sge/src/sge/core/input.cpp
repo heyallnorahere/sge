@@ -68,7 +68,7 @@ namespace sge {
     }
 
     bool input::get_key(key_code code) {
-        if (input_data->key_status.find(code) == input_data->key_status.end()) {
+        if (!input_data || input_data->key_status.find(code) == input_data->key_status.end()) {
             return false;
         }
 
@@ -76,7 +76,8 @@ namespace sge {
     }
 
     bool input::get_mouse_button(mouse_button button) {
-        if (input_data->mouse_button_status.find(button) == input_data->mouse_button_status.end()) {
+        if (!input_data ||
+            input_data->mouse_button_status.find(button) == input_data->mouse_button_status.end()) {
             return false;
         }
 
@@ -84,10 +85,18 @@ namespace sge {
     }
 
     glm::vec2 input::get_mouse_position() {
+        if (!input_data) {
+            return glm::vec2(0.f);
+        }
+
         return input_data->mouse_position;
     }
 
     void input::set_mouse_position(glm::vec2 position) {
+        if (!input_data) {
+            return;
+        }
+
         input_data->mouse_position = position;
     }
 } // namespace sge

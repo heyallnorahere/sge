@@ -33,9 +33,7 @@ namespace sge {
         app_instance = std::unique_ptr<application>(::create_app_instance());
     }
 
-    void application::destroy() {
-        app_instance.reset();
-    }
+    void application::destroy() { app_instance.reset(); }
 
     application& application::get() { return *app_instance; }
 
@@ -52,7 +50,9 @@ namespace sge {
         dispatcher.dispatch<window_resize_event>(
             SGE_BIND_EVENT_FUNC(application::on_window_resize));
 
-        input::on_event(e);
+        if (is_subsystem_initialized(subsystem_input)) {
+            input::on_event(e);
+        }
 
         for (auto& _layer : m_layer_stack) {
             if (e.handled) {
@@ -66,20 +66,36 @@ namespace sge {
         spdlog::info("using SGE v{0}", get_engine_version());
         spdlog::info("initializing application: {0}...", m_title);
 
-        input::init();
+        if ((m_disabled_subsystems & subsystem_input) == 0) {
+            input::init();
+            m_initialized_subsystems |= subsystem_input;
+        }
+
         m_window = window::create(get_window_title(), 1600, 900);
         m_window->set_event_callback(SGE_BIND_EVENT_FUNC(application::on_event));
 
         renderer::init();
         m_swapchain = swapchain::create(m_window);
 
-        asset_serializer::init();
-        script_engine::init();
+        if ((m_disabled_subsystems & subsystem_asset) == 0) {
+            asset_serializer::init();
+            m_initialized_subsystems |= subsystem_asset;
+
+            if ((m_disabled_subsystems & subsystem_script_engine) == 0) {
+                script_engine::init();
+                m_initialized_subsystems |= subsystem_script_engine;
+            }
+        }
 
         m_imgui_layer = new imgui_layer;
         push_overlay(m_imgui_layer);
 
-        project::init(is_editor());
+        if ((m_disabled_subsystems &
+             (subsystem_asset | subsystem_script_engine | subsystem_project)) == 0) {
+            project::init(is_editor());
+            m_initialized_subsystems |= subsystem_project;
+        }
+
         on_init();
     }
 
@@ -87,21 +103,27 @@ namespace sge {
         spdlog::info("shutting down application: {0}...", m_title);
 
         renderer::clear_render_data();
-
         on_shutdown();
-        project::shutdown();
+
+        if (is_subsystem_initialized(subsystem_project)) {
+            project::shutdown();
+        }
 
         pop_overlay(m_imgui_layer);
         delete m_imgui_layer;
         m_imgui_layer = nullptr;
 
-        script_engine::shutdown();
+        if (is_subsystem_initialized(subsystem_script_engine)) {
+            script_engine::shutdown();
+        }
 
         m_swapchain.reset();
         renderer::shutdown();
 
         m_window.reset();
-        input::shutdown();
+        if (is_subsystem_initialized(subsystem_input)) {
+            input::shutdown();
+        }
     }
 
     void application::run() {
@@ -135,8 +157,7 @@ namespace sge {
                     t0 = t1;
                 }
 
-                for (auto it = m_layer_stack.rbegin(); it != m_layer_stack.rend();
-                     it++) {
+                for (auto it = m_layer_stack.rbegin(); it != m_layer_stack.rend(); it++) {
                     (*it)->on_update(ts);
                 }
 
@@ -159,10 +180,8 @@ namespace sge {
         }
     }
 
-    bool application::on_window_close(window_close_event& e) {
-        m_running = false;
-        return true;
-    }
+    void application::disable_subsystem(subsystem id) { m_disabled_subsystems |= id; }
+    void application::reenable_subsystem(subsystem id) { m_disabled_subsystems &= ~id; }
 
     bool application::on_window_resize(window_resize_event& e) {
         uint32_t width = e.get_width();
@@ -174,5 +193,10 @@ namespace sge {
         }
 
         return false;
+    }
+
+    bool application::on_window_close(window_close_event& e) {
+        m_running = false;
+        return true;
     }
 } // namespace sge

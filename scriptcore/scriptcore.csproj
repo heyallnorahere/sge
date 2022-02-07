@@ -2,10 +2,14 @@
   
   <PropertyGroup>
     <AssemblyName>SGE.Scriptcore</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Platforms>x64;ARM64</Platforms>
     <RootNamespace>SGE</RootNamespace>
     <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
-  <Import Project="..\SGE.targets" />
+  <Target Name="CopyBinary" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildThisFileDirectory)\assemblies" />
+  </Target>
 
 </Project>

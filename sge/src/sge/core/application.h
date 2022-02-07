@@ -21,6 +21,13 @@
 #include "sge/events/window_events.h"
 #include "sge/renderer/swapchain.h"
 namespace sge {
+    enum subsystem : uint32_t {
+        subsystem_input = 0x1,
+        subsystem_asset = 0x2,
+        subsystem_project = 0x4,
+        subsystem_script_engine = 0x8
+    };
+
     class imgui_layer;
     class application {
     public:
@@ -52,12 +59,17 @@ namespace sge {
         ref<window> get_window() { return m_window; }
         swapchain& get_swapchain() { return *m_swapchain; }
 
+        bool is_subsystem_initialized(subsystem id) { return (m_initialized_subsystems & id) != 0; }
+
     protected:
         virtual void on_init() {}
         virtual void on_shutdown() {}
 
         virtual std::string get_window_title() { return m_title; }
         virtual bool is_editor() { return false; }
+
+        void disable_subsystem(subsystem id);
+        void reenable_subsystem(subsystem id);
 
         layer_stack m_layer_stack;
         std::string m_title;
@@ -73,5 +85,8 @@ namespace sge {
     private:
         bool on_window_resize(window_resize_event& e);
         bool on_window_close(window_close_event& e);
+
+        uint32_t m_disabled_subsystems = 0;
+        uint32_t m_initialized_subsystems = 0;
     };
 } // namespace sge
