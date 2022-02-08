@@ -85,7 +85,13 @@ inline bool write_file(const fs::path& path, const std::vector<uint32_t>& data) 
 inline std::optional<std::string> embed_license(const std::string& desc) {
     std::optional<std::string> result;
 
-    size_t colon_pos = desc.find(':');
+#ifdef _WIN32
+    static constexpr char desc_separator = ';';
+#else
+    static constexpr char desc_separator = ':';
+#endif
+
+    size_t colon_pos = desc.find(desc_separator);
     fs::path license_path = fs::absolute(desc.substr(0, colon_pos));
 
     std::string license;

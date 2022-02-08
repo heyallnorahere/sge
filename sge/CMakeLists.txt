@@ -39,10 +39,12 @@ else()
     set(SGE_CPU_ARCHITECTURE ARM64)
 endif()
 
+# configuration header
+configure_file("sge_config.h.in" "sge_config.h" @ONLY)
+
 # base lists
-set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/mono/include" "${VENDOR_DIR}/glm")
+set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/mono/include" "${VENDOR_DIR}/glm" ${CMAKE_CURRENT_BINARY_DIR})
 set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${MONO_LIBS})
-set(SGE_DEFINES SGE_VERSION="${SGE_VERSION}" SGE_CPU_ARCHITECTURE="${SGE_CPU_ARCHITECTURE}")
 
 # nvidia nsight aftermath
 if(SGE_USE_AFTERMATH)
@@ -94,13 +96,19 @@ if(MSVC)
     set_source_files_properties(${SGE_SHADERS} PROPERTIES VS_TOOL_OVERRIDE "None")
 endif()
 
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL Windows)
+    set(LICENSE_DESC_SEPARATOR ";")
+else()
+    set(LICENSE_DESC_SEPARATOR ":")
+endif()
+
 # type face directory generation
 set(TYPE_FACE_DIRECTORY_FILE "${CMAKE_CURRENT_BINARY_DIR}/type_face_directory.cpp")
 add_custom_command(OUTPUT ${TYPE_FACE_DIRECTORY_FILE}
     COMMAND embed_type_faces
     "${CMAKE_SOURCE_DIR}/assets/fonts"
     ${TYPE_FACE_DIRECTORY_FILE}
-    "${CMAKE_SOURCE_DIR}/LICENSE:190"
+    "${CMAKE_SOURCE_DIR}/LICENSE${LICENSE_DESC_SEPARATOR}190"
     COMMENT "Generating embedded SGE type face directory"
     DEPENDS "${CMAKE_SOURCE_DIR}/assets/fonts" embed_type_faces)
 
@@ -110,7 +118,6 @@ target_link_libraries(sge PUBLIC ${SGE_LIBS})
 target_include_directories(sge PUBLIC ${SGE_INCLUDES})
 target_compile_definitions(sge PUBLIC ${SGE_DEFINES} $<$<CONFIG:Debug>:SGE_DEBUG>)
 set_target_properties(sge PROPERTIES CXX_STANDARD 17 FOLDER "core")
-
 
 # setup pch
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)

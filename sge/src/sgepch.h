@@ -15,6 +15,8 @@
 */
 
 #pragma once
+#include "sge_config.h"
+
 #include <cstdint>
 #include <stddef.h>
 
