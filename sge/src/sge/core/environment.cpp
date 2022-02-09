@@ -18,6 +18,8 @@
 #include "sge/core/environment.h"
 #ifdef SGE_PLATFORM_WINDOWS
 #include "sge/platform/windows/windows_environment.h"
+#elif defined(SGE_PLATFORM_LINUX)
+#define getenv secure_getenv
 #endif
 
 namespace sge {
@@ -102,7 +104,7 @@ namespace sge {
 #ifdef SGE_PLATFORM_WINDOWS
         value = windows_getenv(key);
 #else
-        char* data = secure_getenv(key.c_str());
+        char* data = getenv(key.c_str());
         if (data != nullptr) {
             value = data;
         }

@@ -39,7 +39,7 @@ namespace sgm::launcher {
 #endif
 
                     home_dir = environment::get(env_name);
-                    home_dir = home_dir.make_preferred();
+                    home_dir.make_preferred();
                 }
 
                 static std::string default_path = (home_dir / "src" / "sge").string();
@@ -56,6 +56,7 @@ namespace sgm::launcher {
                 if (ImGui::Button("Confirm")) {
                     fs::path dir_path = path.empty() ? default_path : path;
                     dir_path = dir_path.lexically_normal();
+                    dir_path.make_preferred();
 
                     if (fs::exists(dir_path)) {
                         if (fs::is_directory(dir_path)) {
@@ -98,7 +99,9 @@ namespace sgm::launcher {
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
+
+        static constexpr float window_padding = 20.f;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(window_padding, window_padding));
 
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.2f, 0.2f, 0.2f, 1.f));
         ImGui::Begin("Main launcher window", nullptr, window_flags);
@@ -110,9 +113,55 @@ namespace sgm::launcher {
             if (environment::has(sge_dir_env_var)) {
                 fs::path sge_dir = environment::get(sge_dir_env_var);
                 fs::current_path(sge_dir);
+
+                m_work_dir_set = true;
             } else {
                 m_popup_manager.open(sge_dir_popup_name);
             }
+        }
+
+        {
+            static std::optional<size_t> hovered_project;
+
+            static constexpr float padding = 20.f;
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(padding, padding));
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(window_padding, window_padding));
+
+            for (size_t i = 0; i < 3; i++) {
+                std::string id = "##project-" + std::to_string(i);
+                bool hovered = hovered_project == i;
+
+                ImVec4 bg_color;
+                if (hovered) {
+                    bg_color = ImVec4(0.6f, 0.6f, 0.6f, 1.f);
+                } else {
+                    bg_color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+                }
+
+                ImGui::PushStyleColor(ImGuiCol_ChildBg, bg_color);
+                ImGui::BeginChild(id.c_str(), ImVec2(0.f, 100.f), true);
+                ImGui::PopStyleColor();
+
+                ImGui::Text("Test project %u", (uint32_t)(i + 1));
+                ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.f), "Some path");
+
+                ImGui::EndChild();
+                if (ImGui::IsItemHovered()) {
+                    hovered_project = i;
+
+                    if (ImGui::IsItemClicked()) {
+                        fs::path sge_dir = environment::get(sge_dir_env_var);
+                        m_callbacks.open_project(sge_dir / "sandbox-project" /
+                                                 "sandbox.sgeproject");
+                    }
+                }
+            }
+
+            if (ImGui::IsWindowHovered()) {
+                hovered_project.reset();
+            }
+
+            ImGui::PopStyleVar(2);
         }
 
         ImGui::End();

@@ -53,6 +53,8 @@ namespace sgm::launcher {
         }
 
         void open_project(const fs::path& project_path) {
+            spdlog::info("opening project: {0}", project_path.string());
+
             // todo: implement
             spdlog::warn("not implemented yet");
         }
