@@ -21,12 +21,78 @@
 #endif
 
 namespace sge {
+	static void export_variable_bourne(const std::string& key, const std::string& value, std::stringstream& stream) {
+		stream << key << "=" << std::quoted(value) << "\nexport " << key;
+	}
+
+	static void export_variable_csh_tcsh(const std::string& key, const std::string& value, std::stringstream& stream) {
+		stream << "setenv " << key << " " << std::quoted(value);
+	}
+
     bool environment::set(const std::string& key, const std::string& value) {
 #ifdef SGE_PLATFORM_WINDOWS
         return windows_setenv(key, value);
 #else
-        // todo: implement
-        return false;
+		fs::path shell_path = get("SHELL");
+		if (!shell_path.empty()) {
+			std::string shell = shell_path.filename();
+
+			if (shell == "fish") {
+				std::stringstream command;
+				command << "set -Ux " << key << " " << std::quoted(value);
+
+				std::stringstream fish_command;
+				fish_command << "fish -c " << std::quoted(command.str());
+
+				std::string end_command = fish_command.str();
+				system(end_command.c_str());
+			} else {
+				using export_variable_t = std::function<void(const std::string&, const std::string&, std::stringstream&)>;
+				static const std::unordered_map<std::string, export_variable_t> export_variable_functions = {
+					{ "bourne", export_variable_bourne },
+					{ "csh", export_variable_csh_tcsh },
+					{ "tcsh", export_variable_csh_tcsh }
+				};
+
+				fs::path home_dir = get("HOME");
+				fs::path profile_path = home_dir / ("." + shell + "rc");
+				std::stringstream file;
+
+				{
+					std::ifstream stream(profile_path);
+					if (stream.is_open()) {
+						std::string line;
+
+						while (std::getline(stream, line)) {
+							file << line << '\n';
+						}
+
+						stream.close();
+					}
+				}
+
+				if (export_variable_functions.find(shell) != export_variable_functions.end()) {
+					auto func = export_variable_functions.at(shell);
+					func(key, value, file);
+				} else {
+					file << "export " << key << "=" << std::quoted(value);
+				}
+
+				{
+					std::ofstream stream(profile_path);
+					if (stream.is_open()) {
+						stream << file.str() << std::flush;
+						stream.close();
+					} else {
+						return false;
+					}
+				}
+			}
+		} else {
+			return false;
+		}
+
+        return setenv(key.c_str(), value.c_str(), 1) == 0;
 #endif
     }
 
@@ -36,7 +102,10 @@ namespace sge {
 #ifdef SGE_PLATFORM_WINDOWS
         value = windows_getenv(key);
 #else
-        // todo: implement
+        char* data = secure_getenv(key.c_str());
+        if (data != nullptr) {
+            value = data;
+        }
 #endif
 
         return value;
@@ -46,8 +115,7 @@ namespace sge {
 #ifdef SGE_PLATFORM_WINDOWS
         return windows_hasenv(key);
 #else
-        // todo: implement
-        return false;
+        return !get(key).empty();
 #endif
     }
 } // namespace sge

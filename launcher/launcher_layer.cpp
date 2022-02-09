@@ -18,6 +18,65 @@
 #include "launcher_layer.h"
 
 namespace sgm::launcher {
+    static const std::string sge_dir_env_var = "SGE_DIR";
+    static const std::string sge_dir_popup_name = "Select SGE directory";
+
+    void launcher_layer::on_attach() {
+        // sge dir selection
+        {
+            popup_manager::popup_data data;
+            data.size.x = 800.f;
+
+            data.callback = []() {
+                ImGui::Text("Please select the directory in which SGE was installed.");
+
+                static fs::path home_dir;
+                if (home_dir.empty()) {
+#ifdef SGE_PLATFORM_WINDOWS
+                    std::string env_name = "USERPROFILE";
+#else
+                    std::string env_name = "HOME";
+#endif
+
+                    home_dir = environment::get(env_name);
+                    home_dir = home_dir.make_preferred();
+                }
+
+                static std::string default_path = (home_dir / "src" / "sge").string();
+                static std::string path;
+
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.1f, 0.1f, 1.f));
+                ImGui::InputTextWithHint("##sge-dir", default_path.c_str(), &path);
+                ImGui::PopStyleColor();
+
+                ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.f),
+                                   "Note: on MacOS and Linux, you may need to relaunch your "
+                                   "terminal.");
+
+                if (ImGui::Button("Confirm")) {
+                    fs::path dir_path = path.empty() ? default_path : path;
+                    dir_path = dir_path.lexically_normal();
+
+                    if (fs::exists(dir_path)) {
+                        if (fs::is_directory(dir_path)) {
+                            if (environment::set(sge_dir_env_var, dir_path.string())) {
+                                ImGui::CloseCurrentPopup();
+                            } else {
+                                spdlog::error("failed to set {0}!", sge_dir_env_var);
+                            }
+                        } else {
+                            spdlog::error("path {0} is not a directory!", dir_path.string());
+                        }
+                    } else {
+                        spdlog::error("path {0} does not exist!", dir_path.string());
+                    }
+                }
+            };
+
+            m_popup_manager.register_popup(sge_dir_popup_name, data);
+        }
+    }
+
     void launcher_layer::on_imgui_render() {
         static constexpr ImGuiConfigFlags required_flags =
             ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
@@ -47,7 +106,16 @@ namespace sgm::launcher {
         ImGui::PopStyleColor();
         ImGui::PopStyleVar(3);
 
-        ImGui::Text("TODO: add controls for launching SGM with projects");
+        if (!m_work_dir_set && !m_popup_manager.is_open(sge_dir_popup_name)) {
+            if (environment::has(sge_dir_env_var)) {
+                fs::path sge_dir = environment::get(sge_dir_env_var);
+                fs::current_path(sge_dir);
+            } else {
+                m_popup_manager.open(sge_dir_popup_name);
+            }
+        }
+
         ImGui::End();
+        m_popup_manager.update();
     }
 } // namespace sgm::launcher

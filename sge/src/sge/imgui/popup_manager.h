@@ -33,14 +33,15 @@ namespace sge {
         popup_manager& operator=(const popup_manager&) = delete;
 
         bool open(const std::string& name);
-        bool register_popup(const std::string& name, const popup_data& data);
+        bool is_open(const std::string& name);
 
+        bool register_popup(const std::string& name, const popup_data& data);
         void update();
 
     private:
         struct internal_popup_data {
             popup_data data;
-            bool opened;
+            bool opened, is_open;
         };
 
         std::unordered_map<std::string, internal_popup_data> m_data;

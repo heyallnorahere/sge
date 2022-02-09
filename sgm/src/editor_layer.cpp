@@ -161,7 +161,7 @@ namespace sgm {
 
                 ImGui::SameLine(about_popup_width -
                                 (style.FramePadding.x * 2.f + version_text_width));
-                ImGui::TextColored(ImVec4(0.3f, 0.3f, 0.3f, 1.f), "%s", version_string.c_str());
+                ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.f), "%s", version_string.c_str());
             };
 
             popup_manager::popup_data data;

@@ -19,8 +19,20 @@
 namespace sge {
     bool popup_manager::open(const std::string& name) {
         if (m_data.find(name) != m_data.end()) {
-            m_data[name].opened = true;
-            return true;
+            auto& data = m_data[name];
+
+            if (!data.is_open) {
+                data.opened = true;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool popup_manager::is_open(const std::string& name) {
+        if (m_data.find(name) != m_data.end()) {
+            return m_data[name].is_open;
         }
 
         return false;
@@ -38,6 +50,7 @@ namespace sge {
         internal_popup_data popup;
         popup.data = data;
         popup.opened = false;
+        popup.is_open = false;
 
         m_data.insert(std::make_pair(name, popup));
         return true;
@@ -63,18 +76,16 @@ namespace sge {
             ImGui::SetNextWindowSize(ImVec2(size.x, size.y), ImGuiCond_Appearing);
 
             static constexpr ImGuiWindowFlags popup_flags =
-                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
-                ImGuiWindowFlags_NoDocking;
+                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking;
             ImGuiWindowFlags flags = popup_flags | popup.data.flags;
 
-            bool open;
             if (popup.data.modal) {
-                open = ImGui::BeginPopupModal(id, p_open, flags);
+                popup.is_open = ImGui::BeginPopupModal(id, p_open, flags);
             } else {
-                open = ImGui::BeginPopup(id, flags);
+                popup.is_open = ImGui::BeginPopup(id, flags);
             }
 
-            if (open) {
+            if (popup.is_open) {
                 popup.data.callback();
                 ImGui::EndPopup();
             }

@@ -14,7 +14,8 @@
    limitations under the License.
 */
 
-#pragma once
+#pragma onces
+#include <sge/imgui/popup_manager.h>
 
 namespace sgm::launcher {
     class launcher_layer : public layer {
@@ -33,9 +34,13 @@ namespace sgm::launcher {
             m_callbacks = callbacks;
         }
 
+        virtual void on_attach() override;
         virtual void on_imgui_render() override;
 
     private:
         app_callbacks m_callbacks;
+        popup_manager m_popup_manager;
+
+        bool m_work_dir_set = false;
     };
 } // namespace sgm::launcher
