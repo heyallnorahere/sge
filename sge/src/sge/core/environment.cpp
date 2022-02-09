@@ -47,7 +47,9 @@ namespace sge {
 				fish_command << "fish -c " << std::quoted(command.str());
 
 				std::string end_command = fish_command.str();
-				system(end_command.c_str());
+				if (system(end_command.c_str()) != 0) {
+					return false;
+				}
 			} else {
 				using export_variable_t = std::function<void(const std::string&, const std::string&, std::stringstream&)>;
 				static const std::unordered_map<std::string, export_variable_t> export_variable_functions = {
