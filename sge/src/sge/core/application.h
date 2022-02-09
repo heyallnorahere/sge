@@ -58,6 +58,7 @@ namespace sge {
         const std::string& get_title() { return m_title; }
         ref<window> get_window() { return m_window; }
         swapchain& get_swapchain() { return *m_swapchain; }
+        imgui_layer& get_imgui_layer() { return *m_imgui_layer; }
 
         bool is_subsystem_initialized(subsystem id) { return (m_initialized_subsystems & id) != 0; }
 

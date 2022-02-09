@@ -24,6 +24,9 @@ namespace sge {
         imgui_layer() : layer("ImGui Layer") {}
         virtual ~imgui_layer() override = default;
 
+        imgui_layer(const imgui_layer&) = delete;
+        imgui_layer& operator=(const imgui_layer&) = delete;
+
         virtual void on_attach() override;
         virtual void on_detach() override;
 

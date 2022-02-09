@@ -26,8 +26,9 @@
 
 // core
 #include "sge/core/application.h"
-#include "sge/core/window.h"
+#include "sge/core/environment.h"
 #include "sge/core/input.h"
+#include "sge/core/window.h"
 
 // events
 #include "sge/events/event.h"

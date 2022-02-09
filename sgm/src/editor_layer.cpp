@@ -21,6 +21,7 @@
 #include "icon_directory.h"
 #include "panels/panels.h"
 #include <sge/scene/scene_serializer.h>
+#include <sge/imgui/imgui_layer.h>
 namespace sgm {
     void editor_layer::on_attach() {
         fs::path scene_path = project::get().get_start_scene();
@@ -36,6 +37,8 @@ namespace sgm {
         add_panel<scene_hierarchy_panel>();
         add_panel<editor_panel>();
         add_panel<content_browser_panel>();
+
+        register_popups();
     }
 
     void editor_layer::on_update(timestep ts) {
@@ -65,7 +68,7 @@ namespace sgm {
         }
 
         texture_cache::new_frame();
-        update_popups();
+        m_popup_manager.update();
         update_dockspace();
 
         for (auto& _panel : m_panels) {
@@ -131,49 +134,42 @@ namespace sgm {
         return false;
     }
 
-    void editor_layer::update_popups() {
+    void editor_layer::register_popups() {
         ImGuiStyle& style = ImGui::GetStyle();
 
-        auto setup_popup = [](float width = 0.f, float height = 0.f) {
-            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-            ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_Appearing);
-        };
+        // about
+        {
+            static constexpr float about_popup_width = 800.f;
 
-        static constexpr float about_popup_width = 600.f;
-        setup_popup(about_popup_width);
-        if (begin_popup("About")) {
-            ImGui::TextWrapped(
-                "Simple Game Engine is an open source 2D game engine focused on easy and "
-                "streamlined development of video games.");
+            std::function<void()> callback = [&]() {
+                ImGui::TextWrapped(
+                    "Simple Game Engine is an open source 2D game engine focused on easy and "
+                    "streamlined development of video games.");
 
-            ImGui::TextWrapped("Please report issues to "
-                               "https://github.com/yodasoda1219/sge/issues");
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.f, 0.f, 1.f));
+                ImGui::Text("Please report issues to "
+                                   "https://github.com/yodasoda1219/sge/issues");
+                ImGui::PopStyleColor();
 
-            if (ImGui::Button("Close")) {
-                ImGui::CloseCurrentPopup();
-            }
+                if (ImGui::Button("Close")) {
+                    ImGui::CloseCurrentPopup();
+                }
 
-            static const std::string version_string = "SGE v" + application::get_engine_version();
-            float version_text_width = ImGui::CalcTextSize(version_string.c_str()).x;
+                static const std::string version_string =
+                    "SGE v" + application::get_engine_version();
+                float version_text_width = ImGui::CalcTextSize(version_string.c_str()).x;
 
-            ImGui::SameLine(about_popup_width - (style.FramePadding.x * 2.f + version_text_width));
-            ImGui::TextColored(ImVec4(0.3f, 0.3f, 0.3f, 1.f), "%s", version_string.c_str());
+                ImGui::SameLine(about_popup_width -
+                                (style.FramePadding.x * 2.f + version_text_width));
+                ImGui::TextColored(ImVec4(0.3f, 0.3f, 0.3f, 1.f), "%s", version_string.c_str());
+            };
 
-            ImGui::EndPopup();
+            popup_manager::popup_data data;
+            data.size.x = 600.f;
+            data.callback = callback;
+
+            m_popup_manager.register_popup("About", data);
         }
-    }
-
-    void editor_layer::open_popup(const std::string& id) { m_opened_popups.insert(id); }
-
-    bool editor_layer::begin_popup(const std::string& id) {
-        if (m_opened_popups.find(id) != m_opened_popups.end()) {
-            m_opened_popups.erase(id);
-
-            ImGui::OpenPopup(id.c_str());
-        }
-
-        return ImGui::BeginPopup(id.c_str());
     }
 
     void editor_layer::update_dockspace() {
@@ -284,7 +280,7 @@ namespace sgm {
 
             if (ImGui::BeginMenu("Help")) {
                 if (ImGui::MenuItem("About")) {
-                    open_popup("About");
+                    m_popup_manager.open("About");
                 }
 
                 ImGui::EndMenu();

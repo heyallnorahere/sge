@@ -16,6 +16,7 @@
 
 #pragma once
 #include "panel.h"
+#include <sge/imgui/popup_manager.h>
 namespace sgm {
     class editor_layer : public layer {
     public:
@@ -37,9 +38,7 @@ namespace sgm {
 
         bool on_key(key_pressed_event& e);
 
-        void update_popups();
-        void open_popup(const std::string& id);
-        bool begin_popup(const std::string& id);
+        void register_popups();
 
         void update_dockspace();
         void update_toolbar();
@@ -52,6 +51,6 @@ namespace sgm {
 
         std::vector<std::unique_ptr<panel>> m_panels;
         std::optional<fs::path> m_scene_path;
-        std::unordered_set<std::string> m_opened_popups;
+        popup_manager m_popup_manager;
     };
 } // namespace sgm

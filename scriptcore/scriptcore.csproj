@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <Target Name="CopyBinary" AfterTargets="Build">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildThisFileDirectory)\assemblies" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildThisFileDirectory)..\assemblies" />
   </Target>
 
 </Project>
