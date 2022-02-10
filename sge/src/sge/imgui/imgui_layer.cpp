@@ -33,7 +33,6 @@ namespace sge {
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
 
-        static constexpr float font_size = 16.f;
         for (const auto& [key, data] : generated_type_face_directory) {
             // memory will be freed by ImGui
             size_t size = data.size() * sizeof(uint32_t);
@@ -41,6 +40,11 @@ namespace sge {
 
             if (font_data == nullptr) {
                 throw std::runtime_error("could not allocate memory to load font: " + key);
+            }
+
+            float font_size = 16.f;
+            if (key.find("Bold") != std::string::npos) {
+                font_size = 32.f;
             }
 
             memcpy(font_data, data.data(), size);

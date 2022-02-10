@@ -16,6 +16,7 @@
 
 #include "launcher_pch.h"
 #include "launcher_layer.h"
+#include <sge/imgui/imgui_layer.h>
 
 namespace sgm::launcher {
     static const std::string sge_dir_env_var = "SGE_DIR";
@@ -79,6 +80,8 @@ namespace sgm::launcher {
     }
 
     void launcher_layer::on_imgui_render() {
+        ImGuiStyle& style = ImGui::GetStyle();
+
         static constexpr ImGuiConfigFlags required_flags =
             ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
 
@@ -109,59 +112,162 @@ namespace sgm::launcher {
         ImGui::PopStyleColor();
         ImGui::PopStyleVar(3);
 
-        if (!m_work_dir_set && !m_popup_manager.is_open(sge_dir_popup_name)) {
-            if (environment::has(sge_dir_env_var)) {
-                fs::path sge_dir = environment::get(sge_dir_env_var);
-                fs::current_path(sge_dir);
+        if (!m_work_dir_set) {
+            if (!m_popup_manager.is_open(sge_dir_popup_name)) {
+                if (environment::has(sge_dir_env_var)) {
+                    fs::path sge_dir = environment::get(sge_dir_env_var);
+                    fs::current_path(sge_dir);
 
-                m_work_dir_set = true;
-            } else {
-                m_popup_manager.open(sge_dir_popup_name);
+                    m_work_dir_set = true;
+                } else {
+                    m_popup_manager.open(sge_dir_popup_name);
+                }
             }
-        }
-
-        {
-            static std::optional<size_t> hovered_project;
-
+        } else {
             static constexpr float padding = 20.f;
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(padding, padding));
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(window_padding, window_padding));
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(padding, window_padding));
 
-            for (size_t i = 0; i < 3; i++) {
-                std::string id = "##project-" + std::to_string(i);
-                bool hovered = hovered_project == i;
+            ImVec2 window_content_region = ImGui::GetContentRegionAvail();
+            float column_size = window_content_region.x * 2.f / 5.f;
 
-                ImVec4 bg_color;
-                if (hovered) {
-                    bg_color = ImVec4(0.6f, 0.6f, 0.6f, 1.f);
-                } else {
-                    bg_color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+            ImGui::Columns(2, nullptr, false);
+            ImGui::SetColumnWidth(0, window_content_region.x - column_size);
+            ImGui::SetColumnWidth(1, column_size);
+
+            // recent projects
+            {
+                static std::optional<size_t> hovered_project;
+
+                size_t unhovered_projects = 0;
+                for (size_t i = 0; i < 3; i++) {
+                    std::string id = "project-" + std::to_string(i);
+                    bool hovered = hovered_project == i;
+
+                    ImVec4 bg_color;
+                    if (hovered) {
+                        bg_color = ImVec4(0.6f, 0.6f, 0.6f, 1.f);
+                    } else {
+                        bg_color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+                    }
+
+                    ImGui::PushStyleColor(ImGuiCol_ChildBg, bg_color);
+                    ImGui::BeginChild(id.c_str(), ImVec2(0.f, 100.f), true);
+                    ImGui::PopStyleColor();
+
+                    ImGui::Text("Test project %u", (uint32_t)(i + 1));
+                    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.f), "Some path");
+
+                    ImGui::EndChild();
+                    if (ImGui::IsItemHovered()) {
+                        hovered_project = i;
+
+                        if (ImGui::IsItemClicked()) {
+                            fs::path sge_dir = environment::get(sge_dir_env_var);
+                            m_callbacks.open_project(sge_dir / "sandbox-project" /
+                                                     "sandbox.sgeproject");
+                        }
+                    } else {
+                        unhovered_projects++;
+                    }
                 }
 
-                ImGui::PushStyleColor(ImGuiCol_ChildBg, bg_color);
-                ImGui::BeginChild(id.c_str(), ImVec2(0.f, 100.f), true);
-                ImGui::PopStyleColor();
-
-                ImGui::Text("Test project %u", (uint32_t)(i + 1));
-                ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.f), "Some path");
-
-                ImGui::EndChild();
-                if (ImGui::IsItemHovered()) {
-                    hovered_project = i;
-
-                    if (ImGui::IsItemClicked()) {
-                        fs::path sge_dir = environment::get(sge_dir_env_var);
-                        m_callbacks.open_project(sge_dir / "sandbox-project" /
-                                                 "sandbox.sgeproject");
-                    }
+                if (unhovered_projects == 3) {
+                    hovered_project.reset();
                 }
             }
 
-            if (ImGui::IsWindowHovered()) {
-                hovered_project.reset();
+            // create/open project
+            ImGui::NextColumn();
+            {
+
+                static std::optional<size_t> hovered_button;
+                size_t unhovered_buttons = 0;
+                size_t total_buttons = 0;
+
+                auto& app = application::get();
+                auto render_button = [&](ref<texture_2d> image, const std::string& text,
+                                         const std::string& id) {
+                    bool hovered = hovered_button == total_buttons;
+
+                    ImVec4 bg_color;
+                    if (hovered) {
+                        bg_color = ImVec4(0.6f, 0.6f, 0.6f, 1.f);
+                    } else {
+                        bg_color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+                    }
+
+                    static constexpr ImGuiWindowFlags button_flags =
+                        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+
+                    ImGui::PushStyleColor(ImGuiCol_ChildBg, bg_color);
+                    ImGui::BeginChild(id.c_str(), ImVec2(0.f, 150.f), true, button_flags);
+                    ImGui::PopStyleColor();
+
+                    ImVec2 content_region = ImGui::GetContentRegionAvail();
+                    float image_size = content_region.y;
+                    ImGui::Image(image->get_imgui_id(), ImVec2(image_size, image_size));
+
+                    ImFont* bold = app.get_imgui_layer().get_font("Roboto-Bold.ttf");
+                    ImGui::PushFont(bold);
+
+                    ImVec2 text_size = ImGui::CalcTextSize(text.c_str());
+                    float text_region = content_region.x - (image_size + style.ItemSpacing.x);
+                    float text_pos = (text_region - text_size.x) / 2.f;
+                    ImGui::SameLine(text_pos + image_size, 0.f);
+
+                    float cursor_pos = ImGui::GetCursorPosY();
+                    cursor_pos += (content_region.y - text_size.y) / 2.f;
+                    ImGui::SetCursorPosY(cursor_pos);
+
+                    ImGui::Text("%s", text.c_str());
+                    ImGui::PopFont();
+                    ImGui::EndChild();
+
+                    bool clicked = false;
+                    if (ImGui::IsItemHovered()) {
+                        hovered_button = total_buttons;
+
+                        if (ImGui::IsItemClicked()) {
+                            clicked = true;
+                        }
+                    } else {
+                        unhovered_buttons++;
+                    }
+
+                    total_buttons++;
+                    return clicked;
+                };
+
+                if (!m_test_texture) {
+                    // todo: design actual icons for creating and opening projects
+                    m_test_texture = texture_2d::load("assets/icons/play.png");
+                }
+
+                if (render_button(m_test_texture, "Create Project", "create-project")) {
+                    spdlog::warn("cannot create projects yet");
+                }
+
+                if (render_button(m_test_texture, "Open Project", "open-project")) {
+                    static const std::vector<dialog_file_filter> project_filters = {
+                        { "SGE project", "*.sgeproject" }
+                    };
+
+                    auto _window = app.get_window();
+                    auto selected = _window->file_dialog(dialog_mode::open, project_filters);
+
+                    if (selected.has_value()) {
+                        m_callbacks.open_project(selected.value());
+                    }
+                }
+
+                if (unhovered_buttons == total_buttons) {
+                    hovered_button.reset();
+                }
             }
 
             ImGui::PopStyleVar(2);
+            ImGui::Columns(1);
         }
 
         ImGui::End();
