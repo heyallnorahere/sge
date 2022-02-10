@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#pragma onces
+#pragma once
 #include <sge/imgui/popup_manager.h>
 
 namespace sgm::launcher {

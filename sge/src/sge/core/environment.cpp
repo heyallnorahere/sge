@@ -122,4 +122,12 @@ namespace sge {
         return !get(key).empty();
 #endif
     }
+
+	fs::path environment::get_home_directory() {
+#ifdef SGE_PLATFORM_WINDOWS
+        return windows_get_home_directory();
+#else
+        return get("HOME");
+#endif
+	}
 } // namespace sge

@@ -33,13 +33,7 @@ namespace sgm::launcher {
 
                 static fs::path home_dir;
                 if (home_dir.empty()) {
-#ifdef SGE_PLATFORM_WINDOWS
-                    std::string env_name = "USERPROFILE";
-#else
-                    std::string env_name = "HOME";
-#endif
-
-                    home_dir = environment::get(env_name);
+                    home_dir = environment::get_home_directory();
                     home_dir.make_preferred();
                 }
 

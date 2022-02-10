@@ -16,7 +16,10 @@
 
 #include "sgepch.h"
 #include "sge/platform/windows/windows_environment.h"
+
 #include <Windows.h>
+#include <ShlObj.h>
+
 namespace sge {
     struct hkey_data {
         HKEY key;
@@ -74,7 +77,7 @@ namespace sge {
                                           (PVOID)data, &data_size);
 
             RegCloseKey(hkey->key);
-            if (status == ERROR_SUCCESS && value_type == REG_SZ) {
+            if (status == ERROR_SUCCESS) {
                 result = data;
             }
 
@@ -96,5 +99,16 @@ namespace sge {
         }
 
         return has_variable;
+    }
+
+    fs::path windows_get_home_directory() {
+        fs::path result;
+
+        wchar_t path[MAX_PATH];
+        if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_PROFILE, nullptr, 0, path))) {
+            result = path;
+        }
+
+        return result;
     }
 } // namespace sge

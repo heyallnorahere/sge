@@ -23,5 +23,7 @@ namespace sge {
         static bool set(const std::string& key, const std::string& value);
         static std::string get(const std::string& key);
         static bool has(const std::string& key);
+
+        static fs::path get_home_directory();
     };
 } // namespace sge

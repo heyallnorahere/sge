@@ -19,4 +19,6 @@ namespace sge {
     bool windows_setenv(const std::string& key, const std::string& value);
     std::string windows_getenv(const std::string& key);
     bool windows_hasenv(const std::string& key);
+
+    fs::path windows_get_home_directory();
 }
