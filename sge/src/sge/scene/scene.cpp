@@ -32,8 +32,21 @@
 #include <box2d/b2_contact.h>
 
 namespace sge {
+    enum class collider_type {
+        box,
+    };
+
+    struct entity_physics_data {
+        std::optional<collider_type> _collider_type;
+        std::optional<glm::vec2> current_box_size;
+
+        b2Fixture* fixture;
+        b2Body* body;
+    };
 
     struct scene_physics_data {
+        std::unordered_map<entt::entity, entity_physics_data> bodies;
+
         b2World* world;
         std::unique_ptr<b2ContactListener> listener;
     };
@@ -228,7 +241,134 @@ namespace sge {
         }
 
         auto& sc = e.get_component<script_component>();
-        verify_script(&sc, e);
+        sc.verify_script(e);
+    }
+
+    void scene::update_physics_data(entity e) {
+        if (e.has_all<rigid_body_component>()) {
+            if (m_physics_data->bodies.find(e) == m_physics_data->bodies.end()) {
+                m_physics_data->bodies.insert(
+                    std::make_pair((entt::entity)e, entity_physics_data()));
+            }
+            auto& data = m_physics_data->bodies[e];
+
+            auto& rb = e.get_component<rigid_body_component>();
+            auto& transform = e.get_component<transform_component>();
+
+            if (data.body == nullptr) {
+                b2BodyDef body_def;
+                body_def.type = rigid_body_type_to_box2d_body(rb.type);
+                body_def.position.Set(transform.translation.x, transform.translation.y);
+                body_def.angle = glm::radians(transform.rotation);
+                body_def.fixedRotation = rb.fixed_rotation;
+
+                data.body = m_physics_data->world->CreateBody(&body_def);
+            } else {
+                b2Vec2 position;
+                position.x = transform.translation.x;
+                position.y = transform.translation.y;
+
+                data.body->SetTransform(position, glm::radians(transform.rotation));
+                data.body->SetFixedRotation(rb.fixed_rotation);
+                data.body->SetType(rigid_body_type_to_box2d_body(rb.type));
+            }
+
+            std::optional<collider_type> type;
+            if (e.has_all<box_collider_component>()) {
+                type = collider_type::box;
+            }
+
+            if (type.has_value()) {
+                switch (type.value()) {
+                case collider_type::box: {
+                    auto& bc = e.get_component<box_collider_component>();
+                    glm::vec2 collider_size = bc.size * transform.scale;
+
+                    bool create_fixture =
+                        (data.fixture == nullptr) || (data._collider_type != collider_type::box);
+                    if (data.current_box_size.has_value()) {
+                        create_fixture |=
+                            (glm::length(data.current_box_size.value() - collider_size) > 0.0001f);
+                    }
+
+                    if (create_fixture) {
+                        b2PolygonShape shape;
+                        shape.SetAsBox(collider_size.x, collider_size.y);
+
+                        b2FixtureDef fixture_def;
+                        fixture_def.shape = &shape;
+                        fixture_def.density = bc.density;
+                        fixture_def.friction = bc.friction;
+                        fixture_def.restitution = bc.restitution;
+                        fixture_def.restitutionThreshold = bc.restitution_threashold;
+                        fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
+
+                        data.fixture = data.body->CreateFixture(&fixture_def);
+                        data.current_box_size = collider_size;
+                        data._collider_type = collider_type::box;
+                    } else {
+                        data.fixture->SetDensity(bc.density);
+                        data.fixture->SetFriction(bc.friction);
+                        data.fixture->SetRestitution(bc.restitution);
+                        data.fixture->SetRestitutionThreshold(bc.restitution_threashold);
+                    }
+                } break;
+                default:
+                    throw std::runtime_error("invalid collider type!");
+                }
+            } else if (data.fixture != nullptr) {
+                data.body->DestroyFixture(data.fixture);
+                data.fixture = nullptr;
+            }
+        } else if (m_physics_data->bodies.find(e) != m_physics_data->bodies.end()) {
+            b2Body* body = m_physics_data->bodies[e].body;
+            if (body != nullptr) {
+                m_physics_data->world->DestroyBody(body);
+            }
+
+            m_physics_data->bodies.erase(e);
+        }
+    }
+
+    bool scene::add_force(entity e, glm::vec2 force, bool wake) {
+        if (!e.has_all<rigid_body_component>()) {
+            return false;
+        }
+
+        // verify that the given entity has a b2Body attached
+        update_physics_data(e);
+
+        // add the force
+        b2Vec2 b2_force(force.x, force.y);
+        m_physics_data->bodies[e].body->ApplyForceToCenter(b2_force, wake);
+
+        return true;
+    }
+
+    std::optional<float> scene::get_angular_velocity(entity e) {
+        std::optional<float> velocity;
+
+        if (e.has_all<rigid_body_component>()) {
+            update_physics_data(e);
+
+            b2Body* body = m_physics_data->bodies[e].body;
+            velocity = body->GetAngularVelocity();
+        }
+
+        return velocity;
+    }
+
+    bool scene::set_angular_velocity(entity e, float velocity) {
+        if (e.has_all<rigid_body_component>()) {
+            update_physics_data(e);
+
+            b2Body* body = m_physics_data->bodies[e].body;
+            body->SetAngularVelocity(velocity);
+
+            return true;
+        }
+
+        return false;
     }
 
     entity scene::find_guid(guid id) {
@@ -248,112 +388,47 @@ namespace sge {
         return found;
     }
 
-    // hack hackity hack hack
-    template <typename T>
-    struct scene_component_copier {
-        T operator()(const T& src, entity e) { return src; }
-    };
-
-    template <>
-    struct scene_component_copier<script_component> {
-        script_component operator()(const script_component& src, entity e) {
-            scene* dst_scene = e.get_scene();
-
-            script_component dst;
-            dst._class = src._class;
-
-            if (src.gc_handle != 0) {
-                dst_scene->verify_script(&dst, e);
-
-                void* src_instance = garbage_collector::get_ref_data(src.gc_handle);
-                void* dst_instance = garbage_collector::get_ref_data(dst.gc_handle);
-
-                std::vector<void*> properties;
-                script_engine::iterate_properties(src._class, properties);
-
-                void* scriptcore = script_engine::get_assembly(0);
-                void* entity_class = script_engine::get_class(scriptcore, "SGE.Entity");
-
-                for (void* property : properties) {
-                    if (!script_helpers::is_property_serializable(property)) {
-                        continue;
-                    }
-
-                    void* value = script_engine::get_property_value(src_instance, property);
-                    if (script_engine::get_property_type(property) != entity_class ||
-                        value == nullptr) {
-                        script_engine::set_property_value(dst_instance, property, value);
-                    } else {
-                        entity native_entity = script_helpers::get_entity_from_object(value);
-
-                        entity found_entity = dst_scene->find_guid(native_entity.get_guid());
-                        if (!found_entity) {
-                            throw std::runtime_error("scene did not copy correctly!");
-                        }
-
-                        void* entity_object = script_helpers::create_entity_object(found_entity);
-                        script_engine::set_property_value(dst_instance, property, entity_object);
-                    }
-                }
-            }
-
-            return dst;
-        }
-    };
-
-    template <typename T>
-    static void copy_component_type(entt::registry& dst, entt::registry& src,
-                                    const std::unordered_map<guid, entt::entity>& entity_map,
-                                    scene* dst_scene) {
-        scene_component_copier<T> copier;
-
-        auto view = src.view<T>();
-        for (entt::entity e : view) {
-            guid id = src.get<id_component>(e).id;
-            if (entity_map.find(id) == entity_map.end()) {
-                throw std::runtime_error("entity registries do not match!");
-            }
-
-            entt::entity new_entity = entity_map.at(id);
-            T& data = src.get<T>(e);
-
-            entity entity_object(new_entity, dst_scene);
-            dst.emplace_or_replace<T>(new_entity, copier(data, entity_object));
-        }
-    }
-
     ref<scene> scene::copy() {
         auto new_scene = ref<scene>::create();
 
-        entt::registry& dst_registry = new_scene->m_registry;
-        std::unordered_map<guid, entt::entity> entity_map;
+        // Map from the entt entity id in the old scene to the new scene
+        std::unordered_map<entt::entity, entt::entity> entity_map;
 
+        // Create corresponding entities (without components) in the new scene. Make sure guid and
+        // tag match.  Also store map from id to new entity in entity map.
         {
-            auto view = m_registry.view<id_component>();
+            auto view = m_registry.view<id_component, tag_component>();
             for (entt::entity id : view) {
                 entity original(id, this);
-                guid entity_id = original.get_component<id_component>().id;
+                guid entity_id = original.get_guid();
                 const std::string& tag = original.get_component<tag_component>().tag;
 
                 entity new_entity = new_scene->create_entity(entity_id, tag);
-                entity_map.insert(std::make_pair(entity_id, (entt::entity)new_entity));
+                entity_map.insert(std::make_pair(id, (entt::entity)new_entity));
             }
         }
 
-        copy_component_type<transform_component>(dst_registry, m_registry, entity_map,
-                                                 new_scene.raw());
-        copy_component_type<camera_component>(dst_registry, m_registry, entity_map,
-                                              new_scene.raw());
-        copy_component_type<sprite_renderer_component>(dst_registry, m_registry, entity_map,
-                                                       new_scene.raw());
-        copy_component_type<native_script_component>(dst_registry, m_registry, entity_map,
-                                                     new_scene.raw());
-        copy_component_type<rigid_body_component>(dst_registry, m_registry, entity_map,
-                                                  new_scene.raw());
-        copy_component_type<box_collider_component>(dst_registry, m_registry, entity_map,
-                                                    new_scene.raw());
-        copy_component_type<script_component>(dst_registry, m_registry, entity_map,
-                                              new_scene.raw());
+        // Loop over every component type in source scene
+        for (auto&& curr : m_registry.storage()) {
+            using namespace entt::literals;
+            auto& storage = curr.second;
+            // Only iterate over the entities in the storage pool if that type supports cloning.
+            auto type = entt::resolve(storage.type());
+            if (!type) {
+                continue;
+            }
+            if (auto clone = type.func("clone"_hs); clone) {
+                for (auto&& e : storage) {
+                    auto srce = entity{ e, this };
+                    auto dste = entity{ entity_map.at(e), new_scene.raw() };
+                    auto raw = storage.get(e);
+                    if (!clone.invoke({}, entt::forward_as_meta(srce), entt::forward_as_meta(dste),
+                                      raw)) {
+                        throw std::runtime_error("Error cloning component!");
+                    }
+                }
+            }
+        }
 
         new_scene->set_viewport_size(m_viewport_width, m_viewport_height);
         return new_scene;
@@ -366,40 +441,6 @@ namespace sge {
             m_physics_data->world = new b2World(b2Vec2(0.f, -9.8f));
             m_physics_data->listener = scene_contact_listener::create(this);
             m_physics_data->world->SetContactListener(m_physics_data->listener.get());
-
-            auto view = m_registry.view<rigid_body_component>();
-            for (auto id : view) {
-                entity e(id, this);
-                auto& transform = e.get_component<transform_component>();
-                auto& rb = e.get_component<rigid_body_component>();
-
-                b2BodyDef body_def;
-                body_def.type = rigid_body_type_to_box2d_body(rb.type);
-                body_def.position.Set(transform.translation.x, transform.translation.y);
-                body_def.angle = glm::radians(transform.rotation);
-                b2Body* body = m_physics_data->world->CreateBody(&body_def);
-                body->SetFixedRotation(rb.fixed_rotation);
-                rb.runtime_body = body;
-
-                if (e.has_all<box_collider_component>()) {
-                    auto& bc = e.get_component<box_collider_component>();
-
-                    b2PolygonShape box_shape;
-                    box_shape.SetAsBox(bc.size.x * transform.scale.x,
-                                       bc.size.y * transform.scale.y);
-
-                    b2FixtureDef fixture_def;
-                    fixture_def.shape = &box_shape;
-                    fixture_def.density = bc.density;
-                    fixture_def.friction = bc.friction;
-                    fixture_def.restitution = bc.restitution;
-                    fixture_def.restitutionThreshold = bc.restitution_threashold;
-                    fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
-
-                    auto fixture = body->CreateFixture(&fixture_def);
-                    bc.runtime_fixture = fixture;
-                }
-            }
         }
 
         // Call OnStart method, if it exists
@@ -492,30 +533,21 @@ namespace sge {
 
         // Physics
         {
+            // update physics data for every entity in the scene
+            for_each([this](entity e) { update_physics_data(e); });
+
+            // update physics world
             static constexpr int32_t velocity_iterations = 6;
             static constexpr int32_t position_iterations = 2;
+            m_physics_data->world->Step(ts.count(), velocity_iterations, position_iterations);
 
+            // sync position data
             auto view = m_registry.view<transform_component, rigid_body_component>();
             for (entt::entity id : view) {
                 entity e(id, this);
-                const auto& transform = e.get_component<transform_component>();
-                auto& rb = e.get_component<rigid_body_component>();
-
-                b2Body* body = (b2Body*)rb.runtime_body;
-                b2Vec2 position;
-                position.x = transform.translation.x;
-                position.y = transform.translation.y;
-                body->SetTransform(position, glm::radians(transform.rotation));
-            }
-
-            m_physics_data->world->Step(ts.count(), velocity_iterations, position_iterations);
-
-            for (entt::entity id : view) {
-                entity e(id, this);
                 auto& transform = e.get_component<transform_component>();
-                auto& rb = e.get_component<rigid_body_component>();
 
-                b2Body* body = (b2Body*)rb.runtime_body;
+                b2Body* body = m_physics_data->bodies[e].body;
                 const auto& position = body->GetPosition();
                 transform.translation.x = position.x;
                 transform.translation.y = position.y;
@@ -573,20 +605,94 @@ namespace sge {
         renderer::end_scene();
     }
 
+    static void create_event_class_map(std::unordered_map<event_id, void*>& map) {
+        static const std::unordered_map<event_id, std::string> names = {
+            { event_id::window_close, "WindowClose" },
+            { event_id::window_resize, "WindowResize" },
+            { event_id::key_pressed, "KeyPressed" },
+            { event_id::key_released, "KeyReleased" },
+            { event_id::key_typed, "KeyTyped" },
+            { event_id::mouse_moved, "MouseMoved" },
+            { event_id::mouse_scrolled, "MouseScrolled" },
+            { event_id::mouse_button, "MouseButton" }
+        };
+
+        class_name_t name_data;
+        name_data.namespace_name = "SGE.Events";
+
+        void* core = script_engine::get_assembly(0);
+        for (const auto& [id, name] : names) {
+            name_data.class_name = name + "Event";
+            void* _class = script_engine::get_class(core, name_data);
+            
+            if (_class != nullptr) {
+                map.insert(std::make_pair(id, _class));
+            }
+        }
+    }
+
     void scene::on_event(event& e) {
-        event_dispatcher dispatcher(e);
+        // native scripts
+        {
+            auto view = m_registry.view<native_script_component>();
+            for (auto entt_entity : view) {
+                if (e.handled) {
+                    break;
+                }
 
-        auto view = m_registry.view<native_script_component>();
-        for (auto entt_entity : view) {
-            entity entity(entt_entity, this);
-            auto& nsc = entity.get_component<native_script_component>();
+                entity entity(entt_entity, this);
+                auto& nsc = entity.get_component<native_script_component>();
 
-            if (nsc.script == nullptr && nsc.instantiate != nullptr) {
-                nsc.instantiate(&nsc, entity);
+                if (nsc.script == nullptr && nsc.instantiate != nullptr) {
+                    nsc.instantiate(&nsc, entity);
+                }
+
+                if (nsc.script != nullptr) {
+                    nsc.script->on_event(e);
+                }
+            }
+        }
+
+        // managed scripts
+        {
+            uint32_t event_handle = 0;
+
+            auto view = m_registry.view<script_component>();
+            for (entt::entity id : view) {
+                if (e.handled) {
+                    continue;
+                }
+
+                entity current(id, this);
+                auto& sc = current.get_component<script_component>();
+                if (sc._class == nullptr) {
+                    continue;
+                }
+
+                static const std::string event_name = "OnEvent(Event)";
+                void* OnEvent = script_engine::get_method(sc._class, event_name);
+                if (OnEvent == nullptr) {
+                    continue;
+                }
+
+                if (event_handle == 0) {
+                    void* event_instance = script_helpers::create_event_object(e);
+                    if (event_instance == nullptr) {
+                        break;
+                    }
+
+                    event_handle = garbage_collector::create_ref(event_instance);
+                }
+
+                verify_script(current);
+                void* script_instance = garbage_collector::get_ref_data(sc.gc_handle);
+
+                void* event_instance = garbage_collector::get_ref_data(event_handle);
+                script_engine::call_method(script_instance, OnEvent, event_instance);
             }
 
-            if (nsc.script != nullptr) {
-                nsc.script->on_event(e);
+            if (event_handle != 0) {
+                garbage_collector::destroy_ref(event_handle);
             }
         }
     }
@@ -625,35 +731,6 @@ namespace sge {
                 renderer::draw_rotated_quad(transform.translation, transform.rotation,
                                             transform.scale, sprite.color);
             }
-        }
-    }
-
-    void scene::verify_script(void* component, entity e) {
-        auto& sc = *(script_component*)component;
-        if (sc._class != nullptr && sc.gc_handle == 0) {
-            void* instance = script_engine::alloc_object(sc._class);
-
-            if (script_engine::get_method(sc._class, ".ctor") != nullptr) {
-                void* constructor = script_engine::get_method(sc._class, ".ctor()");
-                if (constructor != nullptr) {
-                    script_engine::call_method(instance, constructor);
-                } else {
-                    class_name_t name_data;
-                    script_engine::get_class_name(sc._class, name_data);
-                    std::string full_name = script_engine::get_string(name_data);
-
-                    throw std::runtime_error("could not find a suitable constructor for script: " +
-                                             full_name);
-                }
-            } else {
-                script_engine::init_object(instance);
-            }
-
-            void* entity_instance = script_helpers::create_entity_object(e);
-            void* entity_field = script_engine::get_field(sc._class, "__internal_mEntity");
-            script_engine::set_field_value(instance, entity_field, entity_instance);
-
-            sc.gc_handle = garbage_collector::create_ref(instance);
         }
     }
 

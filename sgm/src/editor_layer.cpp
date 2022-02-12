@@ -19,8 +19,28 @@
 #include "editor_scene.h"
 #include "texture_cache.h"
 #include "icon_directory.h"
+#include "panels/panels.h"
 #include <sge/scene/scene_serializer.h>
+#include <sge/imgui/imgui_layer.h>
 namespace sgm {
+    void editor_layer::on_attach() {
+        fs::path scene_path = project::get().get_start_scene();
+        if (fs::exists(scene_path)) {
+            editor_scene::load(scene_path);
+            m_scene_path = scene_path;
+        } else {
+            spdlog::warn("attempted to load nonexistent start scene: {0}", scene_path.string());
+        }
+
+        add_panel<renderer_info_panel>();
+        add_panel<viewport_panel>([this](const fs::path& path) { m_scene_path = path; });
+        add_panel<scene_hierarchy_panel>();
+        add_panel<editor_panel>();
+        add_panel<content_browser_panel>();
+
+        register_popups();
+    }
+
     void editor_layer::on_update(timestep ts) {
         for (auto& _panel : m_panels) {
             _panel->update(ts);
@@ -31,8 +51,7 @@ namespace sgm {
 
     void editor_layer::on_event(event& e) {
         event_dispatcher dispatcher(e);
-
-        // todo: on_key event for keyboard shortcuts
+        dispatcher.dispatch<key_pressed_event>(SGE_BIND_EVENT_FUNC(editor_layer::on_key));
 
         if (!e.handled) {
             editor_scene::on_event(e);
@@ -49,6 +68,7 @@ namespace sgm {
         }
 
         texture_cache::new_frame();
+        m_popup_manager.update();
         update_dockspace();
 
         for (auto& _panel : m_panels) {
@@ -63,6 +83,92 @@ namespace sgm {
                 // end imgui window
                 ImGui::End();
             }
+        }
+    }
+
+    bool editor_layer::on_key(key_pressed_event& e) {
+        if (e.get_repeat_count() > 0) {
+            return false;
+        }
+
+        bool control =
+            input::get_key(key_code::LEFT_CONTROL) || input::get_key(key_code::RIGHT_CONTROL);
+        bool shift = input::get_key(key_code::LEFT_SHIFT) || input::get_key(key_code::RIGHT_SHIFT);
+
+        switch (e.get_key()) {
+        case key_code::N:
+            if (control) {
+                new_scene();
+                return true;
+            }
+
+            break;
+        case key_code::O:
+            if (control) {
+                open();
+                return true;
+            }
+
+            break;
+        case key_code::S:
+            if (control) {
+                if (shift) {
+                    save_as();
+                } else {
+                    save();
+                }
+
+                return true;
+            }
+
+            break;
+        case key_code::Q:
+            if (control) {
+                application::get().quit();
+                return true;
+            }
+
+            break;
+        }
+
+        return false;
+    }
+
+    void editor_layer::register_popups() {
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        // about
+        {
+            static constexpr float about_popup_width = 800.f;
+
+            std::function<void()> callback = [&]() {
+                ImGui::TextWrapped(
+                    "Simple Game Engine is an open source 2D game engine focused on easy and "
+                    "streamlined development of video games.");
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.f, 0.f, 1.f));
+                ImGui::Text("Please report issues to "
+                                   "https://github.com/yodasoda1219/sge/issues");
+                ImGui::PopStyleColor();
+
+                if (ImGui::Button("Close")) {
+                    ImGui::CloseCurrentPopup();
+                }
+
+                static const std::string version_string =
+                    "SGE v" + application::get_engine_version();
+                float version_text_width = ImGui::CalcTextSize(version_string.c_str()).x;
+
+                ImGui::SameLine(about_popup_width -
+                                (style.FramePadding.x * 2.f + version_text_width));
+                ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.f), "%s", version_string.c_str());
+            };
+
+            popup_manager::popup_data data;
+            data.size.x = 600.f;
+            data.callback = callback;
+
+            m_popup_manager.register_popup("About", data);
         }
     }
 
@@ -100,7 +206,8 @@ namespace sgm {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.f, 0.f));
 
         ImGuiID window_id = ImGui::GetID("toolbar");
-        ImGui::BeginChild(window_id, ImVec2(0.f, toolbar_height), false, ImGuiWindowFlags_NoScrollbar);
+        ImGui::BeginChild(window_id, ImVec2(0.f, toolbar_height), false,
+                          ImGuiWindowFlags_NoScrollbar);
 
         ImGui::PopStyleVar(2);
 
@@ -137,32 +244,26 @@ namespace sgm {
     void editor_layer::update_menu_bar() {
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                auto& app = application::get();
-                {
-                    auto _window = app.get_window();
-                    static const std::vector<dialog_file_filter> filters = {
-                        { "SGE scene (*.sgescene)", "*.sgescene" }
-                    };
+                if (ImGui::MenuItem("New Scene", "Ctrl+N")) {
+                    new_scene();
+                }
 
-                    if (ImGui::MenuItem("Open...", "Ctrl+O")) {
-                        auto path = _window->file_dialog(dialog_mode::open, filters);
-                        if (path.has_value()) {
-                            editor_scene::load(path.value());
-                        }
-                    }
+                if (ImGui::MenuItem("Open...", "Ctrl+O")) {
+                    open();
+                }
 
-                    if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
-                        auto path = _window->file_dialog(dialog_mode::save, filters);
-                        if (path.has_value()) {
-                            editor_scene::save(path.value());
-                        }
-                    }
+                if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
+                    save_as();
+                }
+
+                if (ImGui::MenuItem("Save", "Ctrl+S")) {
+                    save();
                 }
 
                 ImGui::Separator();
 
                 if (ImGui::MenuItem("Quit", "Ctrl+Q")) {
-                    app.quit();
+                    application::get().quit();
                 }
 
                 ImGui::EndMenu();
@@ -177,7 +278,61 @@ namespace sgm {
                 ImGui::EndMenu();
             }
 
+            if (ImGui::BeginMenu("Help")) {
+                if (ImGui::MenuItem("About")) {
+                    m_popup_manager.open("About");
+                }
+
+                ImGui::EndMenu();
+            }
+
             ImGui::EndMenuBar();
+        }
+    }
+
+    void editor_layer::new_scene() {
+        // todo(nora): if edited, confirm load
+
+        if (editor_scene::running()) {
+            editor_scene::stop();
+        }
+
+        auto _scene = editor_scene::get_scene();
+        _scene->clear();
+
+        m_scene_path.reset();
+        garbage_collector::collect();
+    }
+
+    static const dialog_file_filter scene_filter = { "SGE scene (*.sgescene)", "*.sgescene" };
+
+    void editor_layer::open() {
+        // todo(nora): if edited, confirm load
+
+        auto _window = application::get().get_window();
+        auto path = _window->file_dialog(dialog_mode::open, { scene_filter });
+
+        if (path.has_value()) {
+            editor_scene::load(path.value());
+            m_scene_path = path;
+        }
+    }
+
+    void editor_layer::save_as() {
+        auto _window = application::get().get_window();
+        auto path = _window->file_dialog(dialog_mode::save, { scene_filter });
+
+        if (path.has_value()) {
+            editor_scene::save(path.value());
+            m_scene_path = path;
+        }
+    }
+
+    void editor_layer::save() {
+        if (m_scene_path.has_value()) {
+            editor_scene::save(m_scene_path.value());
+        } else {
+            save_as();
         }
     }
 } // namespace sgm

@@ -21,16 +21,13 @@ namespace SGE.Components
     /// <summary>
     /// A sprite renderer component, as the name suggests, renders a sprite.
     /// </summary>
-    public sealed class SpriteRendererComponent
+    public sealed class SpriteRendererComponent : Component<SpriteRendererComponent>
     {
-        internal SpriteRendererComponent(IntPtr address)
+        public SpriteRendererComponent()
         {
-            mAddress = address;
             throw new NotImplementedException();
         }
 
         // todo(nora): we need a vector4 struct and a managed texture class
-
-        private readonly IntPtr mAddress;
     }
 }

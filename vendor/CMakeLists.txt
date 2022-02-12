@@ -19,12 +19,17 @@ if(SGE_PLATFORM_DESKTOP)
     add_subdirectory("glfw")
 endif()
 
+add_subdirectory("Vulkan-Headers")
 if(SGE_USE_VULKAN)
     add_subdirectory("VulkanMemoryAllocator")
 endif()
 
 if(SGE_USE_DIRECTX)
     add_subdirectory("DirectX-Headers")
+    
+endif()
+if(SGE_USE_AFTERMATH)
+    add_subdirectory("aftermath-helpers")
 endif()
 
 include("imgui.cmake")

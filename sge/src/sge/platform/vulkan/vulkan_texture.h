@@ -23,9 +23,12 @@ namespace sge {
         vulkan_texture_2d(const texture_spec& spec);
         virtual ~vulkan_texture_2d() override;
 
+        virtual void reload() override;
+
         virtual ref<image_2d> get_image() override { return m_image; }
         virtual texture_wrap get_wrap() override { return m_wrap; }
         virtual texture_filter get_filter() override { return m_filter; }
+        virtual const fs::path& get_path() override { return m_path; }
 
         virtual ImTextureID get_imgui_id() override;
 
@@ -40,6 +43,7 @@ namespace sge {
 
         texture_wrap m_wrap;
         texture_filter m_filter;
+        fs::path m_path;
 
         VkDescriptorImageInfo m_descriptor_info;
         ImTextureID m_imgui_id;

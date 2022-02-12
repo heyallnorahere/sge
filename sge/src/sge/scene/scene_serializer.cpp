@@ -21,44 +21,8 @@
 #include "sge/script/script_engine.h"
 #include "sge/script/script_helpers.h"
 #include "sge/script/garbage_collector.h"
-
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
-
-namespace glm {
-    void to_json(json& data, const vec2& vec) {
-        for (length_t i = 0; i < 2; i++) {
-            data.push_back(vec[i]);
-        }
-    }
-
-    void from_json(const json& data, vec2& vec) {
-        if (data.size() != 2) {
-            throw std::runtime_error("malformed json");
-        }
-
-        for (length_t i = 0; i < 2; i++) {
-            vec[i] = data[i].get<float>();
-        }
-    }
-
-    void to_json(json& data, const vec4& vec) {
-        for (length_t i = 0; i < 4; i++) {
-            data.push_back(vec[i]);
-        }
-    }
-
-    void from_json(const json& data, vec4& vec) {
-        if (data.size() != 4) {
-            throw std::runtime_error("malformed json");
-        }
-
-        for (length_t i = 0; i < 4; i++) {
-            vec[i] = data[i].get<float>();
-        }
-    }
-} // namespace glm
-
+#include "sge/asset/json.h"
+#include "sge/asset/project.h"
 namespace sge {
     struct serialization_data {
         std::queue<std::function<void()>> post_deserialize;
@@ -66,20 +30,6 @@ namespace sge {
         entity current_entity;
     };
     static std::unique_ptr<serialization_data> current_serialization;
-
-    static std::string serialize_path(const fs::path& path) {
-        std::string result = path.string();
-
-        size_t pos;
-        while ((pos = result.find('\\')) != std::string::npos) {
-            result.replace(pos, 1, "/");
-        }
-
-        return result;
-    }
-
-    void to_json(json& data, const guid& id) { data = (uint64_t)id; }
-    void from_json(const json& data, guid& id) { id = data.get<uint64_t>(); }
 
     void to_json(json& data, const id_component& comp) { data = comp.id; }
     void from_json(const json& data, id_component& comp) { comp.id = data.get<guid>(); }
@@ -141,11 +91,22 @@ namespace sge {
 
     void to_json(json& data, const sprite_renderer_component& comp) {
         data["color"] = comp.color;
+        data["texture"] = nullptr;
 
-        if (!comp.texture_path.empty()) {
-            data["texture"] = serialize_path(comp.texture_path);
-        } else {
-            data["texture"] = nullptr;
+        if (comp.texture) {
+            if (!project::loaded()) {
+                throw std::runtime_error("cannot serialize assets without a project loaded!");
+            }
+
+            fs::path path = comp.texture->get_path();
+            if (!path.empty()) {
+                if (path.is_absolute()) {
+                    fs::path asset_dir = project::get().get_asset_dir();
+                    path = path.lexically_relative(asset_dir);
+                }
+
+                data["texture"] = path;
+            }
         }
     }
 
@@ -153,20 +114,16 @@ namespace sge {
         comp.color = data["color"].get<glm::vec4>();
 
         if (!data["texture"].is_null()) {
-            fs::path path = data["texture"].get<std::string>();
-
-            auto img_data = image_data::load(path);
-            if (!img_data) {
-                throw std::runtime_error("could not load sprite texture: " + path.string());
+            if (!project::loaded()) {
+                throw std::runtime_error("cannot deserialize assets without a project loaded!");
             }
 
-            // again, replace once asset system
-            texture_spec spec;
-            spec.filter = texture_filter::linear;
-            spec.wrap = texture_wrap::repeat;
-            spec.image = image_2d::create(img_data, image_usage_none);
-            comp.texture = texture_2d::create(spec);
-            comp.texture_path = path;
+            fs::path path = data["texture"].get<fs::path>();
+            auto _asset = project::get().get_asset_manager().get_asset(path);
+
+            if (_asset) {
+                comp.texture = _asset.as<texture_2d>();
+            }
         }
     }
 
@@ -253,10 +210,9 @@ namespace sge {
         }
 
         data["script_name"] = component.class_name;
-
         data["properties"] = nullptr;
+
         if (component.gc_handle != 0) {
-            current_serialization->_scene->verify_script(current_serialization->current_entity);
             void* instance = garbage_collector::get_ref_data(component.gc_handle);
 
             std::vector<void*> properties;
@@ -338,7 +294,7 @@ namespace sge {
                 };
 
             entity current_entity = current_serialization->current_entity;
-            current_serialization->_scene->verify_script(&component, current_entity);
+            component.verify_script(current_entity);
             void* instance = garbage_collector::get_ref_data(component.gc_handle);
 
             std::vector<void*> properties;
@@ -369,12 +325,17 @@ namespace sge {
     void from_json(const json& data, script_component& component) {
         component.class_name = data["script_name"].get<std::string>();
 
-        // todo: make this more dynamic
-        void* app_assembly = script_engine::get_assembly(1);
+        std::optional<size_t> assembly_index = project::get().get_assembly_index();
+        if (!assembly_index.has_value()) {
+            spdlog::warn("there is no app assembly loaded!");
+            return;
+        }
+
+        void* app_assembly = script_engine::get_assembly(assembly_index.value());
         component._class = script_engine::get_class(app_assembly, component.class_name);
 
         json property_data = data["properties"];
-        if (!property_data.is_null()) {
+        if (!property_data.is_null() && component._class != nullptr) {
             script_deserializer deserializer;
             deserializer(property_data, component);
         }
@@ -462,9 +423,16 @@ namespace sge {
         current_serialization->_scene = m_scene;
 
         json data;
-        std::ifstream stream(path);
-        stream >> data;
-        stream.close();
+        try {
+            std::ifstream stream(path);
+            stream >> data;
+            stream.close();
+        } catch (const std::exception& exc) {
+            spdlog::warn("error while reading scene {0}: {1}", path.string(), exc.what());
+            
+            current_serialization.reset();
+            return;
+        }
 
         m_scene->clear();
 

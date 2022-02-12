@@ -45,6 +45,7 @@ namespace sge {
         vulkan_physical_device(const vulkan_physical_device&) = default;
         vulkan_physical_device& operator=(const vulkan_physical_device&) = default;
 
+        bool is_extension_supported(const std::string& name) const;
         void query_queue_families(VkQueueFlags query, queue_family_indices& indices) const;
         void get_properties(VkPhysicalDeviceProperties& properties) const;
         void get_features(VkPhysicalDeviceFeatures& features) const;
@@ -89,5 +90,6 @@ namespace sge {
 
         VkDevice m_device;
         vulkan_physical_device m_physical_device;
+        void* m_crash_tracker;
     };
 } // namespace sge

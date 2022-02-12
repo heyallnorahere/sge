@@ -4,13 +4,17 @@ if(NOT ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     message(FATAL_ERROR "SGE must be built as a standalone project!")
 endif()
 
+# todo: from git tag
+set(SGE_VERSION 0.0.1)
+
 set(SGE_LANGUAGES C CXX)
 if(APPLE AND ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
     list(APPEND SGE_LANGUAGES OBJC OBJCXX)
 endif()
 
-project(sge LANGUAGES ${SGE_LANGUAGES})
+project(sge VERSION ${SGE_VERSION} LANGUAGES ${SGE_LANGUAGES})
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # platform detection
 if(${CMAKE_SYSTEM_NAME} STREQUAL Windows)
@@ -25,7 +29,7 @@ set(SGE_PLATFORM_DESKTOP ${SGE_PLATFORM_WINDOWS} OR ${SGE_PLATFORM_LINUX} OR ${S
 # find packages
 find_package(Vulkan)
 find_package(D3D12)
-find_package(Mono REQUIRED)
+find_package(Aftermath)
 
 set(SGE_DIRECTX_SUPPORTED ${SGE_PLATFORM_DESKTOP}) # todo: uwp
 set(SGE_VULKAN_SUPPORTED ${SGE_PLATFORM_DESKTOP})
@@ -36,46 +40,69 @@ include(CMakeDependentOption)
 option(SGE_BUILD_SCRIPTCORE "Build SGE script core." ON)
 cmake_dependent_option(SGE_USE_DIRECTX "Use the DirectX 12 graphics api." ON "SGE_DIRECTX_SUPPORTED AND D3D12_FOUND" OFF)
 cmake_dependent_option(SGE_USE_VULKAN "Use the Vulkan graphics api." ON "SGE_VULKAN_SUPPORTED AND Vulkan_FOUND" OFF)
+cmake_dependent_option(SGE_USE_AFTERMATH "Use the NVIDIA Nsight Aftermath SDK" OFF "Aftermath_FOUND" OFF)
 
 # dependencies
 add_subdirectory("vendor")
 
+# tools
+add_subdirectory("tools")
+
 # mono DLL macro
 macro(copy_required_dlls target_name)
     if(WIN32)
-        add_custom_command(TARGET ${target_name} POST_BUILD COMMAND
-            ${CMAKE_COMMAND} -E copy_if_different ${Mono_DLL} $<TARGET_FILE_DIR:${target_name}>)
-    endif()
-endmacro()
-
-# managed (c#) target macro
-macro(managed_target target_name project_file)
-    if(SGE_BUILD_SCRIPTCORE)
-        if(MSVC)
-            include_external_msproject(${target_name} ${project_file})
-        else()
-            add_custom_target(${target_name} ALL
-                COMMAND mono ${Mono_MSBUILD} -noLogo -v:q -p:Configuration=$<CONFIG> ${project_file})
+        set(DLLS_TO_COPY "${CMAKE_SOURCE_DIR}/vendor/mono/bin/windows/coreclr.dll")
+        if(SGE_USE_AFTERMATH)
+            list(APPEND DLLS_TO_COPY ${Aftermath_DLLS})
         endif()
-    else()
-        add_custom_target(${target_name} ALL COMMAND echo "SGE_BUILD_SCRIPTORE was disabled.")
+
+        foreach(DLL ${DLLS_TO_COPY})
+            add_custom_command(TARGET ${target_name} POST_BUILD
+                               COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DLL} $<TARGET_FILE_DIR:${target_name}>)
+        endforeach()
     endif()
 endmacro()
 
 # sge targets
-add_subdirectory("scriptcore")
 add_subdirectory("sge")
 add_subdirectory("sgm")
-add_subdirectory("sandbox")
-add_subdirectory("example-scripts")
+add_subdirectory("launcher")
 
-if(MSVC)
-    set_directory_properties(PROPERTIES VS_STARTUP_PROJECT sgm)
+# output binaries into ${CMAKE_SOURCE_DIR}/bin, subdirectory if not release
+set_target_properties(sgm launcher PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+    "${CMAKE_SOURCE_DIR}/bin/$<$<NOT:$<CONFIG:Release>>:$<CONFIG>>")
+
+# managed code
+if(SGE_BUILD_SCRIPTCORE)
+    if(MSVC)
+        include_external_msproject(scriptcore "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj")
+        set_target_properties(scriptcore PROPERTIES FOLDER "core")
+    else()
+        find_program(dotnet_EXECUTABLE NAMES dotnet
+                     PATHS "/usr/share" "/usr/local/share"
+                           "C:\\Program Files" "C:\\Program Files (x86)"
+                     PATH_SUFFIXES dotnet)
+        
+        if(NOT ${dotnet_EXECUTABLE} STREQUAL "dotnet_EXECUTABLE-NOTFOUND")
+            add_custom_target(scriptcore ALL
+                COMMAND ${dotnet_EXECUTABLE} build -nologo -v:m -c $<CONFIG>
+                "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj"
+                COMMENT "Building SGE.Scriptcore.dll")
+        else()
+            message(STATUS "Could not find the .NET Core executable - skipping build target")
+        endif()
+    endif()
+
+    if(TARGET scriptcore)
+        add_dependencies(sge scriptcore)
+    endif()
 endif()
 
-# folders
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+if(MSVC)
+    set_directory_properties(PROPERTIES VS_STARTUP_PROJECT launcher)
+endif()
 
+# add all dependencies to a folder in IDEs
 macro(get_targets DIRECTORY TARGETS)
     get_property(SUBDIRECTORIES DIRECTORY ${DIRECTORY} PROPERTY SUBDIRECTORIES)
     foreach(SUBDIRECTORY ${SUBDIRECTORIES})

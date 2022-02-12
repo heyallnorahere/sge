@@ -47,6 +47,12 @@ namespace sge {
         void reset_script(entity e);
         void verify_script(entity e);
 
+        void update_physics_data(entity e);
+        bool add_force(entity e, glm::vec2 force, bool wake = true);
+
+        std::optional<float> get_angular_velocity(entity e);
+        bool set_angular_velocity(entity e, float velocity);
+
         entity find_guid(guid id);
         ref<scene> copy();
 
@@ -71,6 +77,11 @@ namespace sge {
     private:
         template <typename T>
         void on_component_added(const entity& e, T& component) {
+            // no behavior
+        }
+
+        template <typename T>
+        void on_component_changed(const entity& e, T& component) {
             // no behavior
         }
 

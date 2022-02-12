@@ -1,0 +1,22 @@
+[
+    {
+        "guid": null,
+        "path": "Scripts/CameraScript.cs",
+        "type": null
+    },
+    {
+        "guid": null,
+        "path": "Scripts/ExampleScript.cs",
+        "type": null
+    },
+    {
+        "guid": null,
+        "path": "Scenes/Example.sgescene",
+        "type": null
+    },
+    {
+        "guid": 9185101818755800820,
+        "path": "Textures/Tux.png",
+        "type": "texture_2d"
+    }
+]

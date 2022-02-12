@@ -78,7 +78,7 @@ namespace sge {
     };
 
     struct render_pass_pipeline_data_t {
-        std::unordered_map<ref<shader>, used_pipeline_data_t> data;
+        std::unordered_map<guid, used_pipeline_data_t> data;
     };
 
     struct frame_renderer_data_t {
@@ -97,7 +97,7 @@ namespace sge {
         std::unique_ptr<renderer_api> api;
         std::map<command_list_type, ref<command_queue>> queues;
 
-        std::unordered_map<ref<shader>, shader_dependency_t> shader_dependencies;
+        std::unordered_map<guid, shader_dependency_t> shader_dependencies;
 
         std::unique_ptr<rendering_scene_t> current_scene;
         std::vector<frame_renderer_data_t> frame_renderer_data;
@@ -211,34 +211,30 @@ namespace sge {
         renderer_data.camera_buffer.reset();
     }
 
-    void renderer::add_shader_dependency(ref<shader> _shader, pipeline* _pipeline) {
-        if (renderer_data.shader_dependencies.find(_shader) ==
-            renderer_data.shader_dependencies.end()) {
-            renderer_data.shader_dependencies.insert(
-                std::make_pair(_shader, shader_dependency_t()));
+    void renderer::add_shader_dependency(guid shader_guid, pipeline* _pipeline) {
+        if (renderer_data.shader_dependencies.find(shader_guid) == renderer_data.shader_dependencies.end()) {
+            renderer_data.shader_dependencies.insert(std::make_pair(shader_guid, shader_dependency_t()));
         }
 
-        renderer_data.shader_dependencies[_shader.raw()].pipelines.insert(_pipeline);
+        renderer_data.shader_dependencies[shader_guid].pipelines.insert(_pipeline);
     }
 
-    void renderer::remove_shader_dependency(ref<shader> _shader, pipeline* _pipeline) {
-        if (renderer_data.shader_dependencies.find(_shader) !=
-            renderer_data.shader_dependencies.end()) {
-            auto& dependency = renderer_data.shader_dependencies[_shader];
+    void renderer::remove_shader_dependency(guid shader_guid, pipeline* _pipeline) {
+        if (renderer_data.shader_dependencies.find(shader_guid) != renderer_data.shader_dependencies.end()) {
+            auto& dependency = renderer_data.shader_dependencies[shader_guid];
             dependency.pipelines.erase(_pipeline);
 
             if (dependency.empty()) {
-                renderer_data.shader_dependencies.erase(_shader);
+                renderer_data.shader_dependencies.erase(shader_guid);
             }
         }
     }
 
-    void renderer::on_shader_reloaded(ref<shader> _shader) {
-        if (renderer_data.shader_dependencies.find(_shader) ==
-            renderer_data.shader_dependencies.end()) {
+    void renderer::on_shader_reloaded(guid shader_guid) {
+        if (renderer_data.shader_dependencies.find(shader_guid) == renderer_data.shader_dependencies.end()) {
             return;
         }
-        const auto& dependency = renderer_data.shader_dependencies[_shader];
+        const auto& dependency = renderer_data.shader_dependencies[shader_guid];
 
         for (auto _pipeline : dependency.pipelines) {
             _pipeline->invalidate();
@@ -302,7 +298,7 @@ namespace sge {
 
             for (auto _pipeline : pipelines) {
                 auto _shader = _pipeline->get_spec()._shader;
-                auto& pipelines = pipeline_data.data[_shader];
+                auto& pipelines = pipeline_data.data[_shader->id];
                 pipelines.currently_using.push_back(_pipeline);
             }
         }
@@ -353,9 +349,10 @@ namespace sge {
                 size_t image_index = swap_chain.get_current_image_index();
                 auto& frame_data = renderer_data.frame_renderer_data[image_index];
 
-                if (frame_data.pipelines[pass].data.find(batch->_shader) !=
+                guid id = batch->_shader->id;
+                if (frame_data.pipelines[pass].data.find(id) !=
                     frame_data.pipelines[pass].data.end()) {
-                    auto& queue = frame_data.pipelines[pass].data[batch->_shader].used;
+                    auto& queue = frame_data.pipelines[pass].data[id].used;
                     if (!queue.empty()) {
                         _pipeline = queue.front();
                         queue.pop();

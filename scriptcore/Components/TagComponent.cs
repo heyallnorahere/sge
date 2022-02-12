@@ -14,26 +14,17 @@
    limitations under the License.
 */
 
-using System;
-
 namespace SGE.Components
 {
     /// <summary>
     /// A tag component represents an entity's name.
     /// </summary>
-    public sealed class TagComponent
+    public sealed class TagComponent : Component<TagComponent>
     {
-        internal TagComponent(IntPtr address)
-        {
-            mAddress = address;
-        }
-
         public string Tag
         {
             get => InternalCalls.GetTag(mAddress);
             set => InternalCalls.SetTag(mAddress, value);
         }
-
-        private readonly IntPtr mAddress;
     }
 }

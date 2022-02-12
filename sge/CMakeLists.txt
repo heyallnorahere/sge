@@ -4,8 +4,53 @@ cmake_minimum_required(VERSION 3.10)
 set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor")
 set(ASSET_DIR "${CMAKE_SOURCE_DIR}/assets")
 set(SGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-set(SGE_INCLUDES ${SGE_DIR} ${Mono_INCLUDE_DIR} "${VENDOR_DIR}/glm")
-set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${Mono_LIBRARY})
+
+# find mono libs
+if(SGE_PLATFORM_WINDOWS)
+    set(MONO_PLATFORM windows)
+elseif(SGE_PLATFORM_MACOSX)
+    set(MONO_PLATFORM osx)
+elseif(SGE_PLATFORM_LINUX)
+    include(glibc)
+    CHECK_GLIBC_VERSION()
+
+    set(CURRENT_GLIBC_VERSION 0.0)
+    file(GLOB AVAILABLE_GLIBC_VERSIONS "${VENDOR_DIR}/mono/lib/linux/*")
+    foreach(DIR ${AVAILABLE_GLIBC_VERSIONS})
+        get_filename_component(CURRENT_VERSION ${DIR} NAME)
+        if(${CURRENT_VERSION} VERSION_GREATER_EQUAL ${CURRENT_GLIBC_VERSION} AND
+           ${GLIBC_VERSION} VERSION_GREATER_EQUAL ${CURRENT_VERSION})
+            set(CURRENT_GLIBC_VERSION ${CURRENT_VERSION})
+        endif()
+    endforeach()
+
+    if(${CURRENT_GLIBC_VERSION} STREQUAL 0.0)
+        message(FATAL_ERROR "No applicable mono binaries! Please compile them yourself.")
+    endif()
+
+    message(STATUS "Using mono binaries for GLIBC version ${CURRENT_GLIBC_VERSION}.")
+    set(MONO_PLATFORM linux/${CURRENT_GLIBC_VERSION})
+endif()
+file(GLOB MONO_LIBS CONFIGURE_DEPENDS "${VENDOR_DIR}/mono/lib/${MONO_PLATFORM}/${CMAKE_SYSTEM_PROCESSOR}/*")
+
+if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" OR ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+    set(SGE_CPU_ARCHITECTURE x64)
+else()
+    set(SGE_CPU_ARCHITECTURE ARM64)
+endif()
+
+# configuration header
+configure_file("sge_config.h.in" "sge_config.h" @ONLY)
+
+# base lists
+set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/mono/include" "${VENDOR_DIR}/glm" ${CMAKE_CURRENT_BINARY_DIR})
+set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb EnTT box2d sge-imgui nlohmann_json ${MONO_LIBS})
+
+# nvidia nsight aftermath
+if(SGE_USE_AFTERMATH)
+    list(APPEND SGE_LIBS sge-aftermath-helpers)
+    list(APPEND SGE_DEFINES SGE_AFTERMATH_LINKED)
+endif()
 
 # platform detection
 if(SGE_PLATFORM_DESKTOP)
@@ -30,8 +75,7 @@ endif()
 
 # graphics api
 if(SGE_USE_VULKAN)
-    list(APPEND SGE_INCLUDES ${Vulkan_INCLUDE_DIR})
-    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator)
+    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator Vulkan-Headers)
     list(APPEND SGE_DEFINES SGE_USE_VULKAN)
     list(APPEND ENABLED_PLATFORMS vulkan)
 endif()
@@ -59,12 +103,27 @@ if(MSVC)
     set_source_files_properties(${SGE_SHADERS} PROPERTIES VS_TOOL_OVERRIDE "None")
 endif()
 
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL Windows)
+    set(LICENSE_DESC_SEPARATOR ";")
+else()
+    set(LICENSE_DESC_SEPARATOR ":")
+endif()
+
+# type face directory generation
+set(TYPE_FACE_DIRECTORY_FILE "${CMAKE_CURRENT_BINARY_DIR}/type_face_directory.cpp")
+add_custom_command(OUTPUT ${TYPE_FACE_DIRECTORY_FILE}
+    COMMAND embed_type_faces
+    "${CMAKE_SOURCE_DIR}/assets/fonts"
+    ${TYPE_FACE_DIRECTORY_FILE}
+    "${CMAKE_SOURCE_DIR}/LICENSE${LICENSE_DESC_SEPARATOR}190"
+    COMMENT "Generating embedded SGE type face directory"
+    DEPENDS "${CMAKE_SOURCE_DIR}/assets/fonts" embed_type_faces)
+
 # add target
-add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS})
+add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS} ${TYPE_FACE_DIRECTORY_FILE})
 target_link_libraries(sge PUBLIC ${SGE_LIBS})
 target_include_directories(sge PUBLIC ${SGE_INCLUDES})
 target_compile_definitions(sge PUBLIC ${SGE_DEFINES} $<$<CONFIG:Debug>:SGE_DEBUG>)
-add_dependencies(sge scriptcore)
 set_target_properties(sge PROPERTIES CXX_STANDARD 17 FOLDER "core")
 
 # setup pch

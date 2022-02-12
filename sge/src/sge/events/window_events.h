@@ -23,6 +23,7 @@ namespace sge {
 
         EVENT_ID_DECL(window_close)
     };
+
     class window_resize_event : public event {
     public:
         window_resize_event(uint32_t width, uint32_t height) {

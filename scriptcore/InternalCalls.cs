@@ -34,11 +34,11 @@ namespace SGE
 
         // entity
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool HasComponent(Type componentType, uint entityID, IntPtr scene);
+        public static extern bool HasComponent(Type componentType, Entity entity);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object GetComponent(Type componentType, uint entityID, IntPtr scene);
+        public static extern IntPtr GetComponent(Type componentType, Entity entity);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern GUID GetGUID(uint entityID, IntPtr scene);
+        public static extern GUID GetGUID(Entity entity);
 
         // guid
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -98,33 +98,39 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern BodyType GetBodyType(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetBodyType(IntPtr component, BodyType bodyType);
+        public static extern void SetBodyType(IntPtr component, Entity entity, BodyType bodyType);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool GetFixedRotation(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetFixedRotation(IntPtr component, bool fixedRotation);
+        public static extern void SetFixedRotation(IntPtr component, Entity entity, bool fixedRotation);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetAngularVelocity(Entity entity, out float velocity);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool SetAngularVelocity(Entity entity, float velocity);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool AddForce(Entity entity, Vector2 force, bool wake);
 
         // box collider component
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetSize(IntPtr component, out Vector2 size);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetSize(IntPtr component, Vector2 size);
+        public static extern void SetSize(IntPtr component, Entity entity, Vector2 size);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float GetDensity(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetDensity(IntPtr component, float density);
+        public static extern void SetDensity(IntPtr component, Entity entity, float density);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float GetFriction(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetFriction(IntPtr component, float friction);
+        public static extern void SetFriction(IntPtr component, Entity entity, float friction);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float GetRestitution(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetRestitution(IntPtr component, float restitution);
+        public static extern void SetRestitution(IntPtr component, Entity entity, float restitution);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float GetRestitutionThreashold(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetRestitutionThreashold(IntPtr component, float threashold);
+        public static extern void SetRestitutionThreashold(IntPtr component, Entity entity, float threashold);
 
         // logger
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -135,5 +141,39 @@ namespace SGE
         public static extern void LogWarn(string message);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void LogError(string message);
+
+        // input
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetKey(KeyCode key);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetMouseButton(MouseButton button);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetMousePosition(out Vector2 position);
+
+        // events
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool IsEventHandled(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetEventHandled(IntPtr address, bool handled);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetResizeWidth(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetResizeHeight(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetPressedEventKey(IntPtr address, out KeyCode key);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetRepeatCount(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetReleasedEventKey(IntPtr address, out KeyCode key);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetTypedEventKey(IntPtr address, out KeyCode key);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetEventMousePosition(IntPtr address, out Vector2 position);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetScrollOffset(IntPtr address, out Vector2 offset);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetEventMouseButton(IntPtr address, out MouseButton button);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetMouseButtonReleased(IntPtr address);
     }
 }

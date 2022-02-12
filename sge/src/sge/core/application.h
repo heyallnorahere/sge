@@ -21,9 +21,18 @@
 #include "sge/events/window_events.h"
 #include "sge/renderer/swapchain.h"
 namespace sge {
+    enum subsystem : uint32_t {
+        subsystem_input = 0x1,
+        subsystem_asset = 0x2,
+        subsystem_project = 0x4,
+        subsystem_script_engine = 0x8
+    };
+
     class imgui_layer;
     class application {
     public:
+        static std::string get_engine_version();
+
         static void create();
         static void destroy();
         static application& get();
@@ -43,23 +52,42 @@ namespace sge {
 
         void on_event(event& e);
 
+        void set_application_args(const std::vector<std::string>& args) { m_args = args; }
+        void get_application_args(std::vector<std::string>& args) { args = m_args; }
+
         const std::string& get_title() { return m_title; }
         ref<window> get_window() { return m_window; }
         swapchain& get_swapchain() { return *m_swapchain; }
+        imgui_layer& get_imgui_layer() { return *m_imgui_layer; }
+
+        bool is_subsystem_initialized(subsystem id) { return (m_initialized_subsystems & id) != 0; }
 
     protected:
         virtual void on_init() {}
         virtual void on_shutdown() {}
 
+        virtual std::string get_window_title() { return m_title; }
+        virtual bool is_editor() { return false; }
+
+        void disable_subsystem(subsystem id);
+        void reenable_subsystem(subsystem id);
+
         layer_stack m_layer_stack;
         std::string m_title;
+
         ref<window> m_window;
         std::unique_ptr<swapchain> m_swapchain;
+
         bool m_running, m_minimized;
         imgui_layer* m_imgui_layer = nullptr;
+
+        std::vector<std::string> m_args;
 
     private:
         bool on_window_resize(window_resize_event& e);
         bool on_window_close(window_close_event& e);
+
+        uint32_t m_disabled_subsystems = 0;
+        uint32_t m_initialized_subsystems = 0;
     };
 } // namespace sge

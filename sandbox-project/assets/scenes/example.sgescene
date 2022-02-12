@@ -1,0 +1,118 @@
+{
+    "entities": [
+        {
+            "box_collider": null,
+            "camera": {
+                "far_clip": 1.0,
+                "near_clip": -1.0,
+                "primary": true,
+                "vertical_fov": null,
+                "view_size": 10.0
+            },
+            "guid": 1666157215113984203,
+            "rigid_body": null,
+            "script": {
+                "properties": {
+                    "Target": 638124786110313657
+                },
+                "script_name": "Sandbox.CameraScript"
+            },
+            "sprite": null,
+            "tag": "Camera",
+            "transform": {
+                "rotation": 0.0,
+                "scale": [
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "box_collider": {
+                "density": 1.0,
+                "friction": 0.5,
+                "restitution": 0.0,
+                "restitution_threashold": 0.5,
+                "size": [
+                    0.5,
+                    0.5
+                ]
+            },
+            "camera": null,
+            "guid": 10829049528697195620,
+            "rigid_body": {
+                "fixed_rotation": false,
+                "type": "static"
+            },
+            "script": null,
+            "sprite": {
+                "color": [
+                    0.012177545577287674,
+                    0.48101264238357544,
+                    0.0,
+                    1.0
+                ],
+                "texture": null
+            },
+            "tag": "Ground",
+            "transform": {
+                "rotation": 0.0,
+                "scale": [
+                    100.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    -2.75
+                ]
+            }
+        },
+        {
+            "box_collider": {
+                "density": 1.0,
+                "friction": 0.5,
+                "restitution": 0.800000011920929,
+                "restitution_threashold": 0.5,
+                "size": [
+                    0.5,
+                    0.5
+                ]
+            },
+            "camera": null,
+            "guid": 638124786110313657,
+            "rigid_body": {
+                "fixed_rotation": false,
+                "type": "dynamic"
+            },
+            "script": {
+                "properties": null,
+                "script_name": "Sandbox.PenguinScript"
+            },
+            "sprite": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "texture": "images/tux.png"
+            },
+            "tag": "Tux",
+            "transform": {
+                "rotation": 14.0,
+                "scale": [
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0
+                ]
+            }
+        }
+    ]
+}

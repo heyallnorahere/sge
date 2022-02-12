@@ -2,10 +2,10 @@ name: build
 on: [ push ]
 jobs:
   build:
-    runs-on: ${{ matrix.os-name }}-latest
+    runs-on: ${{ matrix.os-name }}
     strategy:
       matrix:
-        os-name: [ ubuntu, windows, macos ]
+        os-name: [ ubuntu-latest, windows-2022, macos-latest ]
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -20,13 +20,14 @@ jobs:
         with:
           dotnet-version: 6.0.x
       - name: install dependencies (ubuntu)
-        if: ${{ matrix.os-name == 'ubuntu' }}
+        if: ${{ matrix.os-name == 'ubuntu-latest' }}
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y mesa-common-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev cmake
+          sudo apt-get install -y mesa-common-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev cmake
       - name: install dependencies (macos)
-        if: ${{ matrix.os-name == 'macos' }}
+        if: ${{ matrix.os-name == 'macos-latest' }}
         shell: bash
         run: |
           brew install cmake
@@ -41,5 +42,6 @@ jobs:
       - name: build
         shell: bash
         run: |
+          dotnet restore scriptcore/scriptcore.csproj
           cmake --preset default -DCMAKE_BUILD_TYPE=Release
           cmake --build --preset default

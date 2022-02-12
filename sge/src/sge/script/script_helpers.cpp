@@ -114,4 +114,13 @@ namespace sge {
             scriptcore ? script_engine::get_assembly(0) : script_engine::get_mscorlib();
         return script_engine::get_class(assembly, name);
     }
+
+    void* script_helpers::create_event_object(event& e) {
+        void* method = script_engine::get_method(managed_helpers_class, "CreateEvent");
+
+        event_id id = e.get_id();
+        void* ptr = &e;
+
+        return script_engine::call_method(nullptr, method, &ptr, &id);
+    }
 } // namespace sge

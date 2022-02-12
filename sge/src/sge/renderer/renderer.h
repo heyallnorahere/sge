@@ -61,9 +61,9 @@ namespace sge {
 
         static void clear_render_data();
 
-        static void add_shader_dependency(ref<shader> _shader, pipeline* _pipeline);
-        static void remove_shader_dependency(ref<shader> _shader, pipeline* _pipeline);
-        static void on_shader_reloaded(ref<shader> _shader);
+        static void add_shader_dependency(guid shader_guid, pipeline* _pipeline);
+        static void remove_shader_dependency(guid shader_guid, pipeline* _pipeline);
+        static void on_shader_reloaded(guid shader_guid);
 
         static ref<texture_2d> get_white_texture();
         static ref<texture_2d> get_black_texture();

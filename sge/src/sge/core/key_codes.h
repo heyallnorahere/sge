@@ -16,8 +16,8 @@
 
 #pragma once
 namespace sge {
-    enum class key_code {
-        SPACE,
+    enum class key_code : int32_t {
+        SPACE = 0,
         APOSTROPHE,
         COMMA,
         MINUS,
@@ -108,5 +108,5 @@ namespace sge {
         RIGHT_ALT
     };
 
-    enum class mouse_button { left, right, middle };
+    enum class mouse_button : int32_t { left = 0, right, middle };
 } // namespace sge

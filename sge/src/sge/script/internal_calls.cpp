@@ -15,11 +15,12 @@
 */
 
 #include "sgepch.h"
-#include "sge/script/internal_calls.h"
 #include "sge/script/script_engine.h"
+#include "sge/script/script_helpers.h"
 #include "sge/scene/scene.h"
 #include "sge/scene/entity.h"
 #include "sge/scene/components.h"
+#include "sge/core/input.h"
 namespace sge {
     struct component_callbacks_t {
         std::function<void*(entity)> get;
@@ -41,15 +42,7 @@ namespace sge {
 
         component_callbacks_t callbacks;
         callbacks.has = [](entity e) { return e.has_all<T>(); };
-
-        callbacks.get = [_class](entity e) mutable {
-            void* constructor = script_engine::get_method(_class, ".ctor");
-            auto component = &e.get_component<T>();
-
-            void* instance = script_engine::alloc_object(_class);
-            script_engine::call_method(instance, constructor, &component);
-            return instance;
-        };
+        callbacks.get = [](entity e) { return &e.get_component<T>(); };
 
         auto reflection_type = script_engine::to_reflection_type(_class);
         internal_script_call_data.component_callbacks.insert(
@@ -112,29 +105,24 @@ namespace sge {
             return false;
         }
 
-        static bool HasComponent(void* componentType, uint32_t entityID, void* _scene) {
+        static bool HasComponent(void* componentType, void* _entity) {
             verify_component_type_validity(componentType);
-
-            auto scene_ptr = (scene*)_scene;
-            entity e((entt::entity)entityID, scene_ptr);
+            entity e = script_helpers::get_entity_from_object(_entity);
 
             const auto& callbacks = internal_script_call_data.component_callbacks[componentType];
             return callbacks.has(e);
         }
 
-        static void* GetComponent(void* componentType, uint32_t entityID, void* _scene) {
+        static void* GetComponent(void* componentType, void* _entity) {
             verify_component_type_validity(componentType);
-
-            auto scene_ptr = (scene*)_scene;
-            entity e((entt::entity)entityID, scene_ptr);
+            entity e = script_helpers::get_entity_from_object(_entity);
 
             const auto& callbacks = internal_script_call_data.component_callbacks[componentType];
             return callbacks.get(e);
         }
 
-        static guid GetGUID(uint32_t entityID, void* _scene) {
-            auto scene_ptr = (scene*)_scene;
-            entity e((entt::entity)entityID, scene_ptr);
+        static guid GetGUID(void* _entity) {
+            entity e = script_helpers::get_entity_from_object(_entity);
             return e.get_guid();
         }
 
@@ -231,40 +219,97 @@ namespace sge {
             return rb->type;
         }
 
-        static void SetBodyType(rigid_body_component* rb, rigid_body_component::body_type type) {
+        static void SetBodyType(rigid_body_component* rb, void* _entity,
+                                rigid_body_component::body_type type) {
             rb->type = type;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
         }
 
         static bool GetFixedRotation(rigid_body_component* rb) { return rb->fixed_rotation; }
 
-        static void SetFixedRotation(rigid_body_component* rb, bool fixed_rotation) {
+        static void SetFixedRotation(rigid_body_component* rb, void* _entity, bool fixed_rotation) {
             rb->fixed_rotation = fixed_rotation;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
+
+        static bool GetAngularVelocity(void* _entity, float* velocity) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            std::optional<float> value = _scene->get_angular_velocity(e);
+
+            if (value.has_value()) {
+                *velocity = value.value();
+                return true;
+            }
+
+            return false;
+        }
+
+        static bool SetAngularVelocity(void* _entity, float velocity) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            return _scene->set_angular_velocity(e, velocity);
+        }
+
+        static bool AddForce(void* _entity, glm::vec2 force, bool wake) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            return _scene->add_force(e, force, wake);
         }
 
         static void GetSize(box_collider_component* bc, glm::vec2* size) { *size = bc->size; }
-        static void SetSize(box_collider_component* bc, glm::vec2 size) { bc->size = size; }
+
+        static void SetSize(box_collider_component* bc, void* _entity, glm::vec2 size) {
+            bc->size = size;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
 
         static float GetDensity(box_collider_component* bc) { return bc->density; }
-        static void SetDensity(box_collider_component* bc, float density) { bc->density = density; }
+
+        static void SetDensity(box_collider_component* bc, void* _entity, float density) {
+            bc->density = density;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
 
         static float GetFriction(box_collider_component* bc) { return bc->friction; }
 
-        static void SetFriction(box_collider_component* bc, float friction) {
+        static void SetFriction(box_collider_component* bc, void* _entity, float friction) {
             bc->friction = friction;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
         }
 
         static float GetRestitution(box_collider_component* bc) { return bc->restitution; }
-        
-        static void SetRestitution(box_collider_component* bc, float restitution) {
+
+        static void SetRestitution(box_collider_component* bc, void* _entity, float restitution) {
             bc->restitution = restitution;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
         }
 
         static float GetRestitutionThreashold(box_collider_component* bc) {
             return bc->restitution_threashold;
         }
 
-        static void SetRestitutionThreashold(box_collider_component* bc, float threashold) {
+        static void SetRestitutionThreashold(box_collider_component* bc, void* _entity,
+                                             float threashold) {
             bc->restitution_threashold = threashold;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
         }
 
         static void LogDebug(void* message) {
@@ -286,14 +331,63 @@ namespace sge {
             std::string string = script_engine::from_managed_string(message);
             spdlog::error(string);
         }
+
+        static bool GetKey(key_code key) { return input::get_key(key); }
+        static bool GetMouseButton(mouse_button button) { return input::get_mouse_button(button); }
+
+        static void GetMousePosition(glm::vec2* position) {
+            *position = input::get_mouse_position();
+        }
+
+        static bool IsEventHandled(event* address) { return address->handled; }
+        static void SetEventHandled(event* address, bool handled) { address->handled = handled; }
+
+        static int32_t GetResizeWidth(window_resize_event* address) {
+            return (int32_t)address->get_width();
+        }
+
+        static int32_t GetResizeHeight(window_resize_event* address) {
+            return (int32_t)address->get_height();
+        }
+
+        static void GetPressedEventKey(key_pressed_event* address, key_code* key) {
+            *key = address->get_key();
+        }
+
+        static int32_t GetRepeatCount(key_pressed_event* address) {
+            return (int32_t)address->get_repeat_count();
+        }
+
+        static void GetReleasedEventKey(key_released_event* address, key_code* key) {
+            *key = address->get_key();
+        }
+
+        static void GetTypedEventKey(key_typed_event* address, key_code* key) {
+            *key = address->get_key();
+        }
+
+        static void GetEventMousePosition(mouse_moved_event* address, glm::vec2* position) {
+            *position = address->get_position();
+        }
+
+        static void GetScrollOffset(mouse_scrolled_event* address, glm::vec2* position) {
+            *position = address->get_offset();
+        }
+
+        static void GetEventMouseButton(mouse_button_event* address, mouse_button* button) {
+            *button = address->get_button();
+        }
+
+        static bool GetMouseButtonReleased(mouse_button_event* address) {
+            return address->get_released();
+        }
     } // namespace internal_script_calls
 
-    void register_internal_script_calls() {
+    void script_engine::register_internal_script_calls() {
         register_component_types();
 
 #define REGISTER_CALL(name)                                                                        \
-    script_engine::register_internal_call("SGE.InternalCalls::" #name,                             \
-                                          (void*)internal_script_calls::name)
+    register_internal_call("SGE.InternalCalls::" #name, (void*)internal_script_calls::name)
 
         // scene
         REGISTER_CALL(CreateEntity);
@@ -342,6 +436,9 @@ namespace sge {
         REGISTER_CALL(SetBodyType);
         REGISTER_CALL(GetFixedRotation);
         REGISTER_CALL(SetFixedRotation);
+        REGISTER_CALL(GetAngularVelocity);
+        REGISTER_CALL(SetAngularVelocity);
+        REGISTER_CALL(AddForce);
 
         // box collider component
         REGISTER_CALL(GetSize);
@@ -360,6 +457,25 @@ namespace sge {
         REGISTER_CALL(LogInfo);
         REGISTER_CALL(LogWarn);
         REGISTER_CALL(LogError);
+
+        // input
+        REGISTER_CALL(GetKey);
+        REGISTER_CALL(GetMouseButton);
+        REGISTER_CALL(GetMousePosition);
+
+        // events
+        REGISTER_CALL(IsEventHandled);
+        REGISTER_CALL(SetEventHandled);
+        REGISTER_CALL(GetResizeWidth);
+        REGISTER_CALL(GetResizeHeight);
+        REGISTER_CALL(GetPressedEventKey);
+        REGISTER_CALL(GetRepeatCount);
+        REGISTER_CALL(GetReleasedEventKey);
+        REGISTER_CALL(GetTypedEventKey);
+        REGISTER_CALL(GetEventMousePosition);
+        REGISTER_CALL(GetScrollOffset);
+        REGISTER_CALL(GetEventMouseButton);
+        REGISTER_CALL(GetMouseButtonReleased);
 
 #undef REGISTER_CALL
     }

@@ -18,6 +18,10 @@
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_device.h"
 #include "sge/platform/vulkan/vulkan_context.h"
+#if defined(SGE_AFTERMATH_LINKED) && defined(SGE_DEBUG)
+#include <NsightAftermathGpuCrashTracker.h>
+#define SGE_USE_AFTERMATH
+#endif
 namespace sge {
     std::vector<vulkan_physical_device> vulkan_physical_device::enumerate() {
         VkInstance instance = vulkan_context::get().get_instance();
@@ -36,6 +40,26 @@ namespace sge {
             devices.push_back(vulkan_physical_device(physical_device));
         }
         return devices;
+    }
+
+    bool vulkan_physical_device::is_extension_supported(const std::string& name) const {
+        uint32_t extension_count = 0;
+        vkEnumerateDeviceExtensionProperties(m_device, nullptr, &extension_count, nullptr);
+        if (extension_count == 0) {
+            return false;
+        }
+
+        std::vector<VkExtensionProperties> extensions(extension_count);
+        vkEnumerateDeviceExtensionProperties(m_device, nullptr, &extension_count,
+                                             extensions.data());
+
+        for (const auto& extension : extensions) {
+            if (name == extension.extensionName) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void vulkan_physical_device::query_queue_families(VkQueueFlags query,
@@ -165,6 +189,7 @@ namespace sge {
     }
 
     vulkan_device::vulkan_device(const vulkan_physical_device& physical_device) {
+        m_crash_tracker = nullptr;
         m_physical_device = physical_device;
         create();
     }
@@ -172,6 +197,12 @@ namespace sge {
     vulkan_device::~vulkan_device() {
         vkDeviceWaitIdle(m_device);
         vkDestroyDevice(m_device, nullptr);
+
+#ifdef SGE_USE_AFTERMATH
+        if (m_crash_tracker != nullptr) {
+            delete (GpuCrashTracker*)m_crash_tracker;
+        }
+#endif
     }
 
     VkQueue vulkan_device::get_queue(uint32_t family) {
@@ -184,43 +215,45 @@ namespace sge {
         auto& context = vulkan_context::get();
         VkPhysicalDevice physical_device = m_physical_device.get();
 
-        const auto& selected_extensions = context.get_device_extensions();
-        std::vector<const char*> device_extensions;
-        {
-            uint32_t extension_count = 0;
-            vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count,
-                                                 nullptr);
-            std::vector<VkExtensionProperties> extensions(extension_count);
-            vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count,
-                                                 extensions.data());
-
-            // verify extension availability
-            for (const auto& selected_extension : selected_extensions) {
-                bool found = false;
-                for (const auto& extension : extensions) {
-                    if (selected_extension == extension.extensionName) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    device_extensions.push_back(selected_extension.c_str());
-                } else {
-                    spdlog::warn("device extension {0} is not present", selected_extension);
-                }
+        auto selected_extensions = context.get_device_extensions();
+        auto verify_extension = [&](const std::string& name) {
+            bool supported = m_physical_device.is_extension_supported(name);
+            if (supported) {
+                selected_extensions.insert(name);
             }
 
-            // if VK_KHR_portability_subset is available, add it
-            // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_KHR_portability_subset.html
-            static const char* const portability_subset = "VK_KHR_portability_subset";
-            for (const auto& extension : extensions) {
-                bool requested =
-                    selected_extensions.find(extension.extensionName) != selected_extensions.end();
+            return supported;
+        };
 
-                if (!requested && (strcmp(portability_subset, extension.extensionName) == 0)) {
-                    device_extensions.push_back(portability_subset);
-                    break;
-                }
+        // if VK_KHR_portability_subset is available, add it
+        // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_KHR_portability_subset.html
+        verify_extension("VK_KHR_portability_subset");
+
+        using aftermath_info_t = VkDeviceDiagnosticsConfigCreateInfoNV;
+        std::unique_ptr<aftermath_info_t> aftermath_info;
+#ifdef SGE_USE_AFTERMATH
+        if (verify_extension(VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME) &&
+            verify_extension(VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME)) {
+            spdlog::info("enabling GPU crash dumping");
+            auto crash_tracker = new GpuCrashTracker;
+            crash_tracker->Initialize();
+
+            aftermath_info = std::make_unique<aftermath_info_t>(vk_init<aftermath_info_t>(
+                VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV));
+            aftermath_info->flags =
+                (VkDeviceDiagnosticsConfigFlagBitsNV)(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV |
+                                                      VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV |
+                                                      VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_DEBUG_INFO_BIT_NV);
+        }
+#endif
+
+        // convert to vector
+        std::vector<const char*> device_extensions;
+        for (const auto& selected_extension : selected_extensions) {
+            if (m_physical_device.is_extension_supported(selected_extension)) {
+                device_extensions.push_back(selected_extension.c_str());
+            } else {
+                spdlog::warn("device extension {0} is not present", selected_extension);
             }
         }
 
@@ -281,6 +314,10 @@ namespace sge {
         if (!device_layers.empty()) {
             create_info.ppEnabledLayerNames = device_layers.data();
             create_info.enabledLayerCount = device_layers.size();
+        }
+
+        if (aftermath_info) {
+            create_info.pNext = aftermath_info.get();
         }
 
         VkResult result = vkCreateDevice(physical_device, &create_info, nullptr, &m_device);

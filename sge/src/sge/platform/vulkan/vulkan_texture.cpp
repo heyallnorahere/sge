@@ -25,6 +25,7 @@ namespace sge {
         m_wrap = spec.wrap;
         m_filter = spec.filter;
         m_image = spec.image.as<vulkan_image_2d>();
+        m_path = spec.path;
 
         VkImageLayout optimal_layout;
         if (m_image->get_usage() & ~image_usage_texture) {
@@ -55,6 +56,10 @@ namespace sge {
 
         VkDevice device = vulkan_context::get().get_device().get();
         vkDestroySampler(device, m_sampler, nullptr);
+    }
+
+    void vulkan_texture_2d::reload() {
+        throw std::runtime_error("not implemented yet");
     }
 
     ImTextureID vulkan_texture_2d::get_imgui_id() {

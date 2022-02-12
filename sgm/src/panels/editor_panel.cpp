@@ -266,26 +266,18 @@ namespace sgm {
                 ImGuiID id = ImGui::GetID("sprite-texture");
                 ImGui::PushID(id);
 
+                static constexpr float image_size = 100.f;
                 texture_cache::add_texture(texture);
-                ImGui::Image(texture->get_imgui_id(), ImVec2(100.f, 100.f));
+                ImGui::Image(texture->get_imgui_id(), ImVec2(image_size, image_size));
 
                 if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload =
-                            ImGui::AcceptDragDropPayload("content-browser-file")) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_2d")) {
                         fs::path path = std::string((const char*)payload->Data,
                                                     payload->DataSize / sizeof(char) - 1);
 
-                        auto img_data = image_data::load(path);
-                        if (img_data) {
-                            component.texture_path = path;
-
-                            texture_spec spec;
-                            spec.filter = texture_filter::linear;
-                            spec.wrap = texture_wrap::repeat;
-                            spec.image = image_2d::create(img_data, image_usage_none);
-                            component.texture = texture_2d::create(spec);
-                        } else {
-                            spdlog::warn("could not load image: {0}", path.string());
+                        auto _asset = project::get().get_asset_manager().get_asset(path);
+                        if (_asset) {
+                            component.texture = _asset.as<texture_2d>();
                         }
                     }
 
@@ -295,10 +287,21 @@ namespace sgm {
                 ImGui::PopID();
 
                 if (can_reset) {
-                    if (ImGui::Button("Remove Texture")) {
+                    auto& style = ImGui::GetStyle();
+
+                    static const char* button_text = "X";
+                    static float text_height = ImGui::CalcTextSize(button_text).y;
+
+                    ImVec2 padding = style.FramePadding;
+                    padding.y += (image_size - text_height) / 2.f;
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, padding);
+
+                    ImGui::SameLine();
+                    if (ImGui::Button("X", ImVec2(0.f, image_size))) {
                         component.texture.reset();
-                        component.texture_path.clear();
                     }
+
+                    ImGui::PopStyleVar();
                 }
             });
 
@@ -325,9 +328,14 @@ namespace sgm {
         draw_component<script_component>(
             "Script", selection, [this, selection](script_component& component) {
                 // todo: script cache
-                size_t assembly_index = editor_scene::get_assembly_index();
-                void* assembly = script_engine::get_assembly(assembly_index);
+                std::optional<size_t> assembly_index = project::get().get_assembly_index();
+                if (!assembly_index.has_value()) {
+                    ImGui::TextColored(ImVec4(0.9, 0.f, 0.f, 1.f),
+                                       "The project script assembly failed compilation.");
+                    return;
+                }
 
+                void* assembly = script_engine::get_assembly(assembly_index.value());
                 auto is_class_valid = [assembly](const std::string& name) mutable {
                     void* _class = script_engine::get_class(assembly, name);
                     return _class != nullptr;

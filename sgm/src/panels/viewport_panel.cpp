@@ -19,6 +19,11 @@
 #include "editor_scene.h"
 #include <sge/renderer/renderer.h>
 namespace sgm {
+    viewport_panel::viewport_panel(
+        const std::function<void(const fs::path&)>& load_scene_callback) {
+        m_load_scene_callback = load_scene_callback;
+    }
+
     void viewport_panel::update(timestep ts) {
         if (m_new_size.has_value()) {
             renderer::wait();
@@ -50,12 +55,17 @@ namespace sgm {
         ImGui::Image(m_current_texture->get_imgui_id(), content_region);
 
         if (ImGui::BeginDragDropTarget()) {
-            if (const ImGuiPayload* payload =
-                    ImGui::AcceptDragDropPayload("content-browser-file")) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("scene")) {
                 fs::path path =
                     std::string((const char*)payload->Data, payload->DataSize / sizeof(char) - 1);
-                
-                editor_scene::load(path);
+
+                fs::path asset_dir = project::get().get_asset_dir();
+                fs::path asset_path = asset_dir / path;
+                editor_scene::load(asset_path);
+
+                if (m_load_scene_callback) {
+                    m_load_scene_callback(asset_path);
+                }
             }
 
             ImGui::EndDragDropTarget();
@@ -92,12 +102,6 @@ namespace sgm {
 
         swapchain& swap_chain = application::get().get_swapchain();
         size_t current_image = swap_chain.get_current_image_index();
-
-        if (m_old_textures.empty()) {
-            size_t image_count = swap_chain.get_image_count();
-            m_old_textures.resize(image_count);
-        }
-        m_old_textures[current_image] = m_current_texture;
 
         texture_spec spec;
         spec.image = attachment;

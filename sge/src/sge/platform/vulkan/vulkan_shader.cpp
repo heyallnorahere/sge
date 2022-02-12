@@ -47,7 +47,7 @@ namespace sge {
     void vulkan_shader::reload() {
         destroy();
         create();
-        renderer::on_shader_reloaded(this);
+        renderer::on_shader_reloaded(id);
     }
 
     void vulkan_shader::create() {
@@ -94,12 +94,14 @@ namespace sge {
                 }
             }
 
+            /* not needed
             spdlog::info("{0} reflection results:", m_path.string());
             spdlog::info("{0} uniform buffer(s)", ubo_count);
             spdlog::info("{0} storage buffer(s)", ssbo_count);
             spdlog::info("{0} separate image set(s)", image_count);
             spdlog::info("{0} separate sampler set(s)", sampler_count);
             spdlog::info("{0} combined image sampler set(s)", combined_image_sampler_count);
+            */
         }
     }
 

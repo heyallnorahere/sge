@@ -16,6 +16,10 @@
 
 #include "sgepch.h"
 #include "sge/imgui/imgui_layer.h"
+
+// generated in build/sge/type_face_directory.cpp by tools/embed_type_faces.cpp
+extern std::unordered_map<std::string, std::vector<uint32_t>> generated_type_face_directory;
+
 namespace sge {
     void imgui_layer::on_attach() {
         IMGUI_CHECKVERSION();
@@ -29,9 +33,38 @@ namespace sge {
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
 
-        static constexpr float font_size = 16.f;
-        io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Bold.ttf", font_size);
-        io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Medium.ttf", font_size);
+        for (const auto& [key, data] : generated_type_face_directory) {
+            // memory will be freed by ImGui
+            size_t size = data.size() * sizeof(uint32_t);
+            void* font_data = malloc(size);
+
+            if (font_data == nullptr) {
+                throw std::runtime_error("could not allocate memory to load font: " + key);
+            }
+
+            float font_size = 16.f;
+            if (key.find("Bold") != std::string::npos) {
+                font_size = 32.f;
+            }
+
+            memcpy(font_data, data.data(), size);
+            ImFont* font = io.Fonts->AddFontFromMemoryTTF(font_data, (int32_t)size, font_size);
+
+            fs::path path = key;
+            if (m_fonts.find(path) == m_fonts.end()) {
+                m_fonts.insert(std::make_pair(path, font));
+            } else {
+                spdlog::warn("font \"{0}}\" already present - replacing", key);
+                m_fonts[path] = font;
+            }
+        }
+
+        fs::path default_font = "Roboto-Medium.ttf";
+        if (has_font(default_font)) {
+            io.FontDefault = get_font(default_font);
+        } else {
+            io.Fonts->AddFontDefault();
+        }
 
         ImGui::StyleColorsDark();
         set_style();
@@ -67,6 +100,18 @@ namespace sge {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault(nullptr, param);
         }
+    }
+
+    bool imgui_layer::has_font(const fs::path& path) { return m_fonts.find(path) != m_fonts.end(); }
+
+    ImFont* imgui_layer::get_font(const fs::path& path) {
+        ImFont* font = nullptr;
+
+        if (has_font(path)) {
+            font = m_fonts[path];
+        }
+
+        return font;
     }
 
     void imgui_layer::set_style() {

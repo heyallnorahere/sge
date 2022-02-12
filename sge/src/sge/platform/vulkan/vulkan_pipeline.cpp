@@ -51,7 +51,7 @@ namespace sge {
         if (!m_spec._shader) {
             throw std::runtime_error("no shader was provided!");
         }
-        renderer::add_shader_dependency(m_spec._shader, this);
+        renderer::add_shader_dependency(m_spec._shader->id, this);
 
         create();
 
@@ -79,7 +79,7 @@ namespace sge {
     }
 
     vulkan_pipeline::~vulkan_pipeline() {
-        renderer::remove_shader_dependency(m_spec._shader, this);
+        renderer::remove_shader_dependency(m_spec._shader->id, this);
         destroy();
 
         VkDevice device = vulkan_context::get().get_device().get();

@@ -17,29 +17,39 @@
 #include "sgmpch.h"
 #include <sge/core/main.h>
 #include "editor_layer.h"
-#include "panels/panels.h"
 #include "editor_scene.h"
 #include "icon_directory.h"
 #include "texture_cache.h"
 namespace sgm {
+    static const std::string sgm_title = "Simple Game Maker v" + application::get_engine_version();
+
     class sgm_app : public application {
     public:
         sgm_app() : application("SGM") {}
     
     protected:
         virtual void on_init() override {
+            // defaults to sandbox project
+            fs::path project_path = "sandbox-project/sandbox.sgeproject";
+
+            std::vector<std::string> args;
+            get_application_args(args);
+
+            if (args.size() >= 2) {
+                project_path = args[1];
+            }
+
+            project::load(fs::absolute(project_path));
+            
+            project& _project = project::get();
+            m_window->set_title(sgm_title + " - " + _project.get_name());
+
             icon_directory::load();
             editor_scene::create();
             texture_cache::init();
 
             m_editor_layer = new editor_layer;
             push_layer(m_editor_layer);
-
-            m_editor_layer->add_panel<renderer_info_panel>();
-            m_editor_layer->add_panel<viewport_panel>();
-            m_editor_layer->add_panel<scene_hierarchy_panel>();
-            m_editor_layer->add_panel<editor_panel>();
-            m_editor_layer->add_panel<content_browser_panel>();
         }
 
         virtual void on_shutdown() override {
@@ -50,6 +60,9 @@ namespace sgm {
             editor_scene::destroy();
             icon_directory::clear();
         }
+
+        virtual std::string get_window_title() override { return sgm_title; }
+        virtual bool is_editor() override { return true; }
 
         editor_layer* m_editor_layer;
     };

@@ -15,20 +15,19 @@
 */
 
 #pragma once
+#include "sge/asset/asset.h"
 namespace sge {
     enum class shader_language { glsl, hlsl };
-
     enum class shader_stage { vertex, fragment };
 
-    class shader : public ref_counted {
+    class shader : public asset {
     public:
         static ref<shader> create(const fs::path& path, shader_language language);
         static ref<shader> create(const fs::path& path);
 
         virtual ~shader() = default;
 
-        virtual void reload() = 0;
-        virtual const fs::path& get_path() = 0;
+        virtual asset_type get_asset_type() override { return asset_type::shader; }
 
     protected:
         static void parse_source(const fs::path& path,

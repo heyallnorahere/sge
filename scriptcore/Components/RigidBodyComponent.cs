@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-using System;
-
 namespace SGE.Components
 {
     public enum BodyType
@@ -28,25 +26,34 @@ namespace SGE.Components
     /// <summary>
     /// A rigid body component describes how other entities should affect its parent.
     /// </summary>
-    public sealed class RigidBodyComponent
+    public sealed class RigidBodyComponent : Component<RigidBodyComponent>
     {
-        internal RigidBodyComponent(IntPtr address)
-        {
-            mAddress = address;
-        }
-
         public BodyType BodyType
         {
             get => InternalCalls.GetBodyType(mAddress);
-            set => InternalCalls.SetBodyType(mAddress, value);
+            set => InternalCalls.SetBodyType(mAddress, mParent, value);
         }
 
         public bool FixedRotation
         {
             get => InternalCalls.GetFixedRotation(mAddress);
-            set => InternalCalls.SetFixedRotation(mAddress, value);
+            set => InternalCalls.SetFixedRotation(mAddress, mParent, value);
         }
 
-        private readonly IntPtr mAddress;
+        public float AngularVelocity
+        {
+            get
+            {
+                float velocity = 0f;
+                InternalCalls.GetAngularVelocity(mParent, out velocity);
+                return velocity;
+            }
+            set => InternalCalls.SetAngularVelocity(mParent, value);
+        }
+
+        public void AddForce(Vector2 force, bool wake = true)
+        {
+            InternalCalls.AddForce(mParent, force, wake);
+        }
     }
 }

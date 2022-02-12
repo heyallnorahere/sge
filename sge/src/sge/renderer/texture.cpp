@@ -16,6 +16,7 @@
 
 #include "sgepch.h"
 #include "sge/renderer/texture.h"
+#include "sge/asset/json.h"
 #ifdef SGE_USE_VULKAN
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_texture.h"
@@ -41,5 +42,97 @@ namespace sge {
 #endif
 
         return nullptr;
+    }
+
+    ref<texture_2d> texture_2d::load(const fs::path& path) {
+        if (!fs::exists(path)) {
+            return nullptr;
+        }
+
+        auto img_data = image_data::load(path);
+        if (!img_data) {
+            return nullptr;
+        }
+
+        texture_spec spec;
+        spec.path = path;
+        spec.image = image_2d::create(img_data, image_usage_none);
+
+        fs::path settings_path = path.string() + ".sgetexture";
+        if (fs::exists(settings_path)) {
+            json data;
+
+            std::ifstream stream(settings_path);
+            stream >> data;
+            stream.close();
+
+            json wrap_data = data["wrap"];
+            if (!wrap_data.is_null()) {
+                std::string wrap_string = wrap_data.get<std::string>();
+
+                if (wrap_string == "clamp") {
+                    spec.wrap = texture_wrap::clamp;
+                } else if (wrap_string == "repeat") {
+                    spec.wrap = texture_wrap::repeat;
+                } else {
+                    throw std::runtime_error("invalid wrap: " + wrap_string);
+                }
+            }
+
+            json filter_data = data["filter"];
+            if (!filter_data.is_null()) {
+                std::string filter_string = filter_data.get<std::string>();
+
+                if (filter_string == "linear") {
+                    spec.filter = texture_filter::linear;
+                } else if (filter_string == "repeat") {
+                    spec.filter = texture_filter::nearest;
+                } else {
+                    throw std::runtime_error("invalid filter: " + filter_string);
+                }
+            }
+        }
+
+        return create(spec);
+    }
+
+    void texture_2d::serialize_settings(ref<texture_2d> texture, const fs::path& path) {
+        if (path.empty()) {
+            spdlog::warn("attempted to serialize to a nonexistent path!");
+            return;
+        }
+
+        json data;
+
+        std::string wrap_string;
+        switch (texture->get_wrap()) {
+        case texture_wrap::clamp:
+            wrap_string = "clamp";
+            break;
+        case texture_wrap::repeat:
+            wrap_string = "repeat";
+            break;
+        default:
+            throw std::runtime_error("invalid texture wrap!");
+        }
+        data["wrap"] = wrap_string;
+
+        std::string filter_string;
+        switch (texture->get_filter()) {
+        case texture_filter::linear:
+            filter_string = "linear";
+            break;
+        case texture_filter::nearest:
+            filter_string = "nearest";
+            break;
+        default:
+            throw std::runtime_error("invalid texture filter!");
+        }
+        data["filter"] = filter_string;
+
+        fs::path settings_path = path.string() + ".sgetexture";
+        std::ofstream stream(settings_path);
+        stream << data.dump(4) << std::flush;
+        stream.close();
     }
 } // namespace sge

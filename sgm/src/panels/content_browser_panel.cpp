@@ -19,13 +19,13 @@
 #include "icon_directory.h"
 #include "texture_cache.h"
 namespace sgm {
-    static std::unordered_set<std::string> image_extensions = { ".png", ".jpg", ".jpeg" };
-
     content_browser_panel::content_browser_panel() {
-        // todo: take from project
-        m_current = m_root = fs::absolute(fs::current_path() / "assets");
+        m_current = m_root = project::get().get_asset_dir();
         m_padding = 16.f;
         m_icon_size = 128.f;
+
+        build_extension_data();
+        build_directory_data(m_root, m_root_data);
     }
 
     void content_browser_panel::render() {
@@ -47,23 +47,41 @@ namespace sgm {
         ImGui::Columns(column_count, nullptr, false);
 
         for (const auto& entry : fs::directory_iterator(m_current)) {
-            auto path = fs::absolute(entry.path());
+            fs::path path = fs::absolute(entry.path());
+            fs::path asset_path = path.lexically_relative(m_root);
 
-            std::string filename = path.filename().string();
-            ImGui::PushID(filename.c_str());
+            bool irrelevant_asset = false;
+            const auto& directory_data = get_directory_data(m_current);
+
+            fs::path filename = path.filename();
+            if (entry.is_directory()) {
+                irrelevant_asset =
+                    (directory_data.directories.find(filename) == directory_data.directories.end());
+            } else {
+                irrelevant_asset =
+                    (directory_data.files.find(filename) == directory_data.files.end());
+            }
+
+            if (irrelevant_asset) {
+                continue;
+            }
+
+            std::string filename_string = filename.string();
+            ImGui::PushID(filename_string.c_str());
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
 
             auto icon = get_icon(path);
             ImGui::ImageButton(icon->get_imgui_id(), ImVec2(m_icon_size, m_icon_size));
 
             if (ImGui::BeginDragDropSource()) {
-                std::string payload_path = fs::relative(path).string();
+                std::string payload_path = asset_path.string();
                 const char* c_str = payload_path.c_str();
 
-                ImGui::Text("%s", filename.c_str());
-                ImGui::SetDragDropPayload("content-browser-file", c_str,
+                std::string drag_drop_id = get_drag_drop_id(path);
+                ImGui::SetDragDropPayload(drag_drop_id.c_str(), c_str,
                                           (payload_path.length() + 1) * sizeof(char));
 
+                ImGui::Text("%s", filename_string.c_str());
                 ImGui::EndDragDropSource();
             }
 
@@ -77,7 +95,7 @@ namespace sgm {
             }
 
             {
-                float text_width = ImGui::CalcTextSize(filename.c_str()).x;
+                float text_width = ImGui::CalcTextSize(filename_string.c_str()).x;
 
                 float indentation = (m_icon_size - text_width) / 2.f;
                 if (indentation < 0.f) {
@@ -87,7 +105,7 @@ namespace sgm {
                 ImGui::Indent(indentation);
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (m_icon_size - indentation));
 
-                ImGui::TextWrapped("%s", filename.c_str());
+                ImGui::TextWrapped("%s", filename_string.c_str());
 
                 ImGui::PopTextWrapPos();
                 ImGui::Unindent(indentation);
@@ -100,42 +118,149 @@ namespace sgm {
         ImGui::Columns(1);
     }
 
+    void content_browser_panel::build_extension_data() {
+        if (!m_extension_data.empty()) {
+            m_extension_data.clear();
+        }
+
+        auto add_extension_entry = [this](const fs::path& extension,
+                                          const asset_extension_data& data) mutable {
+            m_extension_data.insert(std::make_pair(extension, data));
+        };
+
+        // images
+        {
+            asset_extension_data data;
+            data.drag_drop_id = "texture_2d";
+            data.icon_name = "image";
+            data.type = asset_type::texture_2d;
+
+            static std::unordered_set<fs::path> image_extensions = { ".png", ".jpg", ".jpeg" };
+            for (fs::path extension : image_extensions) {
+                add_extension_entry(extension, data);
+            }
+        }
+
+        // scenes
+        {
+            asset_extension_data data;
+            data.drag_drop_id = "scene";
+            data.icon_name = "file"; // for now
+            add_extension_entry(".sgescene", data);
+        }
+
+        // shaders
+        {
+            asset_extension_data data;
+            data.drag_drop_id = "shader";
+            data.icon_name = "file"; // for now
+
+            static std::unordered_set<fs::path> shader_extensions = { ".hlsl", ".glsl" };
+            for (fs::path extension : shader_extensions) {
+                add_extension_entry(extension, data);
+            }
+        }
+    }
+
     ref<texture_2d> content_browser_panel::get_icon(const fs::path& path) {
-        std::string extension = path.extension().string();
-        if (image_extensions.find(extension) != image_extensions.end()) {
-            std::string string_path = path.string();
-            if (m_image_icon_blacklist.find(string_path) == m_image_icon_blacklist.end()) {
-                ref<texture_2d> icon;
+        std::string icon_name = "file";
+        if (fs::is_directory(path)) {
+            icon_name = "directory";
+        } else {
+            if (path.has_extension()) {
+                fs::path extension = path.extension();
+                if (m_extension_data.find(extension) != m_extension_data.end()) {
+                    const auto& data = m_extension_data[extension];
+                    if (data.icon_name == "image") {
+                        auto asset_path = path.lexically_relative(m_root);
+                        auto _asset = project::get().get_asset_manager().get_asset(asset_path);
 
-                if (m_file_textures.find(string_path) != m_file_textures.end()) {
-                    icon = m_file_textures[string_path];
-                } else {
-                    // todo: reload when image changes
-                    auto img_data = image_data::load(path);
-                    if (img_data) {
-                        texture_spec spec;
-                        spec.filter = texture_filter::linear;
-                        spec.wrap = texture_wrap::repeat;
-                        spec.image = image_2d::create(img_data, image_usage_none);
-
-                        icon = texture_2d::create(spec);
-                        m_file_textures.insert(std::make_pair(string_path, icon));
+                        if (_asset) {
+                            return _asset.as<texture_2d>();
+                        }
                     } else {
-                        spdlog::warn("could not load image at path {0} - adding to blacklist",
-                                     string_path);
-                        m_image_icon_blacklist.insert(string_path);
+                        icon_name = data.icon_name;
                     }
-                }
-
-                if (icon) {
-                    texture_cache::add_texture(icon);
-                    return icon;
                 }
             }
         }
 
-        // todo: different icons per file type
-        std::string icon_name = fs::is_directory(path) ? "directory" : "file";
         return icon_directory::get(icon_name);
+    }
+
+    std::string content_browser_panel::get_drag_drop_id(const fs::path& path) {
+        if (fs::is_directory(path)) {
+            return "directory";
+        } else {
+            if (path.has_extension()) {
+                fs::path extension = path.extension();
+                if (m_extension_data.find(extension) != m_extension_data.end()) {
+                    return m_extension_data[extension].drag_drop_id;
+                }
+            }
+        }
+
+        return "file";
+    }
+
+    void content_browser_panel::build_directory_data(const fs::path& path,
+                                                     asset_directory_data& data) {
+        data.files.clear();
+        data.directories.clear();
+
+        auto& registry = project::get().get_asset_manager().registry;
+        for (const auto& entry : fs::directory_iterator(path)) {
+            auto entry_path = fs::absolute(entry.path());
+            auto filename = entry_path.filename();
+
+            if (entry.is_directory()) {
+                bool found = false;
+
+                for (const auto& [asset_path, desc] : registry) {
+                    std::string dir_string = entry_path.string();
+                    std::string path_string = (m_root / asset_path).string();
+
+                    if (path_string.substr(0, dir_string.length()) == dir_string) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) {
+                    asset_directory_data subdirectory;
+                    build_directory_data(entry_path, subdirectory);
+
+                    data.directories.insert(std::make_pair(filename, m_subdirectories.size()));
+                    m_subdirectories.push_back(subdirectory);
+                }
+            } else {
+                fs::path asset_path = entry_path.lexically_relative(m_root);
+                if (registry.contains(asset_path)) {
+                    data.files.insert(filename);
+                }
+            }
+        }
+    }
+
+    const content_browser_panel::asset_directory_data& content_browser_panel::get_directory_data(
+        const fs::path& path) {
+        auto asset_path = path.lexically_relative(m_root);
+
+        asset_directory_data* current = &m_root_data;
+        for (const auto& segment : asset_path) {
+            if (segment == ".") {
+                continue;
+            }
+
+            if (current->directories.find(segment) != current->directories.end()) {
+                size_t index = current->directories[segment];
+                current = &m_subdirectories[index];
+            } else {
+                spdlog::warn("directory {0} does not exist!", segment.string());
+                break;
+            }
+        }
+
+        return *current;
     }
 } // namespace sgm

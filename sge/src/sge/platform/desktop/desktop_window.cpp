@@ -71,6 +71,10 @@ namespace sge {
 
     void desktop_window::on_update() { glfwPollEvents(); }
 
+    void desktop_window::set_title(const std::string& title) {
+        glfwSetWindowTitle(m_window, title.c_str());
+    }
+
     void desktop_window::set_event_callback(event_callback_t callback) {
         m_data.event_callback = callback;
     }

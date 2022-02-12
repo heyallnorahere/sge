@@ -48,8 +48,13 @@ namespace sge {
         static void shutdown();
         static void register_internal_call(const std::string& name, const void* callback);
 
-        static size_t load_assembly(const fs::path& path);
+        static std::optional<size_t> load_assembly(const fs::path& path);
+        static bool unload_assembly(size_t index);
+        static std::optional<size_t> reload_assembly(size_t index);
+
         static size_t get_assembly_count();
+        static fs::path get_assembly_path(size_t index);
+
         static void* get_assembly(size_t index);
         static void* get_mscorlib();
 
@@ -61,7 +66,11 @@ namespace sge {
         static void* get_class(void* assembly, const class_name_t& name);
         static void* get_class_from_object(void* object);
 
+        static bool is_value_type(void* _class);
+        static size_t get_type_size(void* _class);
+
         static void* alloc_object(void* _class);
+        static void* clone_object(void* original);
         static void init_object(void* object);
         static const void* unbox_object(void* object);
 
@@ -133,5 +142,8 @@ namespace sge {
 
         static void* get_field_value(void* object, void* field);
         static void set_field_value(void* object, void* field, void* value);
+
+    private:
+        static void register_internal_script_calls();
     };
 } // namespace sge

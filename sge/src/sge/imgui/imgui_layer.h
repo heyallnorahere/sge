@@ -24,15 +24,22 @@ namespace sge {
         imgui_layer() : layer("ImGui Layer") {}
         virtual ~imgui_layer() override = default;
 
+        imgui_layer(const imgui_layer&) = delete;
+        imgui_layer& operator=(const imgui_layer&) = delete;
+
         virtual void on_attach() override;
         virtual void on_detach() override;
 
         void begin();
         void end(command_list& cmdlist);
 
+        bool has_font(const fs::path& path);
+        ImFont* get_font(const fs::path& path);
+
     private:
         void set_style();
 
         std::unique_ptr<imgui_backend> m_platform, m_renderer;
+        std::unordered_map<fs::path, ImFont*> m_fonts;
     };
 } // namespace sge

@@ -15,13 +15,32 @@
 */
 
 #pragma once
+
 #include "sge/renderer/texture.h"
 #include "sge/scene/runtime_camera.h"
 #include "sge/scene/entity_script.h"
 #include "sge/scene/entity.h"
 #include "sge/core/guid.h"
+#include "sge/core/meta_register.h"
 #include "sge/scene/scene.h"
+
+// Components are attached to a registry via the scene object.
+//
+// To support cloning/copying components the component and a clone funciton must be registered.
+// This is done with a meta_register function in the class that is called from a "one time"
+// constructor in the cpp file.
+//
+// The clone function must be a static/free function that adds the component to the dst entity based
+// on the src component and entity.  See the generic clone_component function below for an example.
+// The clone component can determine if the clone is within a scene or across scenes by checking
+// comparing the identity of the scene points in each entity.
+
 namespace sge {
+    template <typename T>
+    T& clone_component(const entity& src, const entity& dst, void* srcc) {
+        return dst.add_or_replace_component<T>(*static_cast<const T*>(srcc));
+    }
+
     struct id_component {
         guid id;
 
@@ -58,6 +77,13 @@ namespace sge {
                    glm::rotate(glm::mat4(1.f), glm::radians(rotation), glm::vec3(0.f, 0.f, 1.f)) *
                    glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f));
         }
+
+        static void meta_register() {
+            using namespace entt::literals;
+            entt::meta<transform_component>()
+                .type("transform_component"_hs)
+                .func<&clone_component<transform_component>>("clone"_hs);
+        }
     };
 
     struct sprite_renderer_component {
@@ -67,10 +93,14 @@ namespace sge {
         sprite_renderer_component& operator=(const sprite_renderer_component&) = default;
 
         glm::vec4 color = glm::vec4(1.f);
-
-        // todo: when asset system is implemented, change
-        fs::path texture_path;
         ref<texture_2d> texture;
+
+        static void meta_register() {
+            using namespace entt::literals;
+            entt::meta<sprite_renderer_component>()
+                .type("sprite_renderer_component"_hs)
+                .func<&clone_component<sprite_renderer_component>>("clone"_hs);
+        }
     };
 
     struct camera_component {
@@ -81,6 +111,13 @@ namespace sge {
 
         runtime_camera camera;
         bool primary = true;
+
+        static void meta_register() {
+            using namespace entt::literals;
+            entt::meta<camera_component>()
+                .type("camera_component"_hs)
+                .func<&clone_component<camera_component>>("clone"_hs);
+        }
     };
 
     struct native_script_component {
@@ -120,6 +157,12 @@ namespace sge {
                 nsc->destroy = nullptr;
             };
         }
+
+        // TODO: Support cloning of native_script_component
+        static void meta_register() {
+            using namespace entt::literals;
+            entt::meta<native_script_component>().type("native_script_component"_hs);
+        }
     };
 
     struct rigid_body_component {
@@ -127,12 +170,28 @@ namespace sge {
         body_type type = body_type::static_;
         bool fixed_rotation = false;
 
-        // Pointer to partner Box2D body object
-        void* runtime_body = nullptr;
-
-        rigid_body_component() = default;
         rigid_body_component(const rigid_body_component&) = default;
+        rigid_body_component(rigid_body_component::body_type type_ = body_type::static_,
+                             bool fixed_rotation_ = false)
+            : type{ type_ }, fixed_rotation{ fixed_rotation_ } {};
         rigid_body_component& operator=(const rigid_body_component&) = default;
+
+        static rigid_body_component& clone(const entity& src, const entity& dst, void* srcc) {
+            auto& src_rb = *static_cast<const rigid_body_component*>(srcc);
+
+            return dst.add_component<rigid_body_component>(src_rb.type, src_rb.fixed_rotation);
+        }
+
+        static rigid_body_component& do_cast(void* data) {
+            return *reinterpret_cast<rigid_body_component*>(data);
+        }
+
+        static void meta_register() {
+            using namespace entt::literals;
+            entt::meta<rigid_body_component>()
+                .type("rigid_body_component"_hs)
+                .func<&rigid_body_component::clone>("clone"_hs);
+        }
     };
 
     struct box_collider_component {
@@ -147,13 +206,25 @@ namespace sge {
         float restitution = 0.f;
         float restitution_threashold = 0.5f;
 
-        // Pointer to the partner Box2D Fixture object
-        void* runtime_fixture = nullptr;
-        std::optional<glm::vec2> previous_hitbox_size;
-
         box_collider_component() = default;
         box_collider_component(const box_collider_component&) = default;
         box_collider_component& operator=(const box_collider_component&) = default;
+
+        static box_collider_component& clone(const entity& src, const entity& dst, void* srcc) {
+            auto dstc = box_collider_component(*reinterpret_cast<box_collider_component*>(srcc));
+            return dst.add_component<box_collider_component>(dstc);
+        }
+
+        static box_collider_component& do_cast(void* data) {
+            return *reinterpret_cast<box_collider_component*>(data);
+        }
+
+        static void meta_register() {
+            using namespace entt::literals;
+            entt::meta<box_collider_component>()
+                .type("box_collider_component"_hs)
+                .func<&box_collider_component::clone>("clone"_hs);
+        }
     };
 
     struct script_component {
@@ -165,6 +236,17 @@ namespace sge {
         uint32_t gc_handle = 0;
         void* _class = nullptr;
         std::string class_name;
+
+        void verify_script(entity e);
+
+        static script_component& clone(const entity& src, const entity& dst, void* srcc);
+
+        static void meta_register() {
+            using namespace entt::literals;
+            entt::meta<script_component>()
+                .type("script_component"_hs)
+                .func<&script_component::clone>("clone"_hs);
+        }
     };
 
     //=== scene::on_component_added/on_component_removed ====
