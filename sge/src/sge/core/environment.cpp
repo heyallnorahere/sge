@@ -51,7 +51,7 @@ namespace sge {
             cmdline = info.cmdline;
         }
 
-        FILE* pipe = _popen(cmdline.c_str(), "r");
+        FILE* pipe = popen(cmdline.c_str(), "r");
         if (pipe == nullptr) {
             return -1;
         }
@@ -77,11 +77,11 @@ namespace sge {
                 file.close();
             }
         } catch (...) {
-            _pclose(pipe);
+            pclose(pipe);
             throw;
         }
 
-        return _pclose(pipe);
+        return pclose(pipe);
 #endif
     }
 
