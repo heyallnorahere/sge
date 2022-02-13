@@ -18,8 +18,8 @@
 #include "sge/renderer/image.h"
 #include "sge/asset/asset.h"
 namespace sge {
-    enum class texture_wrap { clamp, repeat };
-    enum class texture_filter { linear, nearest };
+    enum class texture_wrap { clamp = 0, repeat };
+    enum class texture_filter { linear = 0, nearest };
 
     struct texture_spec {
         ref<image_2d> image;

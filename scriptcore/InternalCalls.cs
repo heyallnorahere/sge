@@ -64,6 +64,16 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetScale(IntPtr component, Vector2 scale);
 
+        // sprite renderer component
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetColor(IntPtr component, out Vector4 color);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetColor(IntPtr component, Vector4 color);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetTexture(IntPtr component, out IntPtr texture);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetTexture(IntPtr component, IntPtr texture);
+
         // camera component
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool GetPrimary(IntPtr component);
@@ -175,5 +185,19 @@ namespace SGE
         public static extern void GetEventMouseButton(IntPtr address, out MouseButton button);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool GetMouseButtonReleased(IntPtr address);
+
+        // texture2d
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void AddRef_texture_2d(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveRef_texture_2d(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void LoadTexture2D(string path, out IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern TextureWrap GetWrapTexture2D(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern TextureFilter GetFilterTexture2D(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetPathTexture2D(IntPtr address);
     }
 }

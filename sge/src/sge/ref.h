@@ -21,10 +21,44 @@ namespace sge {
         ref_counted() { m_ref_count = 0; }
 
     private:
-        mutable int64_t m_ref_count;
+        mutable uint64_t m_ref_count;
+
         template <typename T>
         friend class ref;
+
+#ifdef SGE_INTERNAL
+        template <typename T>
+        friend class ref_counter;
+#endif
     };
+
+#ifdef SGE_INTERNAL
+    template <typename T>
+    class ref_counter {
+    public:
+        ref_counter(T* object) {
+            static_assert(std::is_base_of_v<ref_counted, T>, "class is not a derived type of ref_counted");
+
+            m_object = object;
+        }
+
+        void add() {
+            m_object->m_ref_count++;
+        }
+
+        void remove() {
+            m_object->m_ref_count--;
+
+            if (m_object->m_ref_count == 0) {
+                throw std::runtime_error("something went wrong.");
+            }
+        }
+
+    private:
+        T* m_object;
+    };
+#endif
+
     template <typename T>
     class ref {
     public:

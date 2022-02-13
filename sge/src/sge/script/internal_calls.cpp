@@ -158,6 +158,22 @@ namespace sge {
             component->scale = scale;
         }
 
+        static void GetColor(sprite_renderer_component* component, glm::vec4* color) {
+            *color = component->color;
+        }
+
+        static void SetColor(sprite_renderer_component* component, glm::vec4 color) {
+            component->color = color;
+        }
+
+        static void GetTexture(sprite_renderer_component* component, texture_2d** texture) {
+            *texture = component->texture.raw();
+        }
+
+        static void SetTexture(sprite_renderer_component* component, texture_2d* texture) {
+            component->texture = texture;
+        }
+
         static bool GetPrimary(camera_component* component) { return component->primary; }
 
         static void SetPrimary(camera_component* component, bool primary) {
@@ -381,102 +397,154 @@ namespace sge {
         static bool GetMouseButtonReleased(mouse_button_event* address) {
             return address->get_released();
         }
+
+        static void LoadTexture2D(void* path, texture_2d** address) {
+            fs::path texture_path = script_engine::from_managed_string(path);
+            auto texture = texture_2d::load(texture_path);
+
+            ref_counter counter(texture.raw());
+            counter.add();
+
+            *address = texture.raw();
+        }
+
+        static texture_wrap GetWrapTexture2D(texture_2d* address) { return address->get_wrap(); }
+
+        static texture_filter GetFilterTexture2D(texture_2d* address) {
+            return address->get_filter();
+        }
+
+        static void* GetPathTexture2D(texture_2d* address) {
+            std::string path = address->get_path().string();
+            return script_engine::to_managed_string(path);
+        }
     } // namespace internal_script_calls
+
+    template <typename T>
+    static void add_ref(T* address) {
+        ref_counter<T> counter(address);
+        counter.add();
+    }
+
+    template <typename T>
+    static void remove_ref(T* address) {
+        ref_counter<T> counter(address);
+        counter.remove();
+    }
 
     void script_engine::register_internal_script_calls() {
         register_component_types();
 
-#define REGISTER_CALL(name)                                                                        \
-    register_internal_call("SGE.InternalCalls::" #name, (void*)internal_script_calls::name)
+#define REGISTER_CALL(managed, native)                                                             \
+    register_internal_call("SGE.InternalCalls::" managed, (void*)native)
+
+#define REGISTER_FUNC(name) REGISTER_CALL(#name, internal_script_calls::name)
+#define REGISTER_REF_COUNTER(type)                                                                 \
+    REGISTER_CALL("AddRef_" #type, add_ref<type>);                                                 \
+    REGISTER_CALL("RemoveRef_" #type, remove_ref<type>)
 
         // scene
-        REGISTER_CALL(CreateEntity);
-        REGISTER_CALL(CreateEntityWithGUID);
-        REGISTER_CALL(DestroyEntity);
-        REGISTER_CALL(FindEntity);
+        REGISTER_FUNC(CreateEntity);
+        REGISTER_FUNC(CreateEntityWithGUID);
+        REGISTER_FUNC(DestroyEntity);
+        REGISTER_FUNC(FindEntity);
 
         // entity
-        REGISTER_CALL(HasComponent);
-        REGISTER_CALL(GetComponent);
-        REGISTER_CALL(GetGUID);
+        REGISTER_FUNC(HasComponent);
+        REGISTER_FUNC(GetComponent);
+        REGISTER_FUNC(GetGUID);
 
         // guid
-        REGISTER_CALL(GenerateGUID);
+        REGISTER_FUNC(GenerateGUID);
 
         // tag component
-        REGISTER_CALL(SetTag);
-        REGISTER_CALL(GetTag);
+        REGISTER_FUNC(SetTag);
+        REGISTER_FUNC(GetTag);
 
         // transform component
-        REGISTER_CALL(GetTranslation);
-        REGISTER_CALL(SetTranslation);
-        REGISTER_CALL(GetRotation);
-        REGISTER_CALL(SetRotation);
-        REGISTER_CALL(GetScale);
-        REGISTER_CALL(SetScale);
+        REGISTER_FUNC(GetTranslation);
+        REGISTER_FUNC(SetTranslation);
+        REGISTER_FUNC(GetRotation);
+        REGISTER_FUNC(SetRotation);
+        REGISTER_FUNC(GetScale);
+        REGISTER_FUNC(SetScale);
+
+        // sprite renderer component
+        REGISTER_FUNC(GetColor);
+        REGISTER_FUNC(SetColor);
+        REGISTER_FUNC(GetTexture);
+        REGISTER_FUNC(SetTexture);
 
         // camera component
-        REGISTER_CALL(GetPrimary);
-        REGISTER_CALL(SetPrimary);
-        REGISTER_CALL(GetProjectionType);
-        REGISTER_CALL(SetProjectionType);
-        REGISTER_CALL(GetViewSize);
-        REGISTER_CALL(SetViewSize);
-        REGISTER_CALL(GetFOV);
-        REGISTER_CALL(SetFOV);
-        REGISTER_CALL(GetOrthographicClips);
-        REGISTER_CALL(SetOrthographicClips);
-        REGISTER_CALL(GetPerspectiveClips);
-        REGISTER_CALL(SetPerspectiveClips);
-        REGISTER_CALL(SetOrthographic);
-        REGISTER_CALL(SetPerspective);
+        REGISTER_FUNC(GetPrimary);
+        REGISTER_FUNC(SetPrimary);
+        REGISTER_FUNC(GetProjectionType);
+        REGISTER_FUNC(SetProjectionType);
+        REGISTER_FUNC(GetViewSize);
+        REGISTER_FUNC(SetViewSize);
+        REGISTER_FUNC(GetFOV);
+        REGISTER_FUNC(SetFOV);
+        REGISTER_FUNC(GetOrthographicClips);
+        REGISTER_FUNC(SetOrthographicClips);
+        REGISTER_FUNC(GetPerspectiveClips);
+        REGISTER_FUNC(SetPerspectiveClips);
+        REGISTER_FUNC(SetOrthographic);
+        REGISTER_FUNC(SetPerspective);
 
         // rigid body component
-        REGISTER_CALL(GetBodyType);
-        REGISTER_CALL(SetBodyType);
-        REGISTER_CALL(GetFixedRotation);
-        REGISTER_CALL(SetFixedRotation);
-        REGISTER_CALL(GetAngularVelocity);
-        REGISTER_CALL(SetAngularVelocity);
-        REGISTER_CALL(AddForce);
+        REGISTER_FUNC(GetBodyType);
+        REGISTER_FUNC(SetBodyType);
+        REGISTER_FUNC(GetFixedRotation);
+        REGISTER_FUNC(SetFixedRotation);
+        REGISTER_FUNC(GetAngularVelocity);
+        REGISTER_FUNC(SetAngularVelocity);
+        REGISTER_FUNC(AddForce);
 
         // box collider component
-        REGISTER_CALL(GetSize);
-        REGISTER_CALL(SetSize);
-        REGISTER_CALL(GetDensity);
-        REGISTER_CALL(SetDensity);
-        REGISTER_CALL(GetFriction);
-        REGISTER_CALL(SetFriction);
-        REGISTER_CALL(GetRestitution);
-        REGISTER_CALL(SetRestitution);
-        REGISTER_CALL(GetRestitutionThreashold);
-        REGISTER_CALL(SetRestitutionThreashold);
+        REGISTER_FUNC(GetSize);
+        REGISTER_FUNC(SetSize);
+        REGISTER_FUNC(GetDensity);
+        REGISTER_FUNC(SetDensity);
+        REGISTER_FUNC(GetFriction);
+        REGISTER_FUNC(SetFriction);
+        REGISTER_FUNC(GetRestitution);
+        REGISTER_FUNC(SetRestitution);
+        REGISTER_FUNC(GetRestitutionThreashold);
+        REGISTER_FUNC(SetRestitutionThreashold);
 
         // logger
-        REGISTER_CALL(LogDebug);
-        REGISTER_CALL(LogInfo);
-        REGISTER_CALL(LogWarn);
-        REGISTER_CALL(LogError);
+        REGISTER_FUNC(LogDebug);
+        REGISTER_FUNC(LogInfo);
+        REGISTER_FUNC(LogWarn);
+        REGISTER_FUNC(LogError);
 
         // input
-        REGISTER_CALL(GetKey);
-        REGISTER_CALL(GetMouseButton);
-        REGISTER_CALL(GetMousePosition);
+        REGISTER_FUNC(GetKey);
+        REGISTER_FUNC(GetMouseButton);
+        REGISTER_FUNC(GetMousePosition);
 
         // events
-        REGISTER_CALL(IsEventHandled);
-        REGISTER_CALL(SetEventHandled);
-        REGISTER_CALL(GetResizeWidth);
-        REGISTER_CALL(GetResizeHeight);
-        REGISTER_CALL(GetPressedEventKey);
-        REGISTER_CALL(GetRepeatCount);
-        REGISTER_CALL(GetReleasedEventKey);
-        REGISTER_CALL(GetTypedEventKey);
-        REGISTER_CALL(GetEventMousePosition);
-        REGISTER_CALL(GetScrollOffset);
-        REGISTER_CALL(GetEventMouseButton);
-        REGISTER_CALL(GetMouseButtonReleased);
+        REGISTER_FUNC(IsEventHandled);
+        REGISTER_FUNC(SetEventHandled);
+        REGISTER_FUNC(GetResizeWidth);
+        REGISTER_FUNC(GetResizeHeight);
+        REGISTER_FUNC(GetPressedEventKey);
+        REGISTER_FUNC(GetRepeatCount);
+        REGISTER_FUNC(GetReleasedEventKey);
+        REGISTER_FUNC(GetTypedEventKey);
+        REGISTER_FUNC(GetEventMousePosition);
+        REGISTER_FUNC(GetScrollOffset);
+        REGISTER_FUNC(GetEventMouseButton);
+        REGISTER_FUNC(GetMouseButtonReleased);
+
+        // texture_2d
+        REGISTER_REF_COUNTER(texture_2d);
+        REGISTER_FUNC(LoadTexture2D);
+        REGISTER_FUNC(GetWrapTexture2D);
+        REGISTER_FUNC(GetFilterTexture2D);
+        REGISTER_FUNC(GetPathTexture2D);
 
 #undef REGISTER_CALL
+#undef REGISTER_FUNC
     }
 } // namespace sge

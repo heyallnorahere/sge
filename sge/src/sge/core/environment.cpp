@@ -39,6 +39,11 @@ namespace sge {
 #ifdef SGE_PLATFORM_WINDOWS
         return windows_run_command(info);
 #else
+        if (info.detach) {
+            spdlog::info("todo: fork-exec");
+            return 0;
+        }
+
         std::string cmdline;
         if (!info.workdir.empty() && info.workdir != fs::current_path()) {
             std::stringstream stream;

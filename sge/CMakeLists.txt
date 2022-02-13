@@ -116,7 +116,8 @@ add_custom_command(OUTPUT ${TYPE_FACE_DIRECTORY_FILE}
 add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS} ${TYPE_FACE_DIRECTORY_FILE})
 target_link_libraries(sge PUBLIC ${SGE_LIBS})
 target_include_directories(sge PUBLIC ${SGE_INCLUDES})
-target_compile_definitions(sge PUBLIC ${SGE_DEFINES} $<$<CONFIG:Debug>:SGE_DEBUG>)
+target_compile_definitions(sge PUBLIC ${SGE_DEFINES} $<$<CONFIG:Debug>:SGE_DEBUG>
+                               PRIVATE SGE_INTERNAL)
 set_target_properties(sge PROPERTIES CXX_STANDARD 17 FOLDER "core")
 
 # setup pch

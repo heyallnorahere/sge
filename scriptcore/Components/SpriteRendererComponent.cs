@@ -23,11 +23,33 @@ namespace SGE.Components
     /// </summary>
     public sealed class SpriteRendererComponent : Component<SpriteRendererComponent>
     {
-        public SpriteRendererComponent()
+        public Vector4 Color
         {
-            throw new NotImplementedException();
+            get
+            {
+                Vector4 color;
+                InternalCalls.GetColor(mAddress, out color);
+                return color;
+            }
+            set => InternalCalls.SetColor(mAddress, value);
         }
 
-        // todo(nora): we need a vector4 struct and a managed texture class
+        public Texture2D Texture
+        {
+            get
+            {
+                IntPtr address;
+                InternalCalls.GetTexture(mAddress, out address);
+
+                Texture2D texture = null;
+                if (address != IntPtr.Zero)
+                {
+                    texture = new Texture2D(address);
+                }
+
+                return texture;
+            }
+            set => InternalCalls.SetTexture(mAddress, value.mAddress);
+        }
     }
 }
