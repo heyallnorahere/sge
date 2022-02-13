@@ -72,7 +72,7 @@ namespace sge {
 
     void directx_shader::reload() {
         load();
-        renderer::on_shader_reloaded(this);
+        renderer::on_shader_reloaded(id);
     }
 
     void directx_shader::load() {

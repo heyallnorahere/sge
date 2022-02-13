@@ -200,7 +200,11 @@ namespace sgm::launcher {
 
                     ImVec2 content_region = ImGui::GetContentRegionAvail();
                     float image_size = content_region.y;
+
+                    // for testing purposes
+#ifndef SGE_USE_DIRECTX
                     ImGui::Image(image->get_imgui_id(), ImVec2(image_size, image_size));
+#endif
 
                     ImFont* bold = app.get_imgui_layer().get_font("Roboto-Bold.ttf");
                     ImGui::PushFont(bold);

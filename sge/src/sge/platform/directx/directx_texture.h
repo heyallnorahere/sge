@@ -22,9 +22,12 @@ namespace sge {
         directx_texture_2d(const texture_spec& spec) {}
         virtual ~directx_texture_2d() override = default;
 
+        virtual void reload() override { }
+
         virtual ref<image_2d> get_image() override { return nullptr; }
         virtual texture_wrap get_wrap() override { return texture_wrap::repeat; }
         virtual texture_filter get_filter() override { return texture_filter::linear; }
+        virtual const fs::path& get_path() override { return fs::path(); }
 
         virtual ImTextureID get_imgui_id() override { return (ImTextureID)0; }
     };
