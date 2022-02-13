@@ -30,6 +30,7 @@ namespace sge {
         STARTUPINFOA startup_info;
         memset(&startup_info, 0, sizeof(STARTUPINFOA));
         startup_info.cb = sizeof(STARTUPINFOA);
+        startup_info.dwFlags |= STARTF_USESTDHANDLES;
 
         HANDLE output_file = nullptr;
         if (!info.output_file.empty()) {
@@ -41,10 +42,32 @@ namespace sge {
             output_file = ::CreateFileW(info.output_file.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE,
                                         &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 
-            startup_info.hStdInput = ::GetStdHandle(STD_INPUT_HANDLE);
             startup_info.hStdOutput = output_file;
             startup_info.hStdError = output_file;
-            startup_info.dwFlags |= STARTF_USESTDHANDLES;
+        }
+
+        if (info.detach) {
+            startup_info.hStdInput = INVALID_HANDLE_VALUE;
+
+            if (startup_info.hStdOutput == nullptr) {
+                startup_info.hStdOutput = INVALID_HANDLE_VALUE;
+            }
+
+            if (startup_info.hStdError == nullptr) {
+                startup_info.hStdError = INVALID_HANDLE_VALUE;
+            }
+        }
+
+        if (startup_info.hStdInput == nullptr) {
+            startup_info.hStdInput = ::GetStdHandle(STD_INPUT_HANDLE);
+        }
+
+        if (startup_info.hStdOutput == nullptr) {
+            startup_info.hStdOutput = ::GetStdHandle(STD_OUTPUT_HANDLE);
+        }
+
+        if (startup_info.hStdError == nullptr) {
+            startup_info.hStdError = ::GetStdHandle(STD_ERROR_HANDLE);
         }
 
         fs::path workdir = info.workdir.empty() ? fs::current_path() : info.workdir;
@@ -52,20 +75,28 @@ namespace sge {
 
         int32_t exit_code = -1;
         std::string exe_string = info.executable.string();
+
         PROCESS_INFORMATION win32_process_info;
         if (::CreateProcessA(exe_string.c_str(), buffer, nullptr, nullptr, true, 0, nullptr,
                              workdir_string.c_str(), &startup_info, &win32_process_info)) {
-            ::WaitForSingleObject(win32_process_info.hProcess, std::numeric_limits<DWORD>::max());
+            if (!info.detach) {
+                ::WaitForSingleObject(win32_process_info.hProcess,
+                                      std::numeric_limits<DWORD>::max());
 
-            DWORD win32_exit_code = 0;
-            if (!::GetExitCodeProcess(win32_process_info.hProcess, &win32_exit_code)) {
-                throw std::runtime_error("could not get exit code from executed command!");
+                DWORD win32_exit_code = 0;
+                if (!::GetExitCodeProcess(win32_process_info.hProcess, &win32_exit_code)) {
+                    throw std::runtime_error("could not get exit code from executed command!");
+                }
+
+                exit_code = (int32_t)win32_exit_code;
+            } else {
+                exit_code = 0;
             }
 
             ::CloseHandle(win32_process_info.hProcess);
             ::CloseHandle(win32_process_info.hThread);
-
-            exit_code = (int32_t)win32_exit_code;
+        } else {
+            exit_code = (int32_t)::GetLastError();
         }
 
         free(buffer);

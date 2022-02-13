@@ -21,6 +21,7 @@ namespace sge {
         std::string cmdline;
 
         fs::path workdir, output_file;
+        bool detach = false;
     };
 
     class environment {

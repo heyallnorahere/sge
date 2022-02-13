@@ -55,8 +55,34 @@ namespace sgm::launcher {
         void open_project(const fs::path& project_path) {
             spdlog::info("opening project: {0}", project_path.string());
 
-            // todo: implement
-            spdlog::warn("not implemented yet");
+            static fs::path sgm_path;
+            if (sgm_path.empty()) {
+                sgm_path = fs::current_path() / "bin";
+
+#ifdef SGE_DEBUG
+                sgm_path /= "Debug";
+#endif
+
+                std::string sgm_name = "sgm";
+#ifdef SGE_PLATFORM_WINDOWS
+                sgm_name += ".exe";
+#endif
+                sgm_path /= sgm_name;
+            }
+
+            std::stringstream command;
+            command << std::quoted(sgm_path.string()) << " " << std::quoted(project_path.string());
+
+            process_info info;
+            info.executable = sgm_path;
+            info.cmdline = command.str();
+            info.workdir = fs::current_path();
+            info.detach = true;
+
+            int32_t return_code = environment::run_command(info);
+            if (return_code != 0) {
+                spdlog::error("could not launch SGM! (error code: {0})", return_code);
+            }
         }
 
         launcher_layer* m_layer;
