@@ -166,13 +166,13 @@ namespace sge {
                 for (auto& layer : m_layer_stack) {
                     layer->on_imgui_render();
                 }
-                m_imgui_layer->end(cmdlist);
 
+                m_imgui_layer->end(cmdlist);
                 if (renderer::pop_render_pass() != pass) {
                     throw std::runtime_error("a render pass was pushed, but not popped!");
                 }
-                cmdlist.end();
 
+                cmdlist.end();
                 m_swapchain->present();
             }
 

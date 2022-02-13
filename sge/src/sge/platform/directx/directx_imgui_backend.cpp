@@ -55,6 +55,6 @@ namespace sge {
         auto raw_cmdlist = commandlist.Get();
         ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), raw_cmdlist);
 
-        return nullptr;
+        return raw_cmdlist;
     }
 } // namespace sge

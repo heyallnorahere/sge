@@ -24,7 +24,10 @@ namespace sge {
         m_allocator = allocator;
     }
 
-    void directx_command_list::reset() { COM_assert(m_cmdlist->Reset(m_allocator.Get(), nullptr)); }
+    void directx_command_list::reset() {
+        COM_assert(m_allocator->Reset());
+        COM_assert(m_cmdlist->Reset(m_allocator.Get(), nullptr));
+    }
 
     void directx_command_list::begin() {
         // nothing

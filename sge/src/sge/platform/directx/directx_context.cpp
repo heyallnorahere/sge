@@ -105,7 +105,7 @@ namespace sge {
             spdlog::warn(message);
             break;
         default:
-            // not important enough to show
+            spdlog::info(message);
             break;
         }
     }
@@ -119,10 +119,6 @@ namespace sge {
         if (SUCCEEDED(data->device.As(&info_queue))) {
             info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
 
-            static std::vector<D3D12_MESSAGE_SEVERITY> deny_severities = {
-                D3D12_MESSAGE_SEVERITY_INFO
-            };
-
             static std::vector<D3D12_MESSAGE_ID> deny_ids = {
                 // we should allow arbitrary clear values
                 D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
@@ -133,9 +129,6 @@ namespace sge {
             };
 
             auto filter = dx_init<D3D12_INFO_QUEUE_FILTER>();
-
-            filter.DenyList.NumSeverities = deny_severities.size();
-            filter.DenyList.pSeverityList = deny_severities.data();
 
             filter.DenyList.NumIDs = deny_ids.size();
             filter.DenyList.pIDList = deny_ids.data();
