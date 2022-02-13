@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Reference Include="$(SGE_DIR)assemblies\SGE.Scriptcore.dll" />
+        <Reference Include="$(SGE_DIR)assets\assemblies\SGE.Scriptcore.dll" />
     </ItemGroup>
 
 </Project>

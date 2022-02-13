@@ -17,11 +17,8 @@
 #include "sgepch.h"
 #include "sge/asset/project.h"
 #include "sge/asset/json.h"
+#include "sge/core/environment.h"
 #include "sge/script/script_engine.h"
-#ifdef SGE_PLATFORM_WINDOWS
-#define NOMINMAX
-#include <Windows.h>
-#endif
 namespace sge {
     struct project_data_t {
         std::unique_ptr<project> instance;
@@ -137,47 +134,6 @@ namespace sge {
         return true;
     }
 
-#ifdef SGE_PLATFORM_WINDOWS
-    static int32_t run_command(const fs::path& executable, const std::string& cmdline) {
-        char* buffer = (char*)malloc((cmdline.length() + 1) * sizeof(char));
-        strcpy(buffer, cmdline.c_str());
-
-        STARTUPINFOA startup_info;
-        memset(&startup_info, 0, sizeof(STARTUPINFOA));
-        startup_info.cb = sizeof(STARTUPINFOA);
-
-        int32_t exit_code = -1;
-        std::string exe_string = executable.string();
-        PROCESS_INFORMATION info;
-        if (::CreateProcessA(exe_string.c_str(), buffer, nullptr, nullptr, true, 0, nullptr,
-                             nullptr, &startup_info, &info)) {
-            ::WaitForSingleObject(info.hProcess, std::numeric_limits<DWORD>::max());
-
-            DWORD win32_exit_code = 0;
-            if (!::GetExitCodeProcess(info.hProcess, &win32_exit_code)) {
-                throw std::runtime_error("could not get exit code from executed command!");
-            }
-
-            ::CloseHandle(info.hProcess);
-            ::CloseHandle(info.hThread);
-
-            exit_code = (int32_t)win32_exit_code;
-        }
-
-        free(buffer);
-        return exit_code;
-    }
-#else
-    static int32_t run_command(const fs::path& executable, const std::string& cmdline) {
-        FILE* pipe = popen(cmdline.c_str(), "r");
-        if (pipe == nullptr) {
-            return -1;
-        }
-
-        return pclose(pipe);
-    }
-#endif
-
     static bool compile_app_assembly() {
         static const std::vector<fs::path> dotnet_executable_names = { "dotnet", "dotnet.exe" };
         static const std::vector<fs::path> dotnet_search_paths = {
@@ -216,8 +172,12 @@ namespace sge {
                        << project::get().get_script_project_path().string() << "\" -c "
                        << project::get_config();
 
-        std::string command = command_stream.str();
-        int32_t return_code = run_command(executable_path, command);
+        process_info command_info;
+        command_info.executable = executable_path;
+        command_info.cmdline = command_stream.str();
+        command_info.output_file = "assets/logs/dotnet.log";
+
+        int32_t return_code = environment::run_command(command_info);
         if (return_code != 0) {
             spdlog::warn("MSBuild exited with code: {0}", return_code);
             return false;

@@ -16,9 +16,18 @@
 
 #pragma once
 namespace sge {
+    struct process_info {
+        fs::path executable;
+        std::string cmdline;
+
+        fs::path workdir, output_file;
+    };
+
     class environment {
     public:
         environment() = delete;
+
+        static int32_t run_command(const process_info& info);
 
         static bool set(const std::string& key, const std::string& value);
         static std::string get(const std::string& key);

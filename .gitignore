@@ -5,7 +5,6 @@ build/
 obj/
 bin/
 !vendor/**/bin
-assemblies/
 mono_crash*
 vendor/nvidia-aftermath
 *.nvdbg

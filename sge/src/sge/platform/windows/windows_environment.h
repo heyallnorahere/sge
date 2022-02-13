@@ -15,7 +15,10 @@
 */
 
 #pragma once
+#include "sge/core/environment.h"
 namespace sge {
+    int32_t windows_run_command(const process_info& info);
+
     bool windows_setenv(const std::string& key, const std::string& value);
     std::string windows_getenv(const std::string& key);
     bool windows_hasenv(const std::string& key);
