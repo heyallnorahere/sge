@@ -23,7 +23,6 @@ namespace sgm::launcher {
     public:
         sgm_launcher() : application("SGM Launcher") {
             static const std::vector<subsystem> disabled_subsystems = { subsystem_script_engine,
-                                                                        subsystem_input,
                                                                         subsystem_project };
 
             for (subsystem id : disabled_subsystems) {

@@ -35,9 +35,12 @@ namespace sgm::launcher {
         }
 
         virtual void on_attach() override;
+        virtual void on_event(event& e) override;
         virtual void on_imgui_render() override;
 
     private:
+        bool on_key(key_pressed_event& e);
+
         app_callbacks m_callbacks;
         popup_manager m_popup_manager;
 

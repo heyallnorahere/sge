@@ -21,6 +21,7 @@
 namespace sgm::launcher {
     static const std::string sge_dir_env_var = "SGE_DIR";
     static const std::string sge_dir_popup_name = "Select SGE directory";
+    static const std::string theme_picker_popup_name = "Theme picker";
 
     void launcher_layer::on_attach() {
         // sge dir selection
@@ -71,6 +72,65 @@ namespace sgm::launcher {
 
             m_popup_manager.register_popup(sge_dir_popup_name, data);
         }
+
+        // theme picker
+        {
+            popup_manager::popup_data data;
+            data.modal = false;
+
+            data.callback = []() {
+                ImGuiStyle& style = ImGui::GetStyle();
+
+                static std::vector<const char*> combo_data;
+                if (combo_data.empty()) {
+                    for (ImGuiCol color = 0; color < ImGuiCol_COUNT; color++) {
+                        const char* name = ImGui::GetStyleColorName(color);
+                        combo_data.push_back(name);
+                    }
+                }
+
+                static ImGuiCol current_color = 0;
+                ImGui::Combo("ID", &current_color, combo_data.data(), combo_data.size());
+                ImGui::ColorPicker4("##color-edit", &style.Colors[current_color].x);
+
+                if (ImGui::Button("Export")) {
+                    fs::path export_path = fs::current_path() / "bin" / "style.txt";
+                    fs::path directory = export_path.parent_path();
+
+                    if (!fs::exists(directory)) {
+                        fs::create_directories(directory);
+                    }
+
+                    std::ofstream stream(export_path);
+                    stream << "ImGuiStyle& style = ImGui::GetStyle();" << std::endl;
+
+                    for (ImGuiCol id = 0; id < ImGuiCol_COUNT; id++) {
+                        ImVec4 color = style.Colors[id];
+
+                        char buffer[512];
+                        sprintf(buffer, "style.Colors[%s] = ImVec4(%ff, %ff, %ff, %ff);",
+                                ImGui::GetStyleColorName(id), color.x, color.y, color.z, color.w);
+
+                        stream << buffer << std::endl;
+                    }
+
+                    stream.close();
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("Close")) {
+                    ImGui::CloseCurrentPopup();
+                }
+            };
+
+            m_popup_manager.register_popup(theme_picker_popup_name, data);
+        }
+    }
+
+    void launcher_layer::on_event(event& e) {
+        event_dispatcher dispatcher(e);
+
+        dispatcher.dispatch<key_pressed_event>(SGE_BIND_EVENT_FUNC(launcher_layer::on_key));
     }
 
     void launcher_layer::on_imgui_render() {
@@ -100,10 +160,7 @@ namespace sgm::launcher {
         static constexpr float window_padding = 20.f;
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(window_padding, window_padding));
 
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.2f, 0.2f, 0.2f, 1.f));
         ImGui::Begin("Main launcher window", nullptr, window_flags);
-
-        ImGui::PopStyleColor();
         ImGui::PopStyleVar(3);
 
         if (!m_work_dir_set) {
@@ -138,14 +195,14 @@ namespace sgm::launcher {
                     std::string id = "project-" + std::to_string(i);
                     bool hovered = hovered_project == i;
 
-                    ImVec4 bg_color;
+                    ImGuiCol bg_color;
                     if (hovered) {
-                        bg_color = ImVec4(0.6f, 0.6f, 0.6f, 1.f);
+                        bg_color = ImGuiCol_ButtonHovered;
                     } else {
-                        bg_color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+                        bg_color = ImGuiCol_Button;
                     }
 
-                    ImGui::PushStyleColor(ImGuiCol_ChildBg, bg_color);
+                    ImGui::PushStyleColor(ImGuiCol_ChildBg, style.Colors[bg_color]);
                     ImGui::BeginChild(id.c_str(), ImVec2(0.f, 100.f), true);
                     ImGui::PopStyleColor();
 
@@ -184,17 +241,17 @@ namespace sgm::launcher {
                                          const std::string& id) {
                     bool hovered = hovered_button == total_buttons;
 
-                    ImVec4 bg_color;
+                    ImGuiCol bg_color;
                     if (hovered) {
-                        bg_color = ImVec4(0.6f, 0.6f, 0.6f, 1.f);
+                        bg_color = ImGuiCol_ButtonHovered;
                     } else {
-                        bg_color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+                        bg_color = ImGuiCol_Button;
                     }
 
                     static constexpr ImGuiWindowFlags button_flags =
                         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
-                    ImGui::PushStyleColor(ImGuiCol_ChildBg, bg_color);
+                    ImGui::PushStyleColor(ImGuiCol_ChildBg, style.Colors[bg_color]);
                     ImGui::BeginChild(id.c_str(), ImVec2(0.f, 150.f), true, button_flags);
                     ImGui::PopStyleColor();
 
@@ -266,5 +323,22 @@ namespace sgm::launcher {
 
         ImGui::End();
         m_popup_manager.update();
+    }
+
+    bool launcher_layer::on_key(key_pressed_event& e) {
+        if (e.get_repeat_count() > 0) {
+            return false;
+        }
+
+#ifdef SGE_DEBUG
+        // ctrl+t for theme picker
+        if (e.get_key() == key_code::T &&
+            (input::get_key(key_code::LEFT_CONTROL) || input::get_key(key_code::RIGHT_CONTROL))) {
+            m_popup_manager.open(theme_picker_popup_name);
+            return true;
+        }
+#endif
+
+        return false;
     }
 } // namespace sgm::launcher
