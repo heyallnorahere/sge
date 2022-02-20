@@ -39,7 +39,10 @@ namespace sgm {
                 project_path = args[1];
             }
 
-            project::load(fs::absolute(project_path));
+            spdlog::info("loading project: {0}", project_path.string());
+            if (!project::load(fs::absolute(project_path))) {
+                throw std::runtime_error("could not load project!");
+            }
             
             project& _project = project::get();
             m_window->set_title(sgm_title + " - " + _project.get_name());

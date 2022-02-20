@@ -94,6 +94,7 @@ namespace sge {
         }
 
         if (!fs::exists(project_path)) {
+            spdlog::warn("project does not exist: {0}", path.string());
             return false;
         }
 
@@ -103,7 +104,7 @@ namespace sge {
             stream >> data;
             stream.close();
         } catch (const std::exception& exc) {
-            spdlog::warn("could not load project {0}: {1}", project_path.string(), exc.what());
+            spdlog::warn("invalid project {0}: {1}", project_path.string(), exc.what());
             return false;
         }
 
@@ -177,12 +178,7 @@ namespace sge {
         command_info.cmdline = command_stream.str();
         command_info.output_file = "assets/logs/dotnet.log";
 
-        int32_t return_code = environment::run_command(command_info);
-        if (return_code != 0) {
-            spdlog::warn("MSBuild exited with code: {0}", return_code);
-            return false;
-        }
-
+        environment::run_command(command_info);
         return true;
     }
 

@@ -20,8 +20,15 @@
 
 #ifdef SGE_PLATFORM_WINDOWS
 #include "sge/platform/windows/windows_environment.h"
-#elif defined(SGE_PLATFORM_LINUX)
+#else
+#include <errno.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef SGE_PLATFORM_LINUX
 #define getenv secure_getenv
+#endif
 #endif
 
 namespace sge {
@@ -40,7 +47,84 @@ namespace sge {
         return windows_run_command(info);
 #else
         if (info.detach) {
-            spdlog::info("todo: fork-exec");
+            // shamelessly stolen from stack overflow
+            // https://stackoverflow.com/questions/17954432/creating-a-daemon-in-linux
+
+            // first fork
+            pid_t pid = fork();
+            if (pid < 0) {
+                spdlog::error("could not perform first fork");
+                return -1;
+            }
+
+            if (pid == 0) {
+                if (setsid() < 0) {
+                    spdlog::error("could not set session ID");
+                    exit(EXIT_FAILURE);
+                }
+
+                signal(SIGCHLD, SIG_IGN);
+                signal(SIGHUP, SIG_IGN);
+
+                // second fork
+                pid = fork();
+                if (pid < 0) {
+                    spdlog::error("could not perform second fork");
+                    exit(EXIT_FAILURE);
+                }
+
+                if (pid > 0) {
+                    exit(EXIT_SUCCESS);
+                }
+
+                umask(0);
+                if (!info.workdir.empty()) {
+                    fs::path workdir = fs::absolute(info.workdir);
+                    spdlog::info("changing to directory: {0}", workdir.string());
+                    chdir(workdir.c_str());
+                }
+
+                // close all file descriptors
+                for (int32_t i = sysconf(_SC_OPEN_MAX); i >= 0; i--) {
+                    close(i);
+                }
+
+                // open standard fds
+                for (int32_t i = 0; i < 3; i++) {
+                    std::string mode = std::string(i > 0 ? "w" : "r") + "b";
+
+                    fs::path fd_path = "/dev/null";
+                    if (i > 0 && !info.output_file.empty()) {
+                        fd_path = info.output_file;
+                    }
+
+                    fopen(fd_path.c_str(), mode.c_str());
+                }
+
+                std::vector<std::string> args = {
+                    "sh", "-c", info.cmdline
+                };
+
+                std::vector<char> data;
+                std::vector<size_t> indices;
+                for (const auto& arg : args) {
+                    size_t index = data.size();
+                    indices.push_back(index);
+
+                    data.insert(data.end(), arg.begin(), arg.end());
+                    data.push_back('\0');
+                }
+
+                std::vector<char*> arguments;
+                for (size_t index : indices) {
+                    arguments.push_back(&data[index]);
+                }
+
+                arguments.push_back(nullptr);
+                int32_t return_code = execvp("/bin/sh", arguments.data());
+                exit(return_code);
+            }
+
             return 0;
         }
 
@@ -58,6 +142,7 @@ namespace sge {
 
         FILE* pipe = popen(cmdline.c_str(), "r");
         if (pipe == nullptr) {
+            spdlog::error("could not run command: {0}", strerror(errno));
             return -1;
         }
 

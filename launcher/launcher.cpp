@@ -57,7 +57,6 @@ namespace sgm::launcher {
             static fs::path sgm_path;
             if (sgm_path.empty()) {
                 sgm_path = fs::current_path() / "bin";
-
 #ifdef SGE_DEBUG
                 sgm_path /= "Debug";
 #endif
@@ -66,6 +65,7 @@ namespace sgm::launcher {
 #ifdef SGE_PLATFORM_WINDOWS
                 sgm_name += ".exe";
 #endif
+
                 sgm_path /= sgm_name;
             }
 
@@ -76,6 +76,7 @@ namespace sgm::launcher {
             info.executable = sgm_path;
             info.cmdline = command.str();
             info.workdir = fs::current_path();
+            info.output_file = "assets/logs/sgm.log";
             info.detach = true;
 
             int32_t return_code = environment::run_command(info);
