@@ -44,7 +44,7 @@ add_subdirectory("vendor")
 add_subdirectory("tools")
 
 # mono DLL macro
-macro(copy_required_dlls target_name)
+macro(copy_required_dlls TARGET_NAME)
     if(WIN32)
         set(DLLS_TO_COPY "${CMAKE_SOURCE_DIR}/vendor/mono/bin/windows/coreclr.dll")
         if(SGE_USE_AFTERMATH)
@@ -52,11 +52,25 @@ macro(copy_required_dlls target_name)
         endif()
 
         foreach(DLL ${DLLS_TO_COPY})
-            add_custom_command(TARGET ${target_name} POST_BUILD
-                               COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DLL} $<TARGET_FILE_DIR:${target_name}>)
+            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                               COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DLL} $<TARGET_FILE_DIR:${TARGET_NAME}>)
         endforeach()
     endif()
 endmacro()
+
+# source group function
+macro(dir_source_groups_impl CURRENT_DIRECTORY BASE_DIRECTORY)
+    message(STATUS ${CURRENT_DIRECTORY})
+    get_directory_property(SUBDIRS DIRECTORY ${CURRENT_DIRECTORY} SUBDIRECTORIES)
+    foreach(SUBDIR ${SUBDIRS})
+        dir_source_groups_impl(${SUBDIR} ${BASE_DIRECTORY})
+    endforeach()
+
+endmacro()
+
+function(dir_source_groups DIRECTORY)
+    dir_source_groups_impl(${DIRECTORY} ${DIRECTORY})
+endfunction()
 
 # sge targets
 add_subdirectory("sge")

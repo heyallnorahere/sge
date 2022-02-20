@@ -40,7 +40,8 @@ else()
 endif()
 
 # configuration header
-configure_file("sge_config.h.in" "sge_config.h" @ONLY)
+set(SGE_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/sge_config.h")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/sge_config.h.in" ${SGE_CONFIG} @ONLY)
 
 # base lists
 set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/mono/include" "${VENDOR_DIR}/glm" ${CMAKE_CURRENT_BINARY_DIR})
@@ -81,18 +82,18 @@ if(SGE_USE_VULKAN)
 endif()
 
 # glob sources
-file(GLOB_RECURSE SGE_MANIFEST CONFIGURE_DEPENDS "${SGE_DIR}/*")
+file(GLOB_RECURSE SGE_SOURCE CONFIGURE_DEPENDS "${SGE_DIR}/*")
 file(GLOB_RECURSE PLATFORM_CODE CONFIGURE_DEPENDS "${SGE_DIR}/sge/platform/*")
-list(REMOVE_ITEM SGE_MANIFEST ${PLATFORM_CODE})
+list(REMOVE_ITEM SGE_SOURCE ${PLATFORM_CODE})
 foreach(PLATFORM_NAME ${ENABLED_PLATFORMS})
     file(GLOB_RECURSE GLOBBED_PLATFORM_CODE CONFIGURE_DEPENDS "${SGE_DIR}/sge/platform/${PLATFORM_NAME}/*")
-    list(APPEND SGE_MANIFEST ${GLOBBED_PLATFORM_CODE})
+    list(APPEND SGE_SOURCE ${GLOBBED_PLATFORM_CODE})
 endforeach()
 
 # glob shaders
 file(GLOB_RECURSE SGE_SHADERS CONFIGURE_DEPENDS "${ASSET_DIR}/shaders/*")
 if(MSVC)
-    source_group("Shaders" FILES ${SGE_SHADERS})
+    source_group("shaders" FILES ${SGE_SHADERS})
     set_source_files_properties(${SGE_SHADERS} PROPERTIES VS_TOOL_OVERRIDE "None")
 endif()
 
@@ -113,12 +114,26 @@ add_custom_command(OUTPUT ${TYPE_FACE_DIRECTORY_FILE}
     DEPENDS "${CMAKE_SOURCE_DIR}/assets/fonts/" embed_type_faces)
 
 # add target
-add_library(sge STATIC ${SGE_MANIFEST} ${SGE_SHADERS} ${TYPE_FACE_DIRECTORY_FILE})
+set(SGE_MANIFEST ${SGE_SOURCE} ${SGE_SHADERS} ${TYPE_FACE_DIRECTORY_FILE} ${SGE_CONFIG})
+add_library(sge STATIC ${SGE_MANIFEST})
 target_link_libraries(sge PUBLIC ${SGE_LIBS})
 target_include_directories(sge PUBLIC ${SGE_INCLUDES})
 target_compile_definitions(sge PUBLIC ${SGE_DEFINES} $<$<CONFIG:Debug>:SGE_DEBUG>
                                PRIVATE SGE_INTERNAL)
 set_target_properties(sge PROPERTIES CXX_STANDARD 17 FOLDER "core")
+
+# source groups
+foreach(SGE_SOURCE_FILE ${SGE_MANIFEST})
+    cmake_path(GET SGE_SOURCE_FILE PARENT_PATH DIRECTORY)
+    cmake_path(RELATIVE_PATH DIRECTORY
+        BASE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        OUTPUT_VARIABLE SOURCE_GROUP_NAME)
+
+    string(FIND ${SOURCE_GROUP_NAME} "." PERIOD_INDEX)
+    if(${PERIOD_INDEX} LESS 0)
+        source_group(${SOURCE_GROUP_NAME} FILES ${SGE_SOURCE_FILE})
+    endif()
+endforeach()
 
 # setup pch
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
@@ -131,3 +146,4 @@ message(STATUS "SGE: Linking against libraries: ${SGE_LIBS}")
 message(STATUS "SGE: Including directories: ${SGE_INCLUDES}")
 message(STATUS "SGE: Defining preprocessor macros: ${SGE_DEFINES}")
 message(STATUS "SGE: Enabled platform code: ${ENABLED_PLATFORMS}")
+message(STATUS "Building SGE version ${SGE_VERSION}")
