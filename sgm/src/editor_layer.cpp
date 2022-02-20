@@ -58,6 +58,7 @@ namespace sgm {
         }
     }
 
+    static bool demo_window = false;
     void editor_layer::on_imgui_render() {
         static constexpr ImGuiConfigFlags required_flags =
             ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
@@ -70,6 +71,10 @@ namespace sgm {
         texture_cache::new_frame();
         m_popup_manager.update();
         update_dockspace();
+
+        if (demo_window) {
+            ImGui::ShowDemoWindow(&demo_window);
+        }
 
         for (auto& _panel : m_panels) {
             if (_panel->open()) {
@@ -129,6 +134,22 @@ namespace sgm {
             }
 
             break;
+#ifdef SGE_DEBUG
+        case key_code::T:
+            if (control && shift) {
+                m_popup_manager.open("Theme picker");
+                return true;
+            }
+
+            break;
+        case key_code::D:
+            if (control && shift) {
+                demo_window = !demo_window;
+                return true;
+            }
+
+            break;
+#endif
         }
 
         return false;
@@ -169,6 +190,60 @@ namespace sgm {
             data.callback = callback;
 
             m_popup_manager.register_popup("About", data);
+        }
+
+
+        // theme picker
+        {
+            popup_manager::popup_data data;
+            data.modal = false;
+
+            data.callback = []() {
+                ImGuiStyle& style = ImGui::GetStyle();
+
+                static std::vector<const char*> combo_data;
+                if (combo_data.empty()) {
+                    for (ImGuiCol color = 0; color < ImGuiCol_COUNT; color++) {
+                        const char* name = ImGui::GetStyleColorName(color);
+                        combo_data.push_back(name);
+                    }
+                }
+
+                static ImGuiCol current_color = 0;
+                ImGui::Combo("ID", &current_color, combo_data.data(), combo_data.size());
+                ImGui::ColorPicker4("##color-edit", &style.Colors[current_color].x);
+
+                if (ImGui::Button("Export")) {
+                    fs::path export_path = fs::current_path() / "bin" / "style.txt";
+                    fs::path directory = export_path.parent_path();
+
+                    if (!fs::exists(directory)) {
+                        fs::create_directories(directory);
+                    }
+
+                    std::ofstream stream(export_path);
+                    stream << "ImGuiStyle& style = ImGui::GetStyle();" << std::endl;
+
+                    for (ImGuiCol id = 0; id < ImGuiCol_COUNT; id++) {
+                        ImVec4 color = style.Colors[id];
+
+                        char buffer[512];
+                        sprintf(buffer, "style.Colors[%s] = ImVec4(%ff, %ff, %ff, %ff);",
+                                ImGui::GetStyleColorName(id), color.x, color.y, color.z, color.w);
+
+                        stream << buffer << std::endl;
+                    }
+
+                    stream.close();
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("Close")) {
+                    ImGui::CloseCurrentPopup();
+                }
+            };
+
+            m_popup_manager.register_popup("Theme picker", data);
         }
     }
 
@@ -274,6 +349,15 @@ namespace sgm {
                     std::string title = _panel->get_title();
                     ImGui::MenuItem(title.c_str(), nullptr, &_panel->open());
                 }
+
+#ifdef SGE_DEBUG
+                ImGui::Separator();
+                ImGui::MenuItem("Demo window", "Ctrl+Shift+D", &demo_window);
+
+                if (ImGui::MenuItem("Theme picker", "Ctrl+Shift+T")) {
+                    m_popup_manager.open("Theme picker");
+                }
+#endif
 
                 ImGui::EndMenu();
             }
