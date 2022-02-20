@@ -76,10 +76,11 @@ namespace sgm::launcher {
         // project creation
         {
             popup_manager::popup_data data;
-            data.size.x = 800.f;
+            data.size.x = 600.f;
+            data.size.y = 300.f;
 
             data.callback = [this]() {
-                static const std::string default_name = "My Project";
+                static const std::string default_name = "MyProject";
                 static const std::string default_path = (environment::get_home_directory() / "src" /
                                                          "MyProject" / "MyProject.sgeproject")
                                                             .string();
@@ -117,23 +118,32 @@ namespace sgm::launcher {
                     }
                 }
 
+                static std::string error;
                 if (ImGui::Button("Create")) {
                     project_info info;
                     info.name = name.empty() ? default_name : name;
-                    info.path = path.empty() ? default_path : path;
+                    info.path = fs::absolute(path.empty() ? default_path : path);
 
-                    name.clear();
-                    path.clear();
+                    if (m_callbacks.create_project(info, error)) {
+                        name.clear();
+                        path.clear();
 
-                    m_callbacks.create_project(info);
+                        m_callbacks.open_project(info.path);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
 
                 ImGui::SameLine();
                 if (ImGui::Button("Cancel")) {
                     name.clear();
                     path.clear();
+                    error.clear();
 
                     ImGui::CloseCurrentPopup();
+                }
+
+                if (!error.empty()) {
+                    ImGui::TextColored(ImVec4(0.9f, 0.f, 0.f, 1.f), "%s", error.c_str());
                 }
             };
 

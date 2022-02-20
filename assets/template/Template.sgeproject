@@ -1,5 +1,5 @@
 {
-    "name": "Template",
+    "name": "%project%",
     "asset_registry": "Assets.sgeregistry",
     "asset_directory": "Assets",
     "start_scene": "Scenes/Example.sgescene"

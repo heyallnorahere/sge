@@ -46,9 +46,107 @@ namespace sgm::launcher {
         }
 
     private:
-        void create_project(const launcher_layer::project_info& project_info) {
-            // todo: implement
-            spdlog::warn("not implemented yet");
+        void migrate_file(const fs::path& src, const fs::path& dst,
+                          const std::string& project_name) {
+            fs::path dst_directory = dst.parent_path();
+            if (!fs::exists(dst_directory)) {
+                fs::create_directories(dst_directory);
+            }
+
+            fs::path extension = src.extension();
+            if (extension == ".png" || extension == ".jpg" || extension == ".jpeg") {
+                fs::copy_file(src, dst);
+                return;
+            }
+
+            std::stringstream contents_stream;
+            std::ifstream in_stream(src);
+            std::string line;
+
+            while (std::getline(in_stream, line)) {
+                contents_stream << line << '\n';
+            }
+
+            in_stream.close();
+            std::string contents = contents_stream.str();
+
+            static const std::string project_token = "%project%";
+            size_t pos = 0;
+            while ((pos = contents.find(project_token, pos)) != std::string::npos) {
+                contents.replace(pos, project_token.length(), project_name);
+                pos += project_name.length();
+            }
+
+            fs::path directory = dst.parent_path();
+            if (!fs::exists(directory)) {
+                fs::create_directories(directory);
+            }
+
+            std::ofstream out_stream(dst);
+            out_stream << contents << std::flush;
+            out_stream.close();
+        }
+
+        bool create_project(const launcher_layer::project_info& project_info, std::string& error) {
+            std::string project_name = project_info.name;
+            for (size_t i = 0; i < project_name.length(); i++) {
+                // i dont know how else to do this
+                char c = project_name[i];
+                bool is_digit = (c >= '0' && c <= '9');
+                bool is_lowercase = (c >= 'a' && c <= 'z');
+                bool is_uppercase = (c >= 'A' && c <= 'Z');
+
+                if (is_digit && i == 0) {
+                    error = "The project name cannot start with a digit!";
+                    return false;
+                }
+
+                if (!is_digit && !is_lowercase && !is_uppercase) {
+                    error = "The project name must only comprise of letters and numbers!";
+                    return false;
+                }
+            }
+
+            fs::path project_path = project_info.path;
+            fs::path directory = project_path.parent_path();
+
+            if (fs::exists(directory)) {
+                for (const auto& entry : fs::directory_iterator(directory)) {
+                    error = "The directory in which the project will be created is already in use!";
+                    return false;
+                }
+            }
+
+            fs::path template_dir = fs::current_path() / "assets" / "template";
+            fs::path src_project_file = template_dir / "Template.sgeproject";
+
+            if (!fs::exists(template_dir)) {
+                error = "The template project is not present!";
+                return false;
+            }
+
+            spdlog::info("creating project: {0}", project_path.string());
+            for (const auto& entry : fs::recursive_directory_iterator(template_dir)) {
+                if (entry.is_directory()) {
+                    continue;
+                }
+
+                fs::path src_path = entry.path();
+                if (src_path == src_project_file) {
+                    continue;
+                }
+
+                fs::path relative_path = src_path.lexically_relative(template_dir);
+                fs::path dst_path = directory / relative_path;
+
+                migrate_file(src_path, dst_path, project_name);
+            }
+
+            migrate_file(src_project_file, project_path, project_name);
+            spdlog::info("successfully created project");
+
+            error.clear();
+            return true;
         }
 
         void open_project(const fs::path& project_path) {

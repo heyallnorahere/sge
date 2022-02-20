@@ -1,7 +1,7 @@
 using SGE;
 using SGE.Components;
 
-namespace Template.Assets.Scripts
+namespace %project%.Assets.Scripts
 {
     public sealed class ExampleScript : Script
     {

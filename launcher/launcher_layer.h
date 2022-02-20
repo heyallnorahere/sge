@@ -26,7 +26,7 @@ namespace sgm::launcher {
         };
 
         struct app_callbacks {
-            std::function<void(const project_info&)> create_project;
+            std::function<bool(const project_info&, std::string& error)> create_project;
             std::function<void(const fs::path& path)> open_project;
         };
 
