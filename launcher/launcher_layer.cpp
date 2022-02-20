@@ -82,8 +82,9 @@ namespace sgm::launcher {
 
             data.callback = [this]() {
                 static const std::string default_name = "My Project";
-                static const std::string default_path = environment::get_home_directory() / "src" /
-                                                        "MyProject" / "MyProject.sgeproject";
+                static const std::string default_path = (environment::get_home_directory() / "src" /
+                                                         "MyProject" / "MyProject.sgeproject")
+                                                            .string();
 
                 static std::string name;
                 static std::string path;
