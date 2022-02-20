@@ -280,10 +280,14 @@ namespace sgm {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, padding));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.f, 0.f));
 
+        ImVec4* colors = ImGui::GetStyle().Colors;
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, colors[ImGuiCol_MenuBarBg]);
+
         ImGuiID window_id = ImGui::GetID("toolbar");
         ImGui::BeginChild(window_id, ImVec2(0.f, toolbar_height), false,
                           ImGuiWindowFlags_NoScrollbar);
 
+        ImGui::PopStyleColor();
         ImGui::PopStyleVar(2);
 
         float cursor_pos = (ImGui::GetWindowContentRegionMax().x - icon_size) / 2.f;
@@ -293,9 +297,6 @@ namespace sgm {
         std::string icon_name = running ? "stop" : "play";
         ref<texture_2d> icon = icon_directory::get(icon_name);
 
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
-        ImVec4* colors = ImGui::GetStyle().Colors;
-
         ImVec4 color = colors[ImGuiCol_ButtonHovered];
         color.w = 0.5f;
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color);
@@ -304,6 +305,7 @@ namespace sgm {
         color.w = 0.5f;
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
 
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
         if (ImGui::ImageButton(icon->get_imgui_id(), ImVec2(icon_size, icon_size))) {
             if (running) {
                 editor_scene::stop();
