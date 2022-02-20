@@ -21,7 +21,9 @@
 namespace sgm::launcher {
     static const std::string sge_dir_env_var = "SGE_DIR";
     static const std::string sge_dir_popup_name = "Select SGE directory";
-    static const std::string theme_picker_popup_name = "Theme picker";
+
+    static const std::vector<dialog_file_filter> project_filters = { { "SGE project (*.sgeproject)",
+                                                                       "*.sgeproject" } };
 
     void launcher_layer::on_attach() {
         // sge dir selection
@@ -71,6 +73,72 @@ namespace sgm::launcher {
             };
 
             m_popup_manager.register_popup(sge_dir_popup_name, data);
+        }
+
+        // project creation
+        {
+            popup_manager::popup_data data;
+            data.size.x = 800.f;
+
+            data.callback = [this]() {
+                static const std::string default_name = "My Project";
+                static const std::string default_path = environment::get_home_directory() / "src" /
+                                                        "MyProject" / "MyProject.sgeproject";
+
+                static std::string name;
+                static std::string path;
+
+                static const std::string name_label = "Project name";
+                static const std::string path_label = "Project path";
+
+                float name_size = ImGui::CalcTextSize(name_label.c_str()).x;
+                float path_size = ImGui::CalcTextSize(path_label.c_str()).x;
+                float offset = name_size < path_size ? path_size : name_size;
+
+                ImGuiStyle& style = ImGui::GetStyle();
+                float spacing = style.WindowPadding.x + style.ItemSpacing.x;
+
+                ImGui::Text("%s", name_label.c_str());
+                ImGui::SameLine(offset, spacing);
+                ImGui::InputTextWithHint("##name", default_name.c_str(), &name);
+
+                ImGui::Text("%s", path_label.c_str());
+                ImGui::SameLine(offset, spacing);
+
+                ImGui::InputTextWithHint("##path", default_path.c_str(), &path);
+                ImGui::SameLine();
+
+                if (ImGui::Button("...")) {
+                    auto& app = application::get();
+                    auto _window = app.get_window();
+
+                    auto result = _window->file_dialog(dialog_mode::save, project_filters);
+                    if (result.has_value()) {
+                        path = result->string();
+                    }
+                }
+
+                if (ImGui::Button("Create")) {
+                    project_info info;
+                    info.name = name.empty() ? default_name : name;
+                    info.path = path.empty() ? default_path : path;
+
+                    name.clear();
+                    path.clear();
+
+                    m_callbacks.create_project(info);
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("Cancel")) {
+                    name.clear();
+                    path.clear();
+
+                    ImGui::CloseCurrentPopup();
+                }
+            };
+
+            m_popup_manager.register_popup("Create project", data);
         }
     }
 
@@ -237,14 +305,10 @@ namespace sgm::launcher {
                 }
 
                 if (render_button(m_test_texture, "Create Project", "create-project")) {
-                    spdlog::warn("cannot create projects yet");
+                    m_popup_manager.open("Create project");
                 }
 
                 if (render_button(m_test_texture, "Open Project", "open-project")) {
-                    static const std::vector<dialog_file_filter> project_filters = {
-                        { "SGE project", "*.sgeproject" }
-                    };
-
                     auto _window = app.get_window();
                     auto selected = _window->file_dialog(dialog_mode::open, project_filters);
 

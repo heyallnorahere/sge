@@ -21,7 +21,7 @@ namespace sgm::launcher {
     class launcher_layer : public layer {
     public:
         struct project_info {
-            fs::path directory;
+            fs::path path;
             std::string name;
         };
 
