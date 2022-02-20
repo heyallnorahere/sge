@@ -84,23 +84,23 @@ namespace sge {
                                       std::numeric_limits<DWORD>::max());
 
                 DWORD win32_exit_code = 0;
-                if (!::GetExitCodeProcess(win32_process_info.hProcess, &win32_exit_code)) {
-                    throw std::runtime_error("could not get exit code from executed command!");
+                if (::GetExitCodeProcess(win32_process_info.hProcess, &win32_exit_code)) {
+                    exit_code = (int32_t)win32_exit_code;
                 }
-
-                exit_code = (int32_t)win32_exit_code;
             } else {
                 exit_code = 0;
             }
 
             ::CloseHandle(win32_process_info.hProcess);
             ::CloseHandle(win32_process_info.hThread);
-        } else {
+        }
+        
+        if (exit_code < 0) {
             exit_code = (int32_t)::GetLastError();
         }
 
         free(buffer);
-        if (output_file != nullptr) {
+        if (!info.detach && output_file != nullptr) {
             ::CloseHandle(output_file);
         }
 

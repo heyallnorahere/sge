@@ -11,7 +11,3 @@ copy_required_dlls(sgm)
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
     target_precompile_headers(sgm PRIVATE "${SGM_DIR}/sgmpch.h")
 endif()
-
-if(MSVC)
-    set_target_properties(sgm PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-endif()

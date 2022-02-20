@@ -42,14 +42,12 @@ namespace sgm::launcher {
 
                 static std::string default_path = (home_dir / "src" / "sge").string();
                 static std::string path;
-
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.1f, 0.1f, 1.f));
                 ImGui::InputTextWithHint("##sge-dir", default_path.c_str(), &path);
-                ImGui::PopStyleColor();
 
-                ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.f),
-                                   "Note: on MacOS and Linux, you may need to relaunch your "
-                                   "terminal.");
+#ifndef SGE_PLATFORM_WINDOWS
+                ImGui::TextWrapped("Note: in order for environmental changes to take effect, you "
+                                   "may need to relaunch your terminal.");
+#endif
 
                 if (ImGui::Button("Confirm")) {
                     fs::path dir_path = path.empty() ? default_path : path;
@@ -173,13 +171,10 @@ namespace sgm::launcher {
         ImGui::Begin("Main launcher window", nullptr, window_flags);
         ImGui::PopStyleVar(3);
 
-        if (!m_work_dir_set) {
+        if (!m_sge_dir_set) {
             if (!m_popup_manager.is_open(sge_dir_popup_name)) {
                 if (environment::has(sge_dir_env_var)) {
-                    fs::path sge_dir = environment::get(sge_dir_env_var);
-                    fs::current_path(sge_dir);
-
-                    m_work_dir_set = true;
+                    m_sge_dir_set = true;
                 } else {
                     m_popup_manager.open(sge_dir_popup_name);
                 }

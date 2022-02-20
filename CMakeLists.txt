@@ -95,6 +95,7 @@ endif()
 
 if(MSVC)
     set_directory_properties(PROPERTIES VS_STARTUP_PROJECT launcher)
+    set_target_properties(sgm launcher PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
 
 # add all dependencies to a folder in IDEs

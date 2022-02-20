@@ -41,7 +41,7 @@ namespace sgm::launcher {
         app_callbacks m_callbacks;
         popup_manager m_popup_manager;
 
-        bool m_work_dir_set = false;
+        bool m_sge_dir_set = false;
         ref<texture_2d> m_test_texture;
     };
 } // namespace sgm::launcher
