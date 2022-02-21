@@ -207,11 +207,12 @@ namespace sge {
             }
         }
 
-        auto& tag = dst.get_component<tag_component>();
+        auto& dst_tag = dst.get_component<tag_component>();
         if (!name.empty()) {
-            tag.tag = name;
+            dst_tag.tag = name;
         } else {
-            tag.tag += " - Copy";
+            const auto& src_tag = src.get_component<tag_component>();
+            dst_tag.tag = src_tag.tag + " - Copy";
         }
 
         return dst;

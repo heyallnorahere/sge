@@ -26,11 +26,13 @@ namespace sgm {
 
     void viewport_panel::update(timestep ts) {
         if (m_new_size.has_value()) {
-            renderer::wait();
-
             glm::uvec2 size = m_new_size.value();
-            editor_scene::set_viewport_size(size.x, size.y);
-            invalidate_texture();
+            if (size.x > 0 && size.y > 0) {
+                renderer::wait();
+
+                editor_scene::set_viewport_size(size.x, size.y);
+                invalidate_texture();
+            }
 
             m_new_size.reset();
         }
