@@ -182,6 +182,41 @@ namespace sge {
         return e;
     }
 
+    entity scene::clone_entity(entity src, const std::string& name) {
+        auto dst = create_entity();
+
+        for (auto&& [id_type, storage] : m_registry.storage()) {
+            if (!storage.contains(src)) {
+                continue;
+            }
+
+            auto type = entt::resolve(storage.type());
+            if (!type) {
+                continue;
+            }
+
+            using namespace entt::literals;
+            auto clone = type.func("clone"_hs);
+            if (!clone) {
+                continue;
+            }
+
+            auto raw = storage.get(src);
+            if (!clone.invoke({}, entt::forward_as_meta(src), entt::forward_as_meta(dst), raw)) {
+                throw std::runtime_error("could not clone component!");
+            }
+        }
+
+        auto& tag = dst.get_component<tag_component>();
+        if (!name.empty()) {
+            tag.tag = name;
+        } else {
+            tag.tag += " - Copy";
+        }
+
+        return dst;
+    }
+
     void scene::destroy_entity(entity e) {
         if (e.has_all<native_script_component>()) {
             auto& nsc = e.get_component<native_script_component>();
@@ -292,6 +327,10 @@ namespace sge {
                     }
 
                     if (create_fixture) {
+                        if (data.fixture != nullptr) {
+                            data.body->DestroyFixture(data.fixture);
+                        }
+
                         b2PolygonShape shape;
                         shape.SetAsBox(collider_size.x, collider_size.y);
 
@@ -409,22 +448,24 @@ namespace sge {
         }
 
         // Loop over every component type in source scene
-        for (auto&& curr : m_registry.storage()) {
+        for (auto&& [id_type, storage] : m_registry.storage()) {
             using namespace entt::literals;
-            auto& storage = curr.second;
+
             // Only iterate over the entities in the storage pool if that type supports cloning.
             auto type = entt::resolve(storage.type());
             if (!type) {
                 continue;
             }
+
             if (auto clone = type.func("clone"_hs); clone) {
                 for (auto&& e : storage) {
                     auto srce = entity{ e, this };
                     auto dste = entity{ entity_map.at(e), new_scene.raw() };
+
                     auto raw = storage.get(e);
                     if (!clone.invoke({}, entt::forward_as_meta(srce), entt::forward_as_meta(dste),
                                       raw)) {
-                        throw std::runtime_error("Error cloning component!");
+                        throw std::runtime_error("error cloning component!");
                     }
                 }
             }
@@ -547,6 +588,10 @@ namespace sge {
                 entity e(id, this);
                 auto& transform = e.get_component<transform_component>();
 
+                if (m_physics_data->bodies.find(e) == m_physics_data->bodies.end()) {
+                    continue;
+                }
+
                 b2Body* body = m_physics_data->bodies[e].body;
                 const auto& position = body->GetPosition();
                 transform.translation.x = position.x;
@@ -624,7 +669,7 @@ namespace sge {
         for (const auto& [id, name] : names) {
             name_data.class_name = name + "Event";
             void* _class = script_engine::get_class(core, name_data);
-            
+
             if (_class != nullptr) {
                 map.insert(std::make_pair(id, _class));
             }

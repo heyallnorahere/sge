@@ -50,6 +50,27 @@ namespace SGE
         {
             string entityName = name ?? string.Empty;
             uint entityID = InternalCalls.CreateEntityWithGUID(id, entityName, mNativeAddress);
+
+            return new Entity(entityID, this);
+        }
+
+        /// <summary>
+        /// Clones an entity.
+        /// </summary>
+        /// <param name="entity">The entity to clone.</param>
+        /// <param name="name">The name of the new entity. Defaults to "{entity name} - Copy"</param>
+        /// <returns>The new entity.</returns>
+        /// <exception cref="InvalidOperationException" />
+        public Entity CloneEntity(Entity entity, string name = null)
+        {
+            if (entity.Scene != this)
+            {
+                throw new InvalidOperationException("Attempted to clone an entity with an incompatible scene!");
+            }
+
+            string entityName = name ?? string.Empty;
+            uint entityID = InternalCalls.CloneEntity(entity.ID, entityName, mNativeAddress);
+
             return new Entity(entityID, this);
         }
 

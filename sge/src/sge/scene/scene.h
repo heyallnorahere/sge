@@ -40,6 +40,8 @@ namespace sge {
 
         entity create_entity(const std::string& name = std::string());
         entity create_entity(guid id, const std::string& name = std::string());
+        entity clone_entity(entity src, const std::string& name = std::string());
+
         void destroy_entity(entity entity);
         void clear();
 

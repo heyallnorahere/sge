@@ -37,11 +37,6 @@ namespace sge {
         auto& csrc = *reinterpret_cast<script_component*>(csrc_void);
         scene* dst_scene = dst.get_scene();
 
-        if (src.get_scene() == dst.get_scene()) {
-            throw std::runtime_error(
-                "script_component::clone doesn't support in-scene cloning yet.");
-        }
-
         script_component cdst;
         cdst._class = csrc._class;
         cdst.class_name = csrc.class_name;

@@ -72,25 +72,26 @@ namespace sge {
     }
 
     namespace internal_script_calls {
-        static uint32_t CreateEntity(void* name, void* _scene) {
-            auto scene_ptr = (scene*)_scene;
-
+        static uint32_t CreateEntity(void* name, scene* _scene) {
             std::string native_name = script_engine::from_managed_string(name);
-            return (uint32_t)scene_ptr->create_entity(native_name);
+            return (uint32_t)_scene->create_entity(native_name);
         }
 
-        static uint32_t CreateEntityWithGUID(guid id, void* name, void* _scene) {
-            auto scene_ptr = (scene*)_scene;
-
+        static uint32_t CreateEntityWithGUID(guid id, void* name, scene* _scene) {
             std::string native_name = script_engine::from_managed_string(name);
-            return (uint32_t)scene_ptr->create_entity(id, native_name);
+            return (uint32_t)_scene->create_entity(id, native_name);
         }
 
-        static void DestroyEntity(uint32_t entityID, void* _scene) {
-            auto scene_ptr = (scene*)_scene;
-            entity e((entt::entity)entityID, scene_ptr);
+        static uint32_t CloneEntity(uint32_t entityID, void* name, scene* _scene) {
+            entity src((entt::entity)entityID, _scene);
 
-            scene_ptr->destroy_entity(e);
+            std::string native_name = script_engine::from_managed_string(name);
+            return (uint32_t)_scene->clone_entity(src, native_name);
+        }
+
+        static void DestroyEntity(uint32_t entityID, scene* _scene) {
+            entity e((entt::entity)entityID, _scene);
+            _scene->destroy_entity(e);
         }
 
         static bool FindEntity(guid id, uint32_t* entityID, void* _scene) {
@@ -446,6 +447,7 @@ namespace sge {
         // scene
         REGISTER_FUNC(CreateEntity);
         REGISTER_FUNC(CreateEntityWithGUID);
+        REGISTER_FUNC(CloneEntity);
         REGISTER_FUNC(DestroyEntity);
         REGISTER_FUNC(FindEntity);
 
