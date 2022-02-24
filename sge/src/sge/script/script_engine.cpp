@@ -187,7 +187,7 @@ namespace sge {
             auto& data = script_engine_data->assemblies[index];
 
             if (data.assembly != nullptr) {
-                garbage_collector::collect();
+                mono_assembly_close(data.assembly);
                 data.assembly = nullptr;
                 return true;
             }
@@ -225,12 +225,32 @@ namespace sge {
         return assembly_path;
     }
 
+    std::string script_engine::get_assembly_name(void* assembly) {
+        auto mono_image = (MonoImage*)assembly;
+        auto mono_assembly = mono_image_get_assembly(mono_image);
+
+        auto assembly_name = mono_assembly_get_name(mono_assembly);
+        std::string name = mono_assembly_name_get_name(assembly_name);
+        mono_assembly_name_free(assembly_name);
+
+        return name;
+    }
+
     void* script_engine::get_assembly(size_t index) {
         if (index >= script_engine_data->assemblies.size()) {
             return nullptr;
         }
 
         return script_engine_data->assemblies[index].image;
+    }
+
+    void* script_engine::get_assembly_from_class(void* _class) {
+        if (_class == nullptr) {
+            return nullptr;
+        }
+
+        auto mono_class = (MonoClass*)_class;
+        return mono_class_get_image(mono_class);
     }
 
     void* script_engine::get_mscorlib() { return mono_get_corlib(); }
@@ -283,6 +303,11 @@ namespace sge {
     void* script_engine::get_class_from_object(void* object) {
         auto mono_object = (MonoObject*)object;
         return mono_object_get_class(mono_object);
+    }
+
+    void* script_engine::get_base_class(void* derived) {
+        auto mono_class = (MonoClass*)derived;
+        return mono_class_get_parent(mono_class);
     }
 
     bool script_engine::is_value_type(void* _class) {

@@ -367,7 +367,7 @@ namespace sge {
             component = &e.add_component<T>();
         }
 
-        *component = data[key].get<T>();
+        data[key].get_to<T>(*component);
     }
 
     scene_serializer::scene_serializer(ref<scene> _scene) { m_scene = _scene; }

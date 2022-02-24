@@ -58,7 +58,6 @@ namespace sge {
         }
 
         entity m_parent;
-
         friend struct native_script_component;
     };
 } // namespace sge

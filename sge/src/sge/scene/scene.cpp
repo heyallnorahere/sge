@@ -782,14 +782,7 @@ namespace sge {
 
     void scene::remove_script(entity e) {
         auto& sc = e.get_component<script_component>();
-        if (sc._class != nullptr) {
-            if (sc.gc_handle != 0) {
-                garbage_collector::destroy_ref(sc.gc_handle);
-                sc.gc_handle = 0;
-            }
-
-            sc._class = nullptr;
-        }
+        sc.remove_script();
     }
 
     guid scene::get_guid(entity e) {

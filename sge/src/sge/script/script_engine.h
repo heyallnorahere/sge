@@ -54,8 +54,10 @@ namespace sge {
 
         static size_t get_assembly_count();
         static fs::path get_assembly_path(size_t index);
+        static std::string get_assembly_name(void* assembly);
 
         static void* get_assembly(size_t index);
+        static void* get_assembly_from_class(void* _class);
         static void* get_mscorlib();
 
         static std::string get_string(const class_name_t& class_name);
@@ -65,6 +67,7 @@ namespace sge {
         static void* get_class(void* assembly, const std::string& name);
         static void* get_class(void* assembly, const class_name_t& name);
         static void* get_class_from_object(void* object);
+        static void* get_base_class(void* derived);
 
         static bool is_value_type(void* _class);
         static size_t get_type_size(void* _class);

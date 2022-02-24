@@ -21,15 +21,14 @@ namespace SGE
     /// </summary>
     public struct GUID
     {
-        public ulong ID;
-
-        public GUID(ulong id)
+        public ulong Value;
+        public GUID(ulong value)
         {
-            ID = id;
+            Value = value;
         }
-        public static GUID Generate() => InternalCalls.GenerateGUID();
 
-        public static implicit operator GUID(ulong id) => new GUID(id);
-        public static implicit operator ulong(GUID guid) => guid.ID;
+        public static GUID Generate() => InternalCalls.GenerateGUID();
+        public static implicit operator GUID(ulong id) => new(id);
+        public static implicit operator ulong(GUID guid) => guid.Value;
     }
 }

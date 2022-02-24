@@ -88,16 +88,16 @@ namespace sge {
     }
 
     void script_component::verify_script(entity e) {
-        if (this->_class != nullptr && this->gc_handle == 0) {
-            void* instance = script_engine::alloc_object(this->_class);
+        if (_class != nullptr && gc_handle == 0) {
+            void* instance = script_engine::alloc_object(_class);
 
-            if (script_engine::get_method(this->_class, ".ctor") != nullptr) {
-                void* constructor = script_engine::get_method(this->_class, ".ctor()");
+            if (script_engine::get_method(_class, ".ctor") != nullptr) {
+                void* constructor = script_engine::get_method(_class, ".ctor()");
                 if (constructor != nullptr) {
                     script_engine::call_method(instance, constructor);
                 } else {
                     class_name_t name_data;
-                    script_engine::get_class_name(this->_class, name_data);
+                    script_engine::get_class_name(_class, name_data);
                     std::string full_name = script_engine::get_string(name_data);
 
                     throw std::runtime_error("could not find a suitable constructor for script: " +
@@ -108,10 +108,24 @@ namespace sge {
             }
 
             void* entity_instance = script_helpers::create_entity_object(e);
-            void* entity_field = script_engine::get_field(this->_class, "__internal_mEntity");
+            void* entity_field = script_engine::get_field(_class, "__internal_mEntity");
             script_engine::set_field_value(instance, entity_field, entity_instance);
 
-            this->gc_handle = garbage_collector::create_ref(instance);
+            gc_handle = garbage_collector::create_ref(instance);
+            garbage_collector::add_ref_ptr(gc_handle);
+        }
+    }
+
+    void script_component::remove_script() {
+        if (_class != nullptr) {
+            if (gc_handle != 0) {
+                garbage_collector::destroy_ref(gc_handle);
+                garbage_collector::remove_ref_ptr(gc_handle);
+
+                gc_handle = 0;
+            }
+
+            _class = nullptr;
         }
     }
 } // namespace sge

@@ -19,6 +19,7 @@
 #include "sge/asset/json.h"
 #include "sge/core/environment.h"
 #include "sge/script/script_engine.h"
+#include "sge/script/state_preserver.h"
 namespace sge {
     struct project_data_t {
         std::unique_ptr<project> instance;
@@ -191,6 +192,14 @@ namespace sge {
         }
 
         auto& instance = get();
+        std::unique_ptr<state_preserver> preserver;
+        if (instance.m_assembly_index.has_value()) {
+            void* assembly = script_engine::get_assembly(instance.m_assembly_index.value());
+            std::vector<void*> assemblies = { assembly };
+            
+            preserver = std::make_unique<state_preserver>(assemblies);
+        }
+
         if (load) {
             fs::path current_path = instance.get_assembly_path();
             if (instance.m_assembly_index.has_value()) {

@@ -21,6 +21,7 @@
 namespace sge {
     struct gc_data_t {
         std::unordered_map<uint32_t, void*> strong_map, weak_map;
+        std::unordered_map<uint32_t, std::vector<uint32_t*>> ref_ptrs;
     };
     static std::unique_ptr<gc_data_t> gc_data;
 
@@ -82,14 +83,68 @@ namespace sge {
 
         gc_data->strong_map.erase(gc_handle);
         mono_gchandle_free(gc_handle);
+
+        if (gc_data->ref_ptrs.find(gc_handle) != gc_data->ref_ptrs.end()) {
+            for (uint32_t* ptr : gc_data->ref_ptrs[gc_handle]) {
+                *ptr = 0;
+            }
+
+            gc_data->ref_ptrs.erase(gc_handle);
+        }
     }
 
     void* garbage_collector::get_ref_data(uint32_t gc_handle) {
         MonoObject* object = mono_gchandle_get_target(gc_handle);
-
         if (mono_object_get_vtable(object) == nullptr) {
             return nullptr;
         }
+
         return object;
+    }
+
+    void garbage_collector::get_strong_refs(std::vector<uint32_t>& handles) {
+        handles.clear();
+        if (gc_data->strong_map.empty()) {
+            return;
+        }
+
+        for (auto [handle, object] : gc_data->strong_map) {
+            handles.push_back(handle);
+        }
+    }
+
+    bool garbage_collector::add_ref_ptr(uint32_t& ptr) {
+        if (get_ref_data(ptr) == nullptr) {
+            return false;
+        }
+
+        if (gc_data->ref_ptrs.find(ptr) == gc_data->ref_ptrs.end()) {
+            gc_data->ref_ptrs.insert(std::make_pair(ptr, std::vector<uint32_t*>()));
+        }
+
+        gc_data->ref_ptrs[ptr].push_back(&ptr);
+        return true;
+    }
+
+    void garbage_collector::remove_ref_ptr(uint32_t& ptr) {
+        if (gc_data->ref_ptrs.find(ptr) == gc_data->ref_ptrs.end()) {
+            return;
+        }
+
+        auto& ptrs = gc_data->ref_ptrs[ptr];
+        std::vector<uint32_t*>::iterator it;
+
+        while ((it = std::find(ptrs.begin(), ptrs.end(), &ptr)) != ptrs.end()) {
+            ptrs.erase(it);
+        }
+    }
+
+    void garbage_collector::get_ref_ptrs(uint32_t handle, std::vector<uint32_t*>& ptrs) {
+        if (gc_data->ref_ptrs.find(handle) == gc_data->ref_ptrs.end()) {
+            ptrs.clear();
+            return;
+        }
+
+        ptrs = gc_data->ref_ptrs[handle];
     }
 } // namespace sge

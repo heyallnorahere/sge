@@ -238,6 +238,7 @@ namespace sge {
         std::string class_name;
 
         void verify_script(entity e);
+        void remove_script();
 
         static script_component& clone(const entity& src, const entity& dst, void* srcc);
 

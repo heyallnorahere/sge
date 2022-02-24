@@ -27,5 +27,10 @@ namespace sge {
         static uint32_t create_ref(void* object, bool weak = false);
         static void destroy_ref(uint32_t gc_handle);
         static void* get_ref_data(uint32_t gc_handle);
+        static void get_strong_refs(std::vector<uint32_t>& handles);
+
+        static bool add_ref_ptr(uint32_t& ptr);
+        static void remove_ref_ptr(uint32_t& ptr);
+        static void get_ref_ptrs(uint32_t handle, std::vector<uint32_t*>& ptrs);
     };
 } // namespace sge

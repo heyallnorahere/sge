@@ -45,7 +45,9 @@
     "buildPresets": [
         {
             "name": "default",
+            "displayName": "Default (Release) configuration",
             "configurePreset": "default",
+            "configuration": "Release",
             "jobs": 8,
             "targets": [
                 "launcher"
@@ -53,8 +55,10 @@
         },
         {
             "name": "debug",
+            "displayName":"Debug configuration",
             "inherits": "default",
-            "configurePreset": "debug"
+            "configurePreset": "debug",
+            "configuration": "Debug"
         }
     ]
 }

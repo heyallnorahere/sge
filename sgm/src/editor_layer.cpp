@@ -127,6 +127,12 @@ namespace sgm {
             }
 
             break;
+        case key_code::R:
+            if (control) {
+                project::reload_assembly();
+            }
+
+            break;
         case key_code::Q:
             if (control) {
                 application::get().quit();
@@ -338,7 +344,11 @@ namespace sgm {
                 }
 
                 ImGui::Separator();
+                if (ImGui::MenuItem("Reload C# assembly", "Ctrl+R")) {
+                    project::reload_assembly();
+                }
 
+                ImGui::Separator();
                 if (ImGui::MenuItem("Quit", "Ctrl+Q")) {
                     application::get().quit();
                 }
