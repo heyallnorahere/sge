@@ -16,6 +16,7 @@
 
 #pragma once
 #include "sge/asset/asset_manager.h"
+#include "sge/scene/scene.h"
 namespace sge {
     class project {
     public:
@@ -30,7 +31,7 @@ namespace sge {
 
         static bool save();
         static bool load(const fs::path& path);
-        static std::optional<size_t> reload_assembly();
+        static void reload_assembly(const std::vector<ref<scene>>& active_scenes);
 
         project(const project&) = delete;
         project& operator=(const project&) = delete;

@@ -127,12 +127,13 @@ namespace sgm {
             }
 
             break;
-        /*case key_code::R:
+        case key_code::R:
             if (control) {
-                project::reload_assembly();
+                auto _scene = editor_scene::get_scene();
+                project::reload_assembly({ _scene });
             }
 
-            break;*/
+            break;
         case key_code::Q:
             if (control) {
                 application::get().quit();
@@ -175,7 +176,7 @@ namespace sgm {
 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.f, 0.f, 1.f));
                 ImGui::Text("Please report issues to "
-                                   "https://github.com/yodasoda1219/sge/issues");
+                            "https://github.com/yodasoda1219/sge/issues");
                 ImGui::PopStyleColor();
 
                 if (ImGui::Button("Close")) {
@@ -197,7 +198,6 @@ namespace sgm {
 
             m_popup_manager.register_popup("About", data);
         }
-
 
         // theme picker
         {
@@ -343,10 +343,11 @@ namespace sgm {
                     save();
                 }
 
-                /*ImGui::Separator();
+                ImGui::Separator();
                 if (ImGui::MenuItem("Reload C# assembly", "Ctrl+R")) {
-                    project::reload_assembly();
-                }*/
+                    auto _scene = editor_scene::get_scene();
+                    project::reload_assembly({ _scene });
+                }
 
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit", "Ctrl+Q")) {

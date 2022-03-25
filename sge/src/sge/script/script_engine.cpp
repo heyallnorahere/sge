@@ -19,6 +19,8 @@
 #include "sge/script/mono_include.h"
 #include "sge/script/garbage_collector.h"
 #include "sge/script/script_helpers.h"
+#include "sge/script/value_wrapper.h"
+#include "sge/scene/components.h"
 
 // todo(nora): don't use mono-private-unstable.h
 #include <mono/jit/mono-private-unstable.h>
@@ -195,22 +197,21 @@ namespace sge {
 
         return false;
     }
+    
+    // based on Hazel::ScriptEngine::ReloadAssembly, Hazel-dev branch dotnet6
+    void script_engine::reload_assemblies(const std::vector<ref<scene>>& current_scenes) {
+        std::vector<std::unordered_map<uint32_t, value_wrapper>> old_field_values;
+        for (ref<scene> _scene : current_scenes) {
+            _scene->for_each<script_component>([&](entity e) {
+                auto& sc = e.get_component<script_component>();
+                if (sc.gc_handle == 0) {
+                    return;
+                }
 
-    std::optional<size_t> script_engine::reload_assembly(size_t index) {
-        std::optional<size_t> new_index;
-
-        if (index < script_engine_data->assemblies.size()) {
-            auto& data = script_engine_data->assemblies[index];
-
-            if (data.assembly != nullptr && !data.path.empty()) {
-                fs::path path = data.path;
-                unload_assembly(index);
-
-                new_index = load_assembly(path);
-            }
+                void* _class = sc._class;
+                // todo: save
+            });
         }
-
-        return new_index;
     }
 
     size_t script_engine::get_assembly_count() { return script_engine_data->assemblies.size(); }
@@ -412,7 +413,7 @@ namespace sge {
         auto signature = mono_method_signature(mono_method);
 
         uint32_t param_count = mono_signature_get_param_count(signature);
-        auto names = (const char**)malloc(sizeof(size_t) * param_count);
+        auto names = (const char**)malloc(sizeof(const char*) * param_count);
         mono_method_get_param_names(mono_method, names);
 
         MonoType* type = nullptr;

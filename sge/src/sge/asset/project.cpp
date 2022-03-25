@@ -19,7 +19,6 @@
 #include "sge/asset/json.h"
 #include "sge/core/environment.h"
 #include "sge/script/script_engine.h"
-#include "sge/script/state_preserver.h"
 namespace sge {
     struct project_data_t {
         std::unique_ptr<project> instance;
@@ -132,7 +131,7 @@ namespace sge {
         }
         instance.m_start_scene = start_scene;
 
-        reload_assembly();
+        reload_assembly({});
         return true;
     }
 
@@ -183,45 +182,29 @@ namespace sge {
         return true;
     }
 
-    std::optional<size_t> project::reload_assembly() {
-        std::optional<size_t> new_index;
+    void project::reload_assembly(const std::vector<ref<scene>>& active_scenes) {
+        auto& instance = get();
 
         bool load = true;
         if (project_data->editor) {
             load = compile_app_assembly();
         }
 
-        auto& instance = get();
-        /*std::unique_ptr<state_preserver> preserver;
+        if (!load) {
+            instance.m_assembly_index.reset();
+            return;
+        }
+
+        fs::path current_path = instance.get_assembly_path();
         if (instance.m_assembly_index.has_value()) {
-            void* assembly = script_engine::get_assembly(instance.m_assembly_index.value());
-            std::vector<void*> assemblies = { assembly };
-            
-            preserver = std::make_unique<state_preserver>(assemblies);
-        }*/
-
-        if (load) {
-            fs::path current_path = instance.get_assembly_path();
-            if (instance.m_assembly_index.has_value()) {
-                size_t old_index = instance.m_assembly_index.value();
-
-                if (script_engine::get_assembly_path(old_index) != current_path) {
-                    script_engine::unload_assembly(old_index);
-                    new_index = script_engine::load_assembly(current_path);
-                } else {
-                    new_index = script_engine::reload_assembly(old_index);
-                }
-            } else {
-                new_index = script_engine::load_assembly(current_path);
+            try {
+                script_engine::reload_assemblies(active_scenes);
+            } catch (const std::runtime_error& exc) {
+                spdlog::warn("failed to reload assemblies: {0}", exc.what());
+                instance.m_assembly_index.reset();
             }
+        } else {
+            instance.m_assembly_index = script_engine::load_assembly(current_path);
         }
-
-        if (instance.m_assembly_index.has_value() && !new_index.has_value()) {
-            size_t index = instance.m_assembly_index.value();
-            script_engine::unload_assembly(index);
-        }
-
-        instance.m_assembly_index = new_index;
-        return new_index;
     }
 } // namespace sge

@@ -15,6 +15,8 @@
 */
 
 #pragma once
+#include "sge/scene/scene.h"
+
 namespace sge {
     struct class_name_t {
         std::string namespace_name, class_name;
@@ -50,7 +52,7 @@ namespace sge {
 
         static std::optional<size_t> load_assembly(const fs::path& path);
         static bool unload_assembly(size_t index);
-        static std::optional<size_t> reload_assembly(size_t index);
+        static void reload_assemblies(const std::vector<ref<scene>>& current_scenes);
 
         static size_t get_assembly_count();
         static fs::path get_assembly_path(size_t index);
