@@ -82,7 +82,7 @@ namespace sge {
             using namespace entt::literals;
             entt::meta<transform_component>()
                 .type("transform_component"_hs)
-                .func<&clone_component<transform_component>>("clone"_hs);
+                .func<clone_component<transform_component>>("clone"_hs);
         }
     };
 
@@ -99,7 +99,7 @@ namespace sge {
             using namespace entt::literals;
             entt::meta<sprite_renderer_component>()
                 .type("sprite_renderer_component"_hs)
-                .func<&clone_component<sprite_renderer_component>>("clone"_hs);
+                .func<clone_component<sprite_renderer_component>>("clone"_hs);
         }
     };
 
@@ -116,7 +116,7 @@ namespace sge {
             using namespace entt::literals;
             entt::meta<camera_component>()
                 .type("camera_component"_hs)
-                .func<&clone_component<camera_component>>("clone"_hs);
+                .func<clone_component<camera_component>>("clone"_hs);
         }
     };
 
@@ -167,19 +167,25 @@ namespace sge {
 
     struct rigid_body_component {
         enum class body_type { static_ = 0, kinematic, dynamic };
+
         body_type type = body_type::static_;
         bool fixed_rotation = false;
 
+        uint16_t filter_category = 0x0001;
+        uint16_t filter_mask = 0xffff;
+
         rigid_body_component(const rigid_body_component&) = default;
         rigid_body_component(rigid_body_component::body_type type_ = body_type::static_,
-                             bool fixed_rotation_ = false)
-            : type{ type_ }, fixed_rotation{ fixed_rotation_ } {};
+                             bool fixed_rotation_ = false, uint16_t filter_category_ = 0x0001,
+                             uint16_t filter_mask_ = 0xffff)
+            : type(type_), fixed_rotation(fixed_rotation_), filter_category(filter_category_),
+              filter_mask(filter_mask_){};
+
         rigid_body_component& operator=(const rigid_body_component&) = default;
 
         static rigid_body_component& clone(const entity& src, const entity& dst, void* srcc) {
             auto& src_rb = *static_cast<const rigid_body_component*>(srcc);
-
-            return dst.add_component<rigid_body_component>(src_rb.type, src_rb.fixed_rotation);
+            return dst.add_component<rigid_body_component>(src_rb);
         }
 
         static rigid_body_component& do_cast(void* data) {
@@ -190,7 +196,7 @@ namespace sge {
             using namespace entt::literals;
             entt::meta<rigid_body_component>()
                 .type("rigid_body_component"_hs)
-                .func<&rigid_body_component::clone>("clone"_hs);
+                .func<rigid_body_component::clone>("clone"_hs);
         }
     };
 
@@ -211,8 +217,8 @@ namespace sge {
         box_collider_component& operator=(const box_collider_component&) = default;
 
         static box_collider_component& clone(const entity& src, const entity& dst, void* srcc) {
-            auto dstc = box_collider_component(*reinterpret_cast<box_collider_component*>(srcc));
-            return dst.add_component<box_collider_component>(dstc);
+            auto& src_bc = *reinterpret_cast<box_collider_component*>(srcc);
+            return dst.add_component<box_collider_component>(src_bc);
         }
 
         static box_collider_component& do_cast(void* data) {
@@ -223,7 +229,7 @@ namespace sge {
             using namespace entt::literals;
             entt::meta<box_collider_component>()
                 .type("box_collider_component"_hs)
-                .func<&box_collider_component::clone>("clone"_hs);
+                .func<box_collider_component::clone>("clone"_hs);
         }
     };
 
@@ -246,7 +252,7 @@ namespace sge {
             using namespace entt::literals;
             entt::meta<script_component>()
                 .type("script_component"_hs)
-                .func<&script_component::clone>("clone"_hs);
+                .func<script_component::clone>("clone"_hs);
         }
     };
 

@@ -121,6 +121,14 @@ namespace SGE
         public static extern bool SetAngularVelocity(Entity entity, float velocity);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool AddForce(Entity entity, Vector2 force, bool wake);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern ushort GetFilterCategory(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetFilterCategory(IntPtr component, ushort category);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern ushort GetFilterMask(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetFilterMask(IntPtr component, ushort mask);
 
         // box collider component
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -20,10 +20,16 @@ namespace SGE.Components
 {
     public abstract class Component<T> where T : Component<T>, new()
     {
-        internal void SetInternalData(IntPtr address, Entity parent)
+        internal IntPtr Address
         {
-            mAddress = address;
-            mParent = parent;
+            get => mAddress;
+            set => mAddress = value;
+        }
+
+        internal Entity Parent
+        {
+            get => mParent;
+            set => mParent = value;
         }
 
         protected IntPtr mAddress = IntPtr.Zero;

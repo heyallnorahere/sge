@@ -281,6 +281,22 @@ namespace sge {
             return _scene->add_force(e, force, wake);
         }
 
+        static uint16_t GetFilterCategory(rigid_body_component* component) {
+            return component->filter_category;
+        }
+
+        static void SetFilterCategory(rigid_body_component* component, uint16_t category) {
+            component->filter_category = category;
+        }
+
+        static uint16_t GetFilterMask(rigid_body_component* component) {
+            return component->filter_mask;
+        }
+
+        static void SetFilterMask(rigid_body_component* component, uint16_t mask) {
+            component->filter_mask = mask;
+        }
+
         static void GetSize(box_collider_component* bc, glm::vec2* size) { *size = bc->size; }
 
         static void SetSize(box_collider_component* bc, void* _entity, glm::vec2 size) {
@@ -501,6 +517,10 @@ namespace sge {
         REGISTER_FUNC(GetAngularVelocity);
         REGISTER_FUNC(SetAngularVelocity);
         REGISTER_FUNC(AddForce);
+        REGISTER_FUNC(GetFilterCategory);
+        REGISTER_FUNC(SetFilterCategory);
+        REGISTER_FUNC(GetFilterMask);
+        REGISTER_FUNC(SetFilterMask);
 
         // box collider component
         REGISTER_FUNC(GetSize);

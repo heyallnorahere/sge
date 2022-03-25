@@ -44,11 +44,11 @@ namespace SGE
         /// <returns>The component.</returns>
         public T GetComponent<T>() where T : Component<T>, new()
         {
-            IntPtr address = InternalCalls.GetComponent(typeof(T), this);
-
-            var component = new T();
-            component.SetInternalData(address, this);
-            return component;
+            return new T
+            {
+                Address = InternalCalls.GetComponent(typeof(T), this),
+                Parent = this
+            };
         }
 
         /// <summary>

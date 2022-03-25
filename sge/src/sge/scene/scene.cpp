@@ -341,16 +341,27 @@ namespace sge {
                         fixture_def.friction = bc.friction;
                         fixture_def.restitution = bc.restitution;
                         fixture_def.restitutionThreshold = bc.restitution_threashold;
+                        fixture_def.filter.categoryBits = rb.filter_category;
+                        fixture_def.filter.maskBits = rb.filter_mask;
                         fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
 
                         data.fixture = data.body->CreateFixture(&fixture_def);
                         data.current_box_size = collider_size;
                         data._collider_type = collider_type::box;
                     } else {
-                        data.fixture->SetDensity(bc.density);
+                        if (fabs(data.fixture->GetDensity() - bc.density) > 0.0001f) {
+                            data.fixture->SetDensity(bc.density);
+                            data.body->ResetMassData();
+                        }
+
                         data.fixture->SetFriction(bc.friction);
                         data.fixture->SetRestitution(bc.restitution);
                         data.fixture->SetRestitutionThreshold(bc.restitution_threashold);
+
+                        b2Filter filter;
+                        filter.categoryBits = rb.filter_category;
+                        filter.maskBits = rb.filter_mask;
+                        data.fixture->SetFilterData(filter);
                     }
                 } break;
                 default:
