@@ -33,6 +33,8 @@ namespace sge {
     // A Scene is a set of entities and components.
     class scene : public ref_counted {
     public:
+        static constexpr size_t collision_category_count = sizeof(uint16_t) * 8;
+
         scene() = default;
         ~scene();
         scene(const scene&) = delete;
@@ -57,6 +59,10 @@ namespace sge {
 
         entity find_guid(guid id);
         ref<scene> copy();
+
+        std::string& collision_category_name(size_t index) {
+            return m_collision_category_names[index];
+        }
 
         void on_start();
         void on_stop();
@@ -95,14 +101,13 @@ namespace sge {
         void view_iteration(entt::entity id, const std::function<void(entity)>& callback);
         void render();
 
-        void verify_script(void* component, entity e);
         void remove_script(entity e);
-
         guid get_guid(entity e);
 
         entt::registry m_registry;
         uint32_t m_viewport_width, m_viewport_height;
         scene_physics_data* m_physics_data = nullptr;
+        std::array<std::string, collision_category_count> m_collision_category_names;
 
         friend class entity;
         friend class scene_contact_listener;

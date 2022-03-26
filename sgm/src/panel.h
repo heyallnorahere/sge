@@ -15,6 +15,7 @@
 */
 
 #pragma once
+#include <sge/imgui/popup_manager.h>
 namespace sge {
     enum class panel_id { renderer_info, viewport, scene_hierarchy, editor, content_browser };
 
@@ -24,6 +25,7 @@ namespace sge {
 
         virtual void update(timestep ts) {}
 
+        virtual void register_popups(popup_manager& popup_manager_) { }
         virtual void begin(const char* title, bool* open) { ImGui::Begin(title, open); }
         virtual void render() = 0;
 

@@ -253,6 +253,9 @@ namespace sge {
         }
 
         m_registry.clear();
+        for (std::string& name : m_collision_category_names) {
+            name.clear();
+        }
     }
 
     void scene::set_script(entity e, void* _class) {
@@ -441,6 +444,7 @@ namespace sge {
 
     ref<scene> scene::copy() {
         auto new_scene = ref<scene>::create();
+        new_scene->m_collision_category_names = m_collision_category_names;
 
         // Map from the entt entity id in the old scene to the new scene
         std::unordered_map<entt::entity, entt::entity> entity_map;

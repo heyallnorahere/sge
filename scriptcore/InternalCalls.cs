@@ -20,6 +20,9 @@ using System.Runtime.CompilerServices;
 
 namespace SGE
 {
+    /// <summary>
+    /// Functions defined in sge/script/internal_calls.cpp
+    /// </summary>
     internal static class InternalCalls
     {
         // scene
@@ -33,6 +36,8 @@ namespace SGE
         public static extern void DestroyEntity(uint entityID, IntPtr scene);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool FindEntity(GUID id, out uint entityID, IntPtr scene);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetCollisionCategoryName(IntPtr scene, int index);
 
         // entity
         [MethodImpl(MethodImplOptions.InternalCall)]

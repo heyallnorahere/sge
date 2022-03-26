@@ -1,4 +1,5 @@
 {
+    "collision_categories": null,
     "entities": [
         {
             "box_collider": null,
@@ -45,6 +46,8 @@
             "camera": null,
             "guid": 3059179188644698116,
             "rigid_body": {
+                "filter_category": 1,
+                "filter_mask": 65534,
                 "fixed_rotation": false,
                 "type": "dynamic"
             },
@@ -90,6 +93,8 @@
             "camera": null,
             "guid": 18157140401367065728,
             "rigid_body": {
+                "filter_category": 2,
+                "filter_mask": 65533,
                 "fixed_rotation": false,
                 "type": "static"
             },

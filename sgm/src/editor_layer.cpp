@@ -35,7 +35,7 @@ namespace sgm {
         add_panel<renderer_info_panel>();
         add_panel<viewport_panel>([this](const fs::path& path) { m_scene_path = path; });
         add_panel<scene_hierarchy_panel>();
-        add_panel<editor_panel>();
+        add_panel<editor_panel>([this](const std::string& name) { m_popup_manager.open(name); });
         add_panel<content_browser_panel>();
 
         register_popups();
@@ -193,7 +193,7 @@ namespace sgm {
             };
 
             popup_manager::popup_data data;
-            data.size.x = 600.f;
+            data.size.x = about_popup_width;
             data.callback = callback;
 
             m_popup_manager.register_popup("About", data);
@@ -250,6 +250,11 @@ namespace sgm {
             };
 
             m_popup_manager.register_popup("Theme picker", data);
+        }
+
+        // give panels the popup manager
+        for (auto& _panel : m_panels) {
+            _panel->register_popups(m_popup_manager);
         }
     }
 

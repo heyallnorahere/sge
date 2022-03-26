@@ -19,6 +19,7 @@
 #include "editor_scene.h"
 #include "texture_cache.h"
 #include <sge/renderer/renderer.h>
+#include <sge/imgui/imgui_layer.h>
 #include <imgui_internal.h>
 namespace sgm {
     static void edit_int(void* instance, void* property, const std::string& label) {
@@ -89,7 +90,8 @@ namespace sgm {
         }
     }
 
-    editor_panel::editor_panel() {
+    editor_panel::editor_panel(const std::function<void(const std::string&)>& popup_callback) {
+        m_popup_callback = popup_callback;
         m_script_controls = {
             { script_helpers::get_core_type("System.Int32"), edit_int },
             { script_helpers::get_core_type("System.Single"), edit_float },
@@ -161,6 +163,7 @@ namespace sgm {
         return std::make_pair(text, callback);
     }
 
+    static const std::string collision_filter_editor_name = "Collision filter editor";
     void editor_panel::render() {
         entity& selection = editor_scene::get_selection();
         if (!selection) {
@@ -314,6 +317,33 @@ namespace sgm {
             }
 
             ImGui::Checkbox("Fixed rotation", &component.fixed_rotation);
+
+            if (ImGui::CollapsingHeader("Collision filter")) {
+                ImGui::Indent();
+                bool editor_open = m_popup_manager->is_open(collision_filter_editor_name);
+
+                ImGui::Text("Category");
+                ImGui::SameLine();
+
+                if (ImGui::Button("Edit##category-edit-button") && !editor_open) {
+                    m_filter_editor_data.type = filter_editor_type::category;
+                    m_filter_editor_data.field = &component.filter_category;
+
+                    m_popup_manager->open(collision_filter_editor_name);
+                }
+
+                ImGui::Text("Mask");
+                ImGui::SameLine();
+
+                if (ImGui::Button("Edit##mask-edit-button") && !editor_open) {
+                    m_filter_editor_data.type = filter_editor_type::mask;
+                    m_filter_editor_data.field = &component.filter_mask;
+
+                    m_popup_manager->open(collision_filter_editor_name);
+                }
+
+                ImGui::Unindent();
+            }
         });
 
         draw_component<box_collider_component>(
@@ -370,8 +400,95 @@ namespace sgm {
             });
     }
 
+    void editor_panel::register_popups(popup_manager& popup_manager_) {
+        {
+            popup_manager::popup_data data;
+            data.callback = [this]() mutable {
+                ImGuiStyle& style = ImGui::GetStyle();
+
+                std::string text;
+                switch (m_filter_editor_data.type) {
+                case filter_editor_type::category:
+                    text = "Select the collision categories in which this object resides.";
+                    break;
+                case filter_editor_type::mask:
+                    text = "Select the categories of objects this object can collide with.";
+                    break;
+                }
+
+                ImGui::Text("%s", text.c_str());
+                ImGui::Separator();
+
+                auto _scene = editor_scene::get_scene();
+                uint16_t& field = *m_filter_editor_data.field;
+
+                for (size_t i = 0; i < scene::collision_category_count; i++) {
+                    uint16_t bit = 0x1 << (uint16_t)i;
+
+                    std::string section_id = "toggle-" + std::to_string(i);
+                    ImGui::PushID(section_id.c_str());
+
+                    ImGui::Columns(3, nullptr, false);
+                    ImGui::SetColumnWidth(0, 30.f);
+                    ImGui::SetColumnWidth(1, 100.f);
+
+                    bool enabled = (field & bit) != 0;
+                    if (ImGui::Checkbox("##checkbox", &enabled)) {
+                        if (enabled) {
+                            field |= bit;
+                        } else {
+                            field &= ~bit;
+                        }
+                    }
+
+                    std::string& category_label = _scene->collision_category_name(i);
+                    bool category_label_exists = category_label.length() > 0;
+
+                    std::string default_label = "Category " + std::to_string(i + 1);
+                    ImGui::NextColumn();
+                    ImGui::PushItemWidth(-1.f);
+
+                    std::string button_text;
+                    if (category_label_exists) {
+                        ImGui::InputText("##set-label", &category_label);
+
+                        button_text = "x";
+                    } else {
+                        std::string label = category_label_exists ? category_label : default_label;
+                        ImGui::Text("%s", label.c_str());
+
+                        button_text = "-";
+                    }
+
+                    ImGui::PopItemWidth();
+                    ImGui::NextColumn();
+
+                    if (ImGui::Button(button_text.c_str())) {
+                        if (category_label_exists) {
+                            category_label.clear();
+                        } else {
+                            category_label = default_label;
+                        }
+                    }
+
+                    ImGui::Columns();
+                    ImGui::PopID();
+                }
+
+                ImGui::Separator();
+                if (ImGui::Button("Close")) {
+                    ImGui::CloseCurrentPopup();
+                }
+            };
+
+            popup_manager_.register_popup(collision_filter_editor_name, data);
+        }
+
+        m_popup_manager = &popup_manager_;
+    }
+
     void editor_panel::draw_property_controls() {
-        auto selection = editor_scene::get_selection();
+        const auto& selection = editor_scene::get_selection();
         auto _scene = editor_scene::get_scene();
         _scene->verify_script(selection);
 

@@ -144,6 +144,9 @@ namespace sge {
         default:
             throw std::runtime_error("invalid body type!");
         }
+
+        data["filter_category"] = rb.filter_category;
+        data["filter_mask"] = rb.filter_mask;
     }
 
     static const std::unordered_map<std::string, rigid_body_component::body_type> body_type_map = {
@@ -160,6 +163,16 @@ namespace sge {
             throw std::runtime_error("invalid body type!");
         }
         rb.type = body_type_map.at(body_type);
+
+        static const std::string category_node_name = "filter_category";
+        if (data.find(category_node_name) != data.end()) {
+            rb.filter_category = data[category_node_name].get<uint16_t>();
+        }
+
+        static const std::string mask_node_name = "filter_mask";
+        if (data.find(mask_node_name) != data.end()) {
+            rb.filter_mask = data[mask_node_name].get<uint16_t>();
+        }
     }
 
     void to_json(json& data, const box_collider_component& bc) {
@@ -400,8 +413,29 @@ namespace sge {
 
             entities.push_back(entity_data);
         });
-        data["entities"] = entities;
 
+        std::array<json, scene::collision_category_count> collision_category_names;
+        bool insert_category_name_array = false;
+
+        for (size_t i = 0; i < scene::collision_category_count; i++) {
+            const std::string& name = m_scene->m_collision_category_names[i];
+            if (name.length() > 0) {
+                insert_category_name_array |= true;
+                collision_category_names[i] = name;
+            } else {
+                collision_category_names[i] = nullptr;
+            }
+        }
+
+        json category_name_array;
+        if (insert_category_name_array) {
+            category_name_array = collision_category_names;
+        } else {
+            category_name_array = nullptr;
+        }
+
+        data["entities"] = entities;
+        data["collision_categories"] = category_name_array;
         current_serialization.reset();
 
         std::ofstream stream(path);
@@ -435,6 +469,15 @@ namespace sge {
         }
 
         m_scene->clear();
+        const auto& category_node = data["collision_categories"];
+        if (!category_node.is_null()) {
+            for (size_t i = 0; i < scene::collision_category_count; i++) {
+                const auto& subnode = category_node[i];
+                if (!subnode.is_null()) {
+                    m_scene->m_collision_category_names[i] = subnode.get<std::string>();
+                }
+            }
+        }
 
         for (const auto& entity_data : data["entities"]) {
             entity e = m_scene->create_entity();

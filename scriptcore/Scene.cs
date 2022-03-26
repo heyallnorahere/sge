@@ -15,6 +15,8 @@
 */
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace SGE
 {
@@ -23,6 +25,63 @@ namespace SGE
     /// </summary>
     public sealed class Scene
     {
+        private class CollisionCategoryList : IReadOnlyList<string>
+        {
+            private struct Enumerator : IEnumerator<string>
+            {
+                public Enumerator(CollisionCategoryList parent)
+                {
+                    mParent = parent;
+                    mIndex = -1;
+                }
+
+                public string Current => mParent[mIndex];
+                object IEnumerator.Current => Current;
+
+                public void Dispose() => GC.SuppressFinalize(this);
+                public void Reset() => mIndex = -1;
+
+                public bool MoveNext()
+                {
+                    if (mIndex < 15)
+                    {
+                        mIndex++;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                private readonly CollisionCategoryList mParent;
+                private int mIndex;
+            }
+
+            public CollisionCategoryList(Scene scene)
+            {
+                mScene = scene;
+            }
+
+
+            public int Count => 16;
+            public string this[int index]
+            {
+                get
+                {
+                    if (index >= Count)
+                    {
+                        throw new IndexOutOfRangeException();
+                    }
+
+                    return InternalCalls.GetCollisionCategoryName(mScene.mNativeAddress, index);
+                }
+            }
+
+            public IEnumerator<string> GetEnumerator() => new Enumerator(this);
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            private readonly Scene mScene;
+        }
+
         internal Scene(IntPtr nativeAddress)
         {
             mNativeAddress = nativeAddress;
@@ -104,6 +163,12 @@ namespace SGE
 
             return null;
         }
+
+        /// <summary>
+        /// The names of the collision categories in this scene.
+        /// If one doesn't have a name, it's corresponding element is empty.
+        /// </summary>
+        public IReadOnlyList<string> CollisionCategoryNames => new CollisionCategoryList(this);
 
         public override bool Equals(object obj)
         {

@@ -1,4 +1,22 @@
 {
+    "collision_categories": [
+        "Penguin",
+        "Ground",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    ],
     "entities": [
         {
             "box_collider": null,
@@ -45,6 +63,8 @@
             "camera": null,
             "guid": 10829049528697195620,
             "rigid_body": {
+                "filter_category": 2,
+                "filter_mask": 65533,
                 "fixed_rotation": false,
                 "type": "static"
             },
@@ -85,11 +105,15 @@
             "camera": null,
             "guid": 638124786110313657,
             "rigid_body": {
+                "filter_category": 1,
+                "filter_mask": 65534,
                 "fixed_rotation": false,
                 "type": "dynamic"
             },
             "script": {
-                "properties": null,
+                "properties": {
+                    "ForceModifier": 10.0
+                },
                 "script_name": "Sandbox.PenguinScript"
             },
             "sprite": {

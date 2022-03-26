@@ -16,7 +16,6 @@
 
 #pragma once
 #include "panel.h"
-#include <sge/imgui/popup_manager.h>
 namespace sgm {
     class editor_layer : public layer {
     public:

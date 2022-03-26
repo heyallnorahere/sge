@@ -106,6 +106,11 @@ namespace sge {
             return false;
         }
 
+        static void* GetCollisionCategoryName(scene* _scene, int32_t index) {
+            std::string name = _scene->collision_category_name(index);
+            return script_engine::to_managed_string(name);
+        }
+
         static bool HasComponent(void* componentType, void* _entity) {
             verify_component_type_validity(componentType);
             entity e = script_helpers::get_entity_from_object(_entity);
@@ -466,6 +471,7 @@ namespace sge {
         REGISTER_FUNC(CloneEntity);
         REGISTER_FUNC(DestroyEntity);
         REGISTER_FUNC(FindEntity);
+        REGISTER_FUNC(GetCollisionCategoryName);
 
         // entity
         REGISTER_FUNC(HasComponent);
@@ -568,5 +574,6 @@ namespace sge {
 
 #undef REGISTER_CALL
 #undef REGISTER_FUNC
+#undef REGISTER_REF_COUNTER
     }
 } // namespace sge
