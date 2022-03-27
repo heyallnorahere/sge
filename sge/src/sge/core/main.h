@@ -16,29 +16,6 @@
 
 #pragma once
 int32_t main(int32_t argc, const char** argv) {
-#ifndef SGE_DEBUG
-    try {
-#endif
-        sge::application::create();
-
-        std::vector<std::string> args;
-        for (int32_t i = 0; i < argc; i++) {
-            args.push_back(argv[i]);
-        }
-
-        auto& app = sge::application::get();
-        app.set_application_args(args);
-
-        app.init();
-        app.run();
-        app.shutdown();
-
-        sge::application::destroy();
-        return EXIT_SUCCESS;
-#ifndef SGE_DEBUG
-    } catch (const std::exception& exc) {
-        spdlog::error(exc.what());
-        return EXIT_FAILURE;
-    }
-#endif
+    application::entrypoint entrypoint;
+    return entrypoint(argc, argv);
 }

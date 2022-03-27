@@ -31,6 +31,10 @@ namespace sge {
     class imgui_layer;
     class application {
     public:
+        struct entrypoint {
+            int32_t operator()(int32_t argc, const char** argv);
+        };
+
         static std::string get_engine_version();
 
         static void create();
@@ -45,11 +49,7 @@ namespace sge {
         void push_overlay(layer* overlay) { m_layer_stack.push_overlay(overlay); }
         bool pop_overlay(layer* overlay) { return m_layer_stack.pop_overlay(overlay); }
 
-        void init();
-        void shutdown();
-        void run();
         void quit() { m_running = false; }
-
         void on_event(event& e);
 
         void set_application_args(const std::vector<std::string>& args) { m_args = args; }
@@ -84,6 +84,10 @@ namespace sge {
         std::vector<std::string> m_args;
 
     private:
+        void init();
+        void shutdown();
+        void run();
+
         bool on_window_resize(window_resize_event& e);
         bool on_window_close(window_close_event& e);
 

@@ -25,6 +25,34 @@
 
 extern sge::application* create_app_instance();
 namespace sge {
+    int32_t application::entrypoint::operator()(int32_t argc, const char** argv) {
+#ifndef SGE_DEBUG
+        try {
+#endif
+            sge::application::create();
+
+            std::vector<std::string> args;
+            for (int32_t i = 0; i < argc; i++) {
+                args.push_back(argv[i]);
+            }
+
+            auto& app = sge::application::get();
+            app.set_application_args(args);
+
+            app.init();
+            app.run();
+            app.shutdown();
+
+            sge::application::destroy();
+            return EXIT_SUCCESS;
+#ifndef SGE_DEBUG
+        } catch (const std::exception& exc) {
+            spdlog::error(exc.what());
+            return EXIT_FAILURE;
+        }
+#endif
+    }
+
     std::string application::get_engine_version() { return SGE_VERSION; }
 
     static std::unique_ptr<application> app_instance;
@@ -130,8 +158,8 @@ namespace sge {
         if (m_running) {
             throw std::runtime_error("cannot recursively call run()");
         }
-        m_running = true;
 
+        m_running = true;
         while (m_running) {
             if (!m_minimized) {
                 m_swapchain->new_frame();
