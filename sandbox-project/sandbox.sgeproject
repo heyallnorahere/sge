@@ -1,6 +1,0 @@
-{
-    "name": "Sandbox",
-    "asset_registry": "assets.sgeregistry",
-    "asset_directory": "assets",
-    "start_scene": "scenes/example.sgescene"
-}

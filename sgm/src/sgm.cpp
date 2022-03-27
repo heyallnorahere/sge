@@ -26,24 +26,25 @@ namespace sgm {
     class sgm_app : public application {
     public:
         sgm_app() : application("SGM") {}
-    
+
     protected:
         virtual void on_init() override {
-            // defaults to sandbox project
-            fs::path project_path = "sandbox-project/sandbox.sgeproject";
-
             std::vector<std::string> args;
             get_application_args(args);
 
-            if (args.size() >= 2) {
-                project_path = args[1];
+            // to set up sgm for debugging, set the command line arguments to the path of the
+            // project you want to debug with
+            if (args.size() < 2) {
+                throw std::runtime_error("cannot run SGM without a project!");
             }
 
+            fs::path project_path = args[1];
             spdlog::info("loading project: {0}", project_path.string());
+
             if (!project::load(fs::absolute(project_path))) {
                 throw std::runtime_error("could not load project!");
             }
-            
+
             project& _project = project::get();
             m_window->set_title(sgm_title + " - " + _project.get_name());
 
