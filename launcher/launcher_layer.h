@@ -20,13 +20,25 @@
 namespace sgm::launcher {
     class launcher_layer : public layer {
     public:
-        struct project_info {
+        struct recent_project_t {
+            std::string name;
+            fs::path path;
+
+            size_t hash() const {
+                size_t name_hash = std::hash<std::string>()(name);
+                size_t path_hash = std::hash<fs::path>()(path);
+
+                return (path_hash << 1) ^ name_hash;
+            }
+        };
+
+        struct project_info_t {
             fs::path path;
             std::string name;
         };
 
         struct app_callbacks {
-            std::function<bool(const project_info&, std::string& error)> create_project;
+            std::function<bool(const project_info_t&, std::string& error)> create_project;
             std::function<void(const fs::path& path)> open_project;
         };
 
@@ -37,10 +49,16 @@ namespace sgm::launcher {
         virtual void on_attach() override;
         virtual void on_imgui_render() override;
 
+        void add_to_recent(const fs::path& path);
+
     private:
+        void read_recent_projects();
+        void write_recent_projects();
+
         app_callbacks m_callbacks;
         popup_manager m_popup_manager;
 
+        std::list<recent_project_t> m_recent_projects;
         bool m_sge_dir_set = false;
         ref<texture_2d> m_test_texture;
     };

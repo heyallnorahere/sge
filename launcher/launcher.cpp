@@ -87,7 +87,7 @@ namespace sgm::launcher {
             out_stream.close();
         }
 
-        bool create_project(const launcher_layer::project_info& project_info, std::string& error) {
+        bool create_project(const launcher_layer::project_info_t& project_info, std::string& error) {
             std::string project_name = project_info.name;
             for (size_t i = 0; i < project_name.length(); i++) {
                 // i dont know how else to do this
@@ -180,6 +180,8 @@ namespace sgm::launcher {
             int32_t return_code = environment::run_command(info);
             if (return_code != 0) {
                 spdlog::error("could not launch SGM! (error code: {0})", return_code);
+            } else {
+                m_layer->add_to_recent(project_path);
             }
         }
 

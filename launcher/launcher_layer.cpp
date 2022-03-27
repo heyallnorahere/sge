@@ -16,6 +16,7 @@
 
 #include "launcher_pch.h"
 #include "launcher_layer.h"
+#include <sge/asset/json.h>
 #include <sge/imgui/imgui_layer.h>
 
 namespace sgm::launcher {
@@ -26,6 +27,8 @@ namespace sgm::launcher {
                                                                        "*.sgeproject" } };
 
     void launcher_layer::on_attach() {
+        read_recent_projects();
+
         // sge dir selection
         {
             popup_manager::popup_data data;
@@ -120,7 +123,7 @@ namespace sgm::launcher {
 
                 static std::string error;
                 if (ImGui::Button("Create")) {
-                    project_info info;
+                    project_info_t info;
                     info.name = name.empty() ? default_name : name;
                     info.path = fs::absolute(path.empty() ? default_path : path);
 
@@ -203,43 +206,59 @@ namespace sgm::launcher {
 
             // recent projects
             {
-                static std::optional<size_t> hovered_project;
+                if (!m_recent_projects.empty()) {
+                    static std::optional<size_t> hovered_project;
 
-                size_t unhovered_projects = 0;
-                for (size_t i = 0; i < 3; i++) {
-                    std::string id = "project-" + std::to_string(i);
-                    bool hovered = hovered_project == i;
+                    size_t recent_project_count = m_recent_projects.size();
+                    size_t unhovered_projects = 0;
 
-                    ImGuiCol bg_color;
-                    if (hovered) {
-                        bg_color = ImGuiCol_ButtonHovered;
-                    } else {
-                        bg_color = ImGuiCol_Button;
-                    }
+                    std::optional<fs::path> to_open;
+                    for (size_t i = 0; i < recent_project_count; i++) {
+                        auto it = m_recent_projects.begin();
+                        std::advance(it, i);
 
-                    ImGui::PushStyleColor(ImGuiCol_ChildBg, style.Colors[bg_color]);
-                    ImGui::BeginChild(id.c_str(), ImVec2(0.f, 100.f), true);
-                    ImGui::PopStyleColor();
+                        const auto& current = *it;
+                        std::string string_path = current.path.string();
 
-                    ImGui::Text("Test project %u", (uint32_t)(i + 1));
-                    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.f), "Some path");
+                        std::string id = "project-" + std::to_string(i);
+                        bool hovered = hovered_project == i;
 
-                    ImGui::EndChild();
-                    if (ImGui::IsItemHovered()) {
-                        hovered_project = i;
-
-                        if (ImGui::IsItemClicked()) {
-                            fs::path sge_dir = environment::get(sge_dir_env_var);
-                            m_callbacks.open_project(sge_dir / "sandbox-project" /
-                                                     "sandbox.sgeproject");
+                        ImGuiCol bg_color;
+                        if (hovered) {
+                            bg_color = ImGuiCol_ButtonHovered;
+                        } else {
+                            bg_color = ImGuiCol_Button;
                         }
-                    } else {
-                        unhovered_projects++;
-                    }
-                }
 
-                if (unhovered_projects == 3) {
-                    hovered_project.reset();
+                        ImGui::PushStyleColor(ImGuiCol_ChildBg, style.Colors[bg_color]);
+                        ImGui::BeginChild(id.c_str(), ImVec2(0.f, 100.f), true);
+                        ImGui::PopStyleColor();
+
+                        ImGui::Text("%s", current.name.c_str());
+                        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.f), "%s",
+                                           string_path.c_str());
+
+                        ImGui::EndChild();
+                        if (ImGui::IsItemHovered()) {
+                            hovered_project = i;
+
+                            if (ImGui::IsItemClicked()) {
+                                to_open = current.path;
+                            }
+                        } else {
+                            unhovered_projects++;
+                        }
+                    }
+
+                    if (unhovered_projects == recent_project_count) {
+                        hovered_project.reset();
+                    }
+
+                    if (to_open.has_value()) {
+                        m_callbacks.open_project(to_open.value());
+                    }
+                } else {
+                    ImGui::Text("No projects have been opened so far.");
                 }
             }
 
@@ -334,5 +353,86 @@ namespace sgm::launcher {
 
         ImGui::End();
         m_popup_manager.update();
+    }
+
+    static std::optional<std::string> get_project_name(const fs::path& path) {
+        std::ifstream file(path);
+        if (!file.is_open()) {
+            spdlog::error("cannot open file: {0}", path.string());
+            return std::optional<std::string>();
+        }
+
+        json data;
+        try {
+            file >> data;
+            file.close();
+        } catch (const std::exception& exc) {
+            spdlog::error("invalid json file: {0}", path.string());
+            file.close();
+            return std::optional<std::string>();
+        }
+
+        return data["name"].get<std::string>();
+    }
+
+    void launcher_layer::add_to_recent(const fs::path& path) {
+        auto name = get_project_name(path);
+        if (!name.has_value()) {
+            return;
+        }
+
+        recent_project_t result;
+        result.name = name.value();
+        result.path = path;
+        size_t hash = result.hash();
+
+        m_recent_projects.remove_if(
+            [&](const recent_project_t& element) { return element.hash() == hash; });
+        m_recent_projects.push_front(result);
+
+        write_recent_projects();
+    }
+
+    void from_json(const json& data, launcher_layer::recent_project_t& result) {
+        result.name = data["name"].get<std::string>();
+        result.path = data["path"].get<fs::path>();
+    }
+
+    void to_json(json& result, const launcher_layer::recent_project_t& data) {
+        result["name"] = data.name;
+        result["path"] = data.path;
+    }
+
+    static const fs::path recent_projects_path =
+        fs::current_path() / "assets" / "settings" / "recent_projects.json";
+
+    void launcher_layer::read_recent_projects() {
+        std::ifstream file(recent_projects_path);
+        if (!file.is_open()) {
+            return;
+        }
+
+        json data;
+        try {
+            file >> data;
+            file.close();
+        } catch (const std::exception& exc) {
+            file.close();
+            return;
+        }
+
+        data.get_to(m_recent_projects);
+    }
+
+    void launcher_layer::write_recent_projects() {
+        fs::path output_directory = recent_projects_path.parent_path();
+        if (!fs::exists(output_directory)) {
+            fs::create_directories(output_directory);
+        }
+
+        json data = m_recent_projects;
+        std::ofstream file(recent_projects_path);
+        file << data.dump(4);
+        file.close();
     }
 } // namespace sgm::launcher

@@ -19,7 +19,6 @@
 #include "editor_scene.h"
 #include "texture_cache.h"
 #include <sge/renderer/renderer.h>
-#include <sge/imgui/imgui_layer.h>
 #include <imgui_internal.h>
 namespace sgm {
     static void edit_int(void* instance, void* property, const std::string& label) {
@@ -71,7 +70,6 @@ namespace sgm {
         }
 
         ImGui::InputText(label.c_str(), &tag, ImGuiInputTextFlags_ReadOnly);
-
         if (ImGui::BeginDragDropTarget()) {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("entity")) {
                 guid id = *(guid*)payload->Data;
@@ -101,9 +99,8 @@ namespace sgm {
         };
     }
 
-    template <typename T>
-    static void draw_component(const std::string& name, entity e,
-                               std::function<void(T&)> callback) {
+    template <typename T, typename Func>
+    static void draw_component(const std::string& name, entity e, const Func& callback) {
         if (e.has_all<T>()) {
             static constexpr ImGuiTreeNodeFlags tree_flags =
                 ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
