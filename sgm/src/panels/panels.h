@@ -70,7 +70,10 @@ namespace sgm {
         virtual std::string get_title() override { return "Editor"; }
         virtual panel_id get_id() override { return panel_id::editor; }
 
+        void clear_section_header_cache() { m_section_header_cache.clear(); }
+
     private:
+        using script_control_t = std::function<void(void*, void*, const std::string&)>;
         enum class filter_editor_type { category, mask };
 
         struct filter_editor_data_t {
@@ -78,10 +81,17 @@ namespace sgm {
             uint16_t* field;
         };
 
+        struct section_header_t {
+            std::string name;
+            std::vector<void*> properties;
+            std::vector<section_header_t> subheaders;
+        };
+
+        void cache_script_class(void* _class);
         void draw_property_controls();
+        void render_header(void* script_object, const section_header_t& header);
 
-        using script_control_t = std::function<void(void*, void*, const std::string&)>;
-
+        std::unordered_map<void*, std::vector<section_header_t>> m_section_header_cache;
         std::unordered_map<void*, script_control_t> m_script_controls;
         std::function<void(const std::string&)> m_popup_callback;
         popup_manager* m_popup_manager;

@@ -66,6 +66,11 @@ namespace SGE
             return attribute != null;
         }
 
+        internal static Attribute GetPropertyAttribute(PropertyInfo property, Type attributeType)
+        {
+            return property.GetCustomAttribute(attributeType);
+        }
+
         internal static Event CreateEvent(IntPtr address, EventID id)
         {
             if (!mEventTypes.ContainsKey(id))

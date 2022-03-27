@@ -15,6 +15,7 @@
 */
 
 using SGE.Components;
+using System.Collections.Generic;
 
 namespace SGE
 {

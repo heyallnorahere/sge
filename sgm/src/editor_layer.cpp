@@ -129,8 +129,7 @@ namespace sgm {
             break;
         case key_code::R:
             if (control) {
-                auto _scene = editor_scene::get_scene();
-                project::reload_assembly({ _scene });
+                reload_project_assembly();
             }
 
             break;
@@ -350,8 +349,7 @@ namespace sgm {
 
                 ImGui::Separator();
                 if (ImGui::MenuItem("Reload C# assembly", "Ctrl+R")) {
-                    auto _scene = editor_scene::get_scene();
-                    project::reload_assembly({ _scene });
+                    reload_project_assembly();
                 }
 
                 ImGui::Separator();
@@ -390,6 +388,20 @@ namespace sgm {
 
             ImGui::EndMenuBar();
         }
+    }
+
+    void editor_layer::reload_project_assembly() {
+        for (const auto& panel_ : m_panels) {
+            if (panel_->get_id() == panel_id::editor) {
+                auto editor = (editor_panel*)panel_.get();
+                editor->clear_section_header_cache();
+
+                break;
+            }
+        }
+
+        auto _scene = editor_scene::get_scene();
+        project::reload_assembly({ _scene });
     }
 
     void editor_layer::new_scene() {

@@ -487,6 +487,81 @@ namespace sgm {
         m_popup_manager = &popup_manager_;
     }
 
+    void editor_panel::cache_script_class(void* _class) {
+        if (m_section_header_cache.find(_class) != m_section_header_cache.end()) {
+            return;
+        }
+
+        std::vector<void*> properties;
+        script_engine::iterate_properties(_class, properties);
+
+        void* attribute_type = script_helpers::get_core_type("SGE.SectionHeaderAttribute", true);
+        void* header_names_property = script_engine::get_property(attribute_type, "HeaderNames");
+
+        std::vector<section_header_t> headers;
+        for (void* property : properties) {
+            if (!script_helpers::is_property_serializable(property)) {
+                continue;
+            }
+
+            std::vector<std::string> header_names;
+            if (script_helpers::property_has_attribute(property, attribute_type)) {
+                uint32_t attribute =
+                    script_helpers::get_property_attribute(property, attribute_type);
+                void* object = garbage_collector::get_ref_data(attribute);
+
+                void* list = script_engine::get_property_value(object, header_names_property);
+                void* list_type = script_engine::get_class_from_object(list);
+
+                void* count_property = script_engine::get_property(list_type, "Count");
+                void* returned = script_engine::get_property_value(list, count_property);
+                int32_t count = script_engine::unbox_object<int32_t>(returned);
+
+                void* item_property = script_engine::get_property(list_type, "Item");
+                for (int32_t i = 0; i < count; i++) {
+                    returned = script_engine::get_property_value(list, item_property, &i);
+
+                    std::string name = script_engine::from_managed_string(returned);
+                    header_names.push_back(name);
+                }
+
+                garbage_collector::destroy_ref(attribute);
+            } else {
+                header_names.push_back("");
+            }
+
+            section_header_t* current_node = nullptr;
+            for (const auto& name : header_names) {
+                std::vector<section_header_t>* nodes;
+                if (current_node != nullptr) {
+                    nodes = &current_node->subheaders;
+                } else {
+                    nodes = &headers;
+                }
+
+                section_header_t* found = nullptr;
+                for (auto& current : *nodes) {
+                    if (current.name == name) {
+                        found = &current;
+                    }
+                }
+
+                if (found != nullptr) {
+                    current_node = found;
+                } else {
+                    current_node = &nodes->emplace_back();
+                    current_node->name = name;
+                }
+            }
+
+            if (current_node != nullptr) {
+                current_node->properties.push_back(property);
+            }
+        }
+
+        m_section_header_cache.insert(std::make_pair(_class, headers));
+    }
+
     void editor_panel::draw_property_controls() {
         const auto& selection = editor_scene::get_selection();
         auto _scene = editor_scene::get_scene();
@@ -495,14 +570,28 @@ namespace sgm {
         auto& sc = selection.get_component<script_component>();
         void* instance = garbage_collector::get_ref_data(sc.gc_handle);
 
-        std::vector<void*> properties;
-        script_engine::iterate_properties(sc._class, properties);
+        if (m_section_header_cache.find(sc._class) == m_section_header_cache.end()) {
+            cache_script_class(sc._class);
+        }
 
-        for (void* property : properties) {
-            if (!script_helpers::is_property_serializable(property)) {
-                continue;
+        const auto& headers = m_section_header_cache[sc._class];
+        for (const auto& header : headers) {
+            render_header(instance, header);
+        }
+    }
+
+    void editor_panel::render_header(void* script_object, const section_header_t& header) {
+        bool indented = false;
+        if (!header.name.empty()) {
+            if (!ImGui::CollapsingHeader(header.name.c_str())) {
+                return;
             }
 
+            ImGui::Indent();
+            indented = true;
+        }
+
+        for (void* property : header.properties) {
             void* property_type = script_engine::get_property_type(property);
             if (m_script_controls.find(property_type) == m_script_controls.end()) {
                 continue;
@@ -512,7 +601,15 @@ namespace sgm {
             // todo: format label?
 
             const auto& callback = m_script_controls[property_type];
-            callback(instance, property, property_name);
+            callback(script_object, property, property_name);
+        }
+
+        for (const auto& subheader : header.subheaders) {
+            render_header(script_object, subheader);
+        }
+
+        if (indented) {
+            ImGui::Unindent();
         }
     }
 } // namespace sgm

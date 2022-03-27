@@ -43,6 +43,7 @@ namespace sgm {
         void update_toolbar();
         void update_menu_bar();
 
+        void reload_project_assembly();
         void new_scene();
         void open();
         void save_as();

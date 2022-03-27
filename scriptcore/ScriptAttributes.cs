@@ -15,15 +15,56 @@
 */
 
 using System;
+using System.Collections.Generic;
 
 namespace SGE
 {
     /// <summary>
     /// A property with this attribute applied will not be serialized or shown in an editor.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public sealed class UnserializedAttribute : Attribute
     {
         // this should really just act as a flag
+    }
+
+    /// <summary>
+    /// Indicates to the editor that the property should be under the specific header.
+    /// If no header is specified, no header will contain this property.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+    public sealed class SectionHeaderAttribute : Attribute
+    {
+        public SectionHeaderAttribute(string path)
+        {
+            var names = new List<string>();
+            var segments = path.Split('/', '\\');
+
+            foreach (string segment in segments)
+            {
+                if (segment.Length == 0 || segment == ".")
+                {
+                    continue;
+                }
+
+                if (segment == "..")
+                {
+                    names.RemoveAt(names.Count - 1);
+                }
+                else
+                {
+                    names.Add(segment);
+                }
+            }
+
+            if (names.Count == 0)
+            {
+                names.Add(string.Empty);
+            }
+
+            HeaderNames = names;
+        }
+
+        public IReadOnlyList<string> HeaderNames { get; }
     }
 }

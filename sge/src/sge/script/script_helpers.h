@@ -25,6 +25,7 @@ namespace sge {
         static void init(void* helpers_class);
 
         static bool property_has_attribute(void* property, void* attribute_type);
+        static uint32_t get_property_attribute(void* property, void* attribute_type);
         static bool is_property_serializable(void* property);
 
         static void* create_entity_object(entity e);

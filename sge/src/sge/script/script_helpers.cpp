@@ -17,6 +17,7 @@
 #include "sgepch.h"
 #include "sge/script/script_helpers.h"
 #include "sge/script/script_engine.h"
+#include "sge/script/garbage_collector.h"
 namespace sge {
     static void* managed_helpers_class = nullptr;
     void script_helpers::init(void* helpers_class) { managed_helpers_class = helpers_class; }
@@ -28,7 +29,24 @@ namespace sge {
         void* method = script_engine::get_method(managed_helpers_class, "PropertyHasAttribute");
         void* returned =
             script_engine::call_method(nullptr, method, reflection_property, reflection_type);
+
         return script_engine::unbox_object<bool>(returned);
+    }
+
+    uint32_t script_helpers::get_property_attribute(void* property, void* attribute_type) {
+        void* reflection_property = script_engine::to_reflection_property(property);
+        void* reflection_type = script_engine::to_reflection_type(attribute_type);
+
+        void* method = script_engine::get_method(managed_helpers_class, "GetPropertyAttribute");
+        void* returned =
+            script_engine::call_method(nullptr, method, reflection_property, reflection_type);
+
+        uint32_t handle = 0;
+        if (returned != nullptr) {
+            handle = garbage_collector::create_ref(returned);
+        }
+
+        return handle;
     }
 
     bool script_helpers::is_property_serializable(void* property) {
