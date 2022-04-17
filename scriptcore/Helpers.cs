@@ -71,6 +71,8 @@ namespace SGE
             return property.GetCustomAttribute(attributeType);
         }
 
+        internal static string GetTypeNameSafe(Type type) => type.FullName ?? type.Name;
+
         internal static Event CreateEvent(IntPtr address, EventID id)
         {
             if (!mEventTypes.ContainsKey(id))
@@ -80,7 +82,7 @@ namespace SGE
             }
 
             Type type = mEventTypes[id];
-            ConstructorInfo constructor = type.GetConstructor(Array.Empty<Type>());
+            ConstructorInfo constructor = type.GetConstructor(new Type[] { });
             if (constructor == null)
             {
                 Log.Error("Couldn't find the constructor for type: {0}", type.FullName);
@@ -90,6 +92,46 @@ namespace SGE
             var @event = (Event)constructor.Invoke(null);
             @event.mAddress = address;
             return @event;
+        }
+
+        internal static object CreateListObject(Type elementType)
+        {
+            var listType = typeof(List<>).MakeGenericType(new Type[] { elementType });
+            return listType.GetConstructor(new Type[] { }).Invoke(null);
+        }
+
+        private static void ReportInnerException(Exception exception, int tabs = 2)
+        {
+            string tabString = string.Empty;
+            for (int i = 0; i < tabs; i++)
+            {
+                tabString += '\t';
+            }
+
+            Log.Error($"{tabString}Type: {exception.GetType().FullName}");
+            Log.Error($"{tabString}Message: {exception.Message}");
+            Log.Error($"{tabString}Source: {exception.Source}");
+
+            var inner = exception.InnerException;
+            if (inner != null)
+            {
+                Console.WriteLine($"{tabString}Inner exception:");
+                ReportInnerException(inner, tabs + 1);
+            }
+        }
+
+        internal static void ReportException(Exception exception)
+        {
+            Log.Error($"Exception thrown: {exception.GetType().FullName}");
+            Log.Error($"\tMessage: {exception.Message}");
+            Log.Error($"\tSource: {exception.Source}");
+
+            var inner = exception.InnerException;
+            if (inner != null)
+            {
+                Console.WriteLine("\tInner exception:");
+                ReportInnerException(inner);
+            }
         }
 
         private static readonly Dictionary<EventID, Type> mEventTypes;

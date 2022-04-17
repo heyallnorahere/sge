@@ -24,7 +24,7 @@ typedef enum {
 } MonoImageOpenStatus;
 
 MONO_API void          mono_images_init    (void);
-MONO_API MONO_RT_EXTERNAL_ONLY void          mono_images_cleanup (void);
+MONO_API void          mono_images_cleanup (void);
 
 MONO_API MonoImage    *mono_image_open     (const char *fname,
 				   MonoImageOpenStatus *status);
@@ -91,8 +91,6 @@ MONO_API uint32_t       mono_image_strong_name_position (MonoImage *image, uint3
 MONO_API void          mono_image_add_to_name_cache (MonoImage *image, 
 			const char *nspace, const char *name, uint32_t idx);
 MONO_API mono_bool     mono_image_has_authenticode_entry (MonoImage *image);
-
-mono_bool mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len);
 
 MONO_END_DECLS
 

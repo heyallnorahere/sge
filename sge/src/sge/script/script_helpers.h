@@ -23,6 +23,7 @@ namespace sge {
         script_helpers() = delete;
 
         static void init(void* helpers_class);
+        static void report_exception(void* exception);
 
         static bool property_has_attribute(void* property, void* attribute_type);
         static uint32_t get_property_attribute(void* property, void* attribute_type);
@@ -32,7 +33,11 @@ namespace sge {
         static entity get_entity_from_object(void* object);
 
         static void* get_core_type(const std::string& name, bool scriptcore = false);
+
+        static std::string get_type_name_safe(void* _class);
+        static bool type_is_array(void* _class);
         
         static void* create_event_object(event& e);
+        static void* create_list_object(void* element_type);
     };
 } // namespace sge

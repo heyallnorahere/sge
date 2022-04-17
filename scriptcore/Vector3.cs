@@ -68,25 +68,25 @@ namespace SGE
         {
             get
             {
-                float x2 = MathF.Pow(X, 2);
-                float y2 = MathF.Pow(Y, 2);
-                float z2 = MathF.Pow(Z, 2);
-                return MathF.Sqrt(x2 + y2 + z2);
+                double x2 = Math.Pow(X, 2);
+                double y2 = Math.Pow(Y, 2);
+                double z2 = Math.Pow(Z, 2);
+                return (float)Math.Sqrt(x2 + y2 + z2);
             }
         }
 
         public Vector3 Normalized => this / Length;
 
-        public static Vector3 operator +(Vector3 lhs, Vector3 rhs) => (lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z);
+        public static Vector3 operator +(Vector3 lhs, Vector3 rhs) => new Vector3(lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z);
         public static Vector3 operator +(Vector3 lhs, float rhs) => lhs + new Vector3(rhs);
-        public static Vector3 operator -(Vector3 vector) => (-vector.X, -vector.Y, -vector.Z);
+        public static Vector3 operator -(Vector3 vector) => new Vector3(-vector.X, -vector.Y, -vector.Z);
         public static Vector3 operator -(Vector3 lhs, Vector3 rhs) => lhs + -rhs;
         public static Vector3 operator -(Vector3 lhs, float rhs) => lhs + -rhs;
-        public static Vector3 operator *(Vector3 lhs, Vector3 rhs) => (lhs.X * rhs.X, lhs.Y * rhs.Y, lhs.Z * rhs.Z);
+        public static Vector3 operator *(Vector3 lhs, Vector3 rhs) => new Vector3(lhs.X * rhs.X, lhs.Y * rhs.Y, lhs.Z * rhs.Z);
         public static Vector3 operator *(Vector3 lhs, float rhs) => lhs * new Vector3(rhs);
-        public static Vector3 operator /(Vector3 lhs, Vector3 rhs) => (lhs.X / rhs.X, lhs.Y / rhs.Y, lhs.Z / rhs.Z);
+        public static Vector3 operator /(Vector3 lhs, Vector3 rhs) => new Vector3(lhs.X / rhs.X, lhs.Y / rhs.Y, lhs.Z / rhs.Z);
         public static Vector3 operator /(Vector3 lhs, float rhs) => lhs / new Vector3(rhs);
 
-        public static implicit operator Vector3((float x, float y, float z) tuple) => new Vector3(tuple.x, tuple.y, tuple.z);
+        public static implicit operator Vector3(Vector4 vector) => new Vector3(vector);
     }
 }

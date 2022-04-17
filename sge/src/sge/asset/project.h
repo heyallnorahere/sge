@@ -47,7 +47,7 @@ namespace sge {
         fs::path get_script_project_path() { return get_directory() / "ScriptAssembly.csproj"; }
 
         fs::path get_assembly_path() {
-            return get_directory() / "bin" / get_config() / "net6.0" / "ScriptAssembly.dll";
+            return get_directory() / "bin" / get_config() / "ScriptAssembly.dll";
         }
 
         std::optional<size_t> get_assembly_index() { return m_assembly_index; }

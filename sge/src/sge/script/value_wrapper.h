@@ -49,6 +49,7 @@ namespace sge {
             alloc();
 
             memcpy(m_buffer, other.m_buffer, m_size);
+            return *this;
         }
 
         void reset() {

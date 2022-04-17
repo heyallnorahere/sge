@@ -112,7 +112,6 @@ namespace sge {
             script_engine::set_field_value(instance, entity_field, entity_instance);
 
             gc_handle = garbage_collector::create_ref(instance);
-            garbage_collector::add_ref_ptr(gc_handle);
         }
     }
 
@@ -120,8 +119,6 @@ namespace sge {
         if (_class != nullptr) {
             if (gc_handle != 0) {
                 garbage_collector::destroy_ref(gc_handle);
-                garbage_collector::remove_ref_ptr(gc_handle);
-
                 gc_handle = 0;
             }
 

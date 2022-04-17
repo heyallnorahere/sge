@@ -28,7 +28,7 @@ namespace SGE
         }
 
         public static GUID Generate() => InternalCalls.GenerateGUID();
-        public static implicit operator GUID(ulong id) => new(id);
+        public static implicit operator GUID(ulong id) => new GUID(id);
         public static implicit operator ulong(GUID guid) => guid.Value;
     }
 }

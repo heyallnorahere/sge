@@ -135,59 +135,12 @@ namespace sge {
         return true;
     }
 
-    static bool compile_app_assembly() {
-        static const std::vector<fs::path> dotnet_executable_names = { "dotnet", "dotnet.exe" };
-        static const std::vector<fs::path> dotnet_search_paths = {
-            "C:\\Program Files",
-            "C:\\Program Files (x86)",
-            "/usr/share",
-            "/usr/local/share",
-        };
-
-        static std::optional<fs::path> dotnet_executable_path;
-        if (!dotnet_executable_path.has_value()) {
-            for (const fs::path& current_path : dotnet_search_paths) {
-                for (const fs::path& current_name : dotnet_executable_names) {
-                    fs::path executable_path = current_path / "dotnet" / current_name;
-
-                    if (fs::exists(executable_path)) {
-                        dotnet_executable_path = executable_path;
-                        break;
-                    }
-                }
-
-                if (dotnet_executable_path.has_value()) {
-                    break;
-                }
-            }
-
-            if (!dotnet_executable_path.has_value()) {
-                spdlog::warn("could not find .NET Core executable!");
-                return false;
-            }
-        }
-
-        fs::path executable_path = dotnet_executable_path.value();
-        std::stringstream command_stream;
-        command_stream << "\"" << executable_path.string() << "\" build \""
-                       << project::get().get_script_project_path().string() << "\" -c "
-                       << project::get_config();
-
-        process_info command_info;
-        command_info.executable = executable_path;
-        command_info.cmdline = command_stream.str();
-        command_info.output_file = "assets/logs/dotnet.log";
-
-        environment::run_command(command_info);
-        return true;
-    }
-
     void project::reload_assembly(const std::vector<ref<scene>>& active_scenes) {
         auto& instance = get();
 
         bool load = true;
         if (project_data->editor) {
-            load = compile_app_assembly();
+            load = script_engine::compile_app_assembly();
         }
 
         if (!load) {

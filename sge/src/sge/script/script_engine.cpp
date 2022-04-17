@@ -15,15 +15,13 @@
 */
 
 #include "sgepch.h"
+#include "sge/asset/project.h"
 #include "sge/script/script_engine.h"
 #include "sge/script/mono_include.h"
 #include "sge/script/garbage_collector.h"
 #include "sge/script/script_helpers.h"
 #include "sge/script/value_wrapper.h"
 #include "sge/scene/components.h"
-
-// todo(nora): don't use mono-private-unstable.h
-#include <mono/jit/mono-private-unstable.h>
 
 namespace sge {
     struct assembly_t {
@@ -34,8 +32,10 @@ namespace sge {
 
     struct script_engine_data_t {
         MonoDomain* root_domain = nullptr;
+        MonoDomain* script_domain = nullptr;
         std::vector<assembly_t> assemblies;
     };
+
     static std::unique_ptr<script_engine_data_t> script_engine_data;
 
 #ifdef SGE_PLATFORM_WINDOWS
@@ -46,39 +46,20 @@ namespace sge {
 #define DOTNET_LIST_SEPARATOR ':'
 #endif
 
-    static std::string build_tpa_list() {
-        fs::path assembly_dir = fs::absolute(fs::current_path() / "assets" / "dotnet");
-        std::string tpa_list;
+    static void script_engine_init_internal() {
+        char domain_name[16];
+        strcpy_s(domain_name, "SGE-Runtime");
 
-        for (const auto& entry : fs::directory_iterator(assembly_dir)) {
-            if (entry.is_directory() || entry.path().extension() != ".dll") {
-                continue;
-            }
+        script_engine_data->script_domain = mono_domain_create_appdomain(domain_name, nullptr);
+        garbage_collector::init();
 
-            tpa_list += fs::absolute(entry.path()).string() + DOTNET_LIST_SEPARATOR;
-        }
+        script_engine::load_assembly(fs::current_path() / "assets" / "assemblies" /
+                                     "SGE.Scriptcore.dll");
+        script_engine::register_internal_script_calls();
 
-        fs::path corlib_path = assembly_dir / NATIVE_DOTNET_DIRNAME / "System.Private.CoreLib.dll";
-        tpa_list += fs::absolute(corlib_path).string();
-
-        return tpa_list;
-    }
-
-    static std::string build_native_library_search_paths() {
-        const std::vector<fs::path> paths = { fs::absolute(fs::current_path() / "assets" /
-                                                           "dotnet" / NATIVE_DOTNET_DIRNAME /
-                                                           SGE_CPU_ARCHITECTURE) };
-
-        std::string list;
-        for (const auto& path : paths) {
-            if (!list.empty()) {
-                list += DOTNET_LIST_SEPARATOR;
-            }
-
-            list += path.string();
-        }
-
-        return list;
+        void* helpers_class =
+            script_engine::get_class(script_engine_data->assemblies[0].image, "SGE.Helpers");
+        script_helpers::init(helpers_class);
     }
 
     void script_engine::init() {
@@ -87,30 +68,17 @@ namespace sge {
         }
         script_engine_data = std::make_unique<script_engine_data_t>();
 
-        {
-            std::unordered_map<std::string, std::string> properties;
-            properties["TRUSTED_PLATFORM_ASSEMBLIES"] = build_tpa_list();
-            properties["NATIVE_DLL_SEARCH_DIRECTORIES"] = build_native_library_search_paths();
-
-            std::vector<const char*> keys, values;
-            for (const auto& [key, value] : properties) {
-                keys.push_back(key.c_str());
-                values.push_back(value.c_str());
-            }
-
-            if (monovm_initialize(properties.size(), keys.data(), values.data()) != 0) {
-                throw std::runtime_error("could not initialize the mono VM!");
-            }
-        }
+        std::string assembly_path = (fs::current_path() / "assets").string();
+        mono_set_assemblies_path(assembly_path.c_str());
+        mono_config_parse(nullptr);
 
         script_engine_data->root_domain = mono_jit_init("SGE");
-        garbage_collector::init();
+        script_engine_init_internal();
+    }
 
-        load_assembly(fs::current_path() / "assets" / "assemblies" / "SGE.Scriptcore.dll");
-        register_internal_script_calls();
-
-        void* helpers_class = get_class(script_engine_data->assemblies[0].image, "SGE.Helpers");
-        script_helpers::init(helpers_class);
+    static void script_engine_shutdown_internal() {
+        mono_domain_free(script_engine_data->script_domain, true);
+        garbage_collector::shutdown();
     }
 
     void script_engine::shutdown() {
@@ -118,16 +86,75 @@ namespace sge {
             throw std::runtime_error("the script engine is not initialized!");
         }
 
-        garbage_collector::shutdown();
-
-        // todo: close assemblies?
-
+        script_engine_shutdown_internal();
         mono_jit_cleanup(script_engine_data->root_domain);
         script_engine_data.reset();
     }
 
     void script_engine::register_internal_call(const std::string& name, const void* callback) {
         mono_add_internal_call(name.c_str(), callback);
+    }
+
+    static bool load_assembly_raw(const fs::path& path, assembly_t& assembly);
+    bool script_engine::compile_app_assembly() {
+        auto& _project = project::get();
+        fs::path project_path = _project.get_script_project_path();
+
+        static fs::path msbuild_path;
+        if (msbuild_path.empty()) {
+#ifdef SGE_PLATFORM_WINDOWS
+            std::string msbuild_platform = "vs";
+            std::string ext = "exe";
+#else
+            std::string msbuild_platform = "mono";
+            std::string ext = "dll";
+#endif
+
+            msbuild_path = fs::current_path() / "assets" / "mono" / "msbuild" / msbuild_platform /
+                           ("MSBuild." + ext);
+        }
+        
+        if (!fs::exists(msbuild_path)) {
+            spdlog::warn("msbuild ({0}) not found!", msbuild_path.string());
+            return false;
+        }
+
+        assembly_t msbuild;
+        if (!load_assembly_raw(msbuild_path, msbuild)) {
+            spdlog::warn("could not load msbuild! ({0})", msbuild_path.string());
+            return false;
+        }
+
+        class_name_t entrypoint_name;
+        entrypoint_name.namespace_name = "Microsoft.Build.CommandLine";
+        entrypoint_name.class_name = "MSBuildApp";
+
+        void* _class = get_class(msbuild.image, entrypoint_name);
+        if (_class == nullptr) {
+            spdlog::warn("could not find {0}.{1} in the msbuild assembly!",
+                         entrypoint_name.namespace_name, entrypoint_name.class_name);
+
+            mono_assembly_close(msbuild.assembly);
+            return false;
+        }
+
+        void* entrypoint = get_method(_class, "Main");
+        if (entrypoint == nullptr) {
+            spdlog::warn("could not find the entrypoint in the msbuild assembly!");
+
+            mono_assembly_close(msbuild.assembly);
+            return false;
+        }
+
+        void* result = call_method(nullptr, entrypoint);
+        int32_t return_code = 1;
+
+        if (result != nullptr) {
+            return_code = unbox_object<int32_t>(result);
+        }
+
+        mono_assembly_close(msbuild.assembly);
+        return return_code == 0;
     }
 
     static std::optional<size_t> find_viable_assembly_index() {
@@ -145,6 +172,28 @@ namespace sge {
         return index;
     }
 
+    static bool load_assembly_raw(const fs::path& path, assembly_t& assembly) {
+        std::string string_path = path.string();
+        if (!fs::exists(path)) {
+            spdlog::warn("assembly does not exist: {0}", string_path);
+            return false;
+        } else {
+            MonoImageOpenStatus status;
+
+            assembly.assembly = mono_assembly_open_full(string_path.c_str(), &status, false);
+            assembly.image = mono_assembly_get_image(assembly.assembly);
+            assembly.path = path;
+
+            if (status != MONO_IMAGE_OK) {
+                std::string error_message = mono_image_strerror(status);
+                spdlog::warn("could not open {0}: ", string_path, error_message);
+                return false;
+            } else {
+                return true;
+            }
+        }
+    }
+
     std::optional<size_t> script_engine::load_assembly(const fs::path& path) {
         std::string string_path = path.string();
         for (size_t i = 0; i < script_engine_data->assemblies.size(); i++) {
@@ -155,29 +204,18 @@ namespace sge {
         }
 
         std::optional<size_t> assembly_index;
-        if (!fs::exists(path)) {
-            spdlog::warn("assembly does not exist: {0}", string_path);
-        } else {
-            assembly_t assembly;
-            MonoImageOpenStatus status;
+        assembly_t data;
 
-            assembly.assembly = mono_assembly_open_full(string_path.c_str(), &status, false);
-            assembly.image = mono_assembly_get_image(assembly.assembly);
-
-            if (status != MONO_IMAGE_OK) {
-                std::string error_message = mono_image_strerror(status);
-                spdlog::warn("could not open {0}: ", string_path, error_message);
+        if (load_assembly_raw(path, data)) {
+            auto found_index = find_viable_assembly_index();
+            if (found_index.has_value()) {
+                size_t index = found_index.value();
+                script_engine_data->assemblies[index] = data;
+                return index;
             } else {
-                auto found_index = find_viable_assembly_index();
-                if (found_index.has_value()) {
-                    size_t index = found_index.value();
-                    script_engine_data->assemblies[index] = assembly;
-                    return index;
-                } else {
-                    size_t index = script_engine_data->assemblies.size();
-                    script_engine_data->assemblies.push_back(assembly);
-                    return index;
-                }
+                size_t index = script_engine_data->assemblies.size();
+                script_engine_data->assemblies.push_back(data);
+                return index;
             }
         }
 
@@ -185,32 +223,264 @@ namespace sge {
     }
 
     bool script_engine::unload_assembly(size_t index) {
+        if (index == 0) {
+            throw std::runtime_error("index 0 is reserved!");
+        }
+
         if (index < script_engine_data->assemblies.size()) {
             auto& data = script_engine_data->assemblies[index];
 
             if (data.assembly != nullptr) {
                 mono_assembly_close(data.assembly);
+
                 data.assembly = nullptr;
+                data.image = nullptr;
+                data.path.clear();
+
                 return true;
             }
         }
 
         return false;
     }
-    
+
+    static void reinitialize_script_engine() {
+        std::vector<fs::path> additional_assemblies;
+        for (size_t i = 0; i < script_engine_data->assemblies.size(); i++) {
+            const auto& assembly = script_engine_data->assemblies[i];
+            additional_assemblies.push_back(assembly.path);
+        }
+
+        script_engine_shutdown_internal();
+        script_engine_init_internal();
+
+        script_engine_data->assemblies.resize(additional_assemblies.size() + 1);
+        for (size_t i = 0; i < additional_assemblies.size(); i++) {
+            const auto& path = additional_assemblies[i];
+            if (!path.empty()) {
+                assembly_t data;
+
+                if (load_assembly_raw(path, data)) {
+                    script_engine_data->assemblies[i + 1] = data;
+                }
+            }
+        }
+    }
+
+    enum class script_property_type { value, entity_, array, list };
+    struct script_property_data_t {
+        value_wrapper data;
+        std::vector<value_wrapper> array;
+        void* array_element_type;
+
+        std::string type_name;
+        script_property_type property_type;
+    };
+
     // based on Hazel::ScriptEngine::ReloadAssembly, Hazel-dev branch dotnet6
     void script_engine::reload_assemblies(const std::vector<ref<scene>>& current_scenes) {
-        std::vector<std::unordered_map<uint32_t, value_wrapper>> old_field_values;
+        std::vector<
+            std::unordered_map<guid, std::unordered_map<std::string, script_property_data_t>>>
+            old_property_values;
+
         for (ref<scene> _scene : current_scenes) {
+            std::unordered_map<guid, std::unordered_map<std::string, script_property_data_t>>
+                entity_data;
+
             _scene->for_each<script_component>([&](entity e) {
                 auto& sc = e.get_component<script_component>();
                 if (sc.gc_handle == 0) {
-                    return;
+                    return; // if the script isn't already initialized, theres nothing to save
                 }
 
                 void* _class = sc._class;
-                // todo: save
+                void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+
+                std::vector<void*> properties;
+                iterate_properties(_class, properties);
+
+                std::unordered_map<std::string, script_property_data_t> property_values;
+                for (void* property : properties) {
+                    if (!script_helpers::is_property_serializable(property)) {
+                        continue;
+                    }
+
+                    script_property_data_t result;
+                    void* type = get_property_type(property);
+                    result.type_name = script_helpers::get_type_name_safe(type);
+
+                    void* property_data = get_property_value(instance, property);
+                    if (is_value_type(type)) {
+                        size_t size = get_type_size(type);
+
+                        const void* unboxed = unbox_object(property_data);
+                        result.data = value_wrapper(unboxed, size);
+
+                        result.property_type = script_property_type::value;
+                    } else {
+                        static const std::vector<std::string> list_type_names = {
+                            "System.Collections.Generic.IList",
+                            "System.Collections.Generic.IReadOnlyList",
+                            "System.Collections.Generic.List"
+                        };
+
+                        bool list = false;
+                        for (const auto& list_name : list_type_names) {
+                            if (result.type_name.substr(0, list_name.length()) == list_name) {
+                                list = true;
+                                break;
+                            }
+                        }
+
+                        if (list) {
+                            void* object_type = get_class_from_object(property_data);
+                            void* count_property = get_property(object_type, "Count");
+
+                            void* returned = get_property_value(property_data, count_property);
+                            int32_t count = unbox_object<int32_t>(returned);
+
+                            void* item_property = get_property(object_type, "Item");
+                            result.array_element_type = get_property_type(item_property);
+                            if (!is_value_type(result.array_element_type)) { // for now
+                                continue;
+                            }
+
+                            size_t item_size = get_type_size(result.array_element_type);
+                            for (int32_t i = 0; i < count; i++) {
+                                void* item = get_property_value(property_data, item_property, &i);
+                                const void* unboxed_data = unbox_object(item);
+
+                                result.array.emplace_back(unboxed_data, item_size);
+                            }
+
+                            result.property_type = script_property_type::list;
+                        } else if (result.type_name == "SGE.Entity") {
+                            entity e = script_helpers::get_entity_from_object(property_data);
+                            guid id = e.get_guid();
+
+                            result.data = value_wrapper(&id, sizeof(guid));
+                            result.property_type = script_property_type::entity_;
+                        } else if (script_helpers::type_is_array(type)) {
+                            result.array_element_type = get_array_element_type(property_data);
+                            if (!is_value_type(result.array_element_type)) {
+                                continue; // for now
+                            }
+
+                            size_t size = get_array_length(property_data);
+                            size_t element_size = get_type_size(result.array_element_type);
+
+                            for (size_t i = 0; i < size; i++) {
+                                void* boxed = get_array_element(property_data, i);
+                                const void* unboxed = unbox_object(boxed);
+
+                                result.array.emplace_back(unboxed, element_size);
+                            }
+
+                            result.property_type = script_property_type::array;
+                        }
+                    }
+
+                    std::string name = get_property_name(property);
+                    property_values.insert(std::make_pair(name, result));
+                }
+
+                guid id = e.get_guid();
+                entity_data.insert(std::make_pair(id, property_values));
+
+                garbage_collector::destroy_ref(sc.gc_handle);
+                sc.gc_handle = 0;
+                sc._class = nullptr;
             });
+
+            old_property_values.push_back(entity_data);
+        }
+
+        reinitialize_script_engine();
+
+        for (size_t scene_index = 0; scene_index < old_property_values.size(); scene_index++) {
+            auto _scene = current_scenes[scene_index];
+            const auto& entity_map = old_property_values[scene_index];
+
+            for (const auto& [entity_id, property_values] : entity_map) {
+                entity current_entity = _scene->find_guid(entity_id);
+                if (!current_entity) {
+                    continue;
+                }
+
+                auto& sc = current_entity.get_component<script_component>();
+                for (const auto& assembly : script_engine_data->assemblies) {
+                    if (assembly.image == nullptr) {
+                        continue;
+                    }
+
+                    void* _class = get_class(assembly.image, sc.class_name);
+                    if (_class != nullptr) {
+                        sc._class = _class;
+                        break;
+                    }
+                }
+
+                if (sc._class == nullptr) {
+                    spdlog::warn(
+                        "between reloads, script class {0} was deleted - deleting script data",
+                        sc.class_name);
+
+                    sc.class_name.clear();
+                    break;
+                }
+
+                sc.verify_script(current_entity);
+                void* script_object = garbage_collector::get_ref_data(sc.gc_handle);
+
+                for (const auto& [property_name, data] : property_values) {
+                    void* property = get_property(sc._class, property_name);
+                    if (property == nullptr) {
+                        spdlog::warn("between reloads, script property {0}.{1} was deleted - "
+                                     "deleting its data",
+                                     sc.class_name, property_name);
+
+                        continue;
+                    }
+
+                    switch (data.property_type) {
+                    case script_property_type::array: {
+                        auto mono_element_type = (MonoClass*)data.array_element_type;
+                        auto mono_array =
+                            mono_array_new(script_engine_data->script_domain, mono_element_type,
+                                           (uintptr_t)data.array.size());
+
+                        for (size_t i = 0; i < data.array.size(); i++) {
+                            const auto& value = data.array[i];
+                            void* addr = mono_array_addr_with_size(mono_array, (int)value.size(),
+                                                                   (uintptr_t)i);
+
+                            memcpy(addr, value.ptr(), value.size());
+                        }
+
+                        set_property_value(script_object, property, mono_array);
+                    } break;
+                    case script_property_type::entity_: {
+                        entity value = data.data.get<entity>();
+                        void* entity_object = script_helpers::create_entity_object(value);
+                        set_property_value(script_object, property, entity_object);
+                    } break;
+                    case script_property_type::list: {
+                        void* list = script_helpers::create_list_object(data.array_element_type);
+                        void* list_type = get_class_from_object(list);
+
+                        void* add_method = get_method(list_type, "Add");
+                        for (const auto& element : data.array) {
+                            call_method(list, add_method, (void*)element.ptr());
+                        }
+
+                        set_property_value(script_object, property, list);
+                    } break;
+                    case script_property_type::value:
+                        set_property_value(script_object, property, (void*)data.data.ptr());
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -324,7 +594,7 @@ namespace sge {
     void* script_engine::alloc_object(void* _class) {
         auto mono_class = (MonoClass*)_class;
 
-        void* object = mono_object_new(script_engine_data->root_domain, mono_class);
+        void* object = mono_object_new(script_engine_data->script_domain, mono_class);
         if (object == nullptr) {
             throw std::runtime_error("could not create object!");
         }
@@ -348,6 +618,35 @@ namespace sge {
     const void* script_engine::unbox_object(void* object) {
         auto mono_object = (MonoObject*)object;
         return mono_object_unbox(mono_object);
+    }
+
+    size_t script_engine::get_array_length(void* array) {
+        auto mono_array = (MonoArray*)array;
+        return (size_t)mono_array_length(mono_array);
+    }
+
+    void* script_engine::get_array_element_type(void* array) {
+        void* array_type = get_class_from_object(array);
+        auto mono_class = (MonoClass*)array_type;
+        return mono_class_get_element_class(mono_class);
+    }
+
+    void* script_engine::get_array_element(void* array, size_t index) {
+        void* array_type = get_class_from_object(array);
+        auto mono_class = (MonoClass*)array_type;
+
+        MonoClass* element_type = mono_class_get_element_class(mono_class);
+        bool value_type = mono_class_is_valuetype(element_type);
+
+        auto mono_array = (MonoArray*)array;
+        int32_t element_size = mono_array_element_size(mono_class);
+        void* ptr = mono_array_addr_with_size(mono_array, element_size, (uintptr_t)index);
+
+        if (value_type) {
+            return mono_value_box(script_engine_data->script_domain, element_type, ptr);
+        } else {
+            return *(void**)ptr;
+        }
     }
 
     void* script_engine::get_method(void* _class, const std::string& name) {
@@ -460,32 +759,7 @@ namespace sge {
 
     void script_engine::handle_exception(void* exception) {
         if (exception != nullptr) {
-            void* exc_class = get_class_from_object(exception);
-
-            class_name_t class_name;
-            get_class_name(exc_class, class_name);
-            std::string exception_name = get_string(class_name);
-
-            void* property = get_property(exc_class, "Message");
-            void* value = get_property_value(exception, property);
-            std::string message = from_managed_string(value);
-
-            property = get_property(exc_class, "Source");
-            value = get_property_value(exception, property);
-            std::string source = "none";
-            if (value != nullptr) {
-                source = from_managed_string(value);
-            }
-
-            property = get_property(exc_class, "StackTrace");
-            value = get_property_value(exception, property);
-            std::string stack_trace = "none";
-            if (value != nullptr) {
-                stack_trace = from_managed_string(value);
-            }
-
-            spdlog::error("{0} thrown: {1}\n\tsource: {2}\n\tstack trace: {3}", exception_name,
-                          message, source, stack_trace);
+            script_helpers::report_exception(exception);
         }
     }
 
@@ -588,7 +862,7 @@ namespace sge {
     }
 
     void* script_engine::to_managed_string(const std::string& native_string) {
-        return mono_string_new(script_engine_data->root_domain, native_string.c_str());
+        return mono_string_new(script_engine_data->script_domain, native_string.c_str());
     }
 
     std::string script_engine::from_managed_string(void* managed_string) {
@@ -599,7 +873,7 @@ namespace sge {
     void* script_engine::to_reflection_type(void* _class) {
         auto mono_class = (MonoClass*)_class;
         auto type = mono_class_get_type(mono_class);
-        return mono_type_get_object(script_engine_data->root_domain, type);
+        return mono_type_get_object(script_engine_data->script_domain, type);
     }
 
     void* script_engine::from_reflection_type(void* reflection_type) {
@@ -612,7 +886,8 @@ namespace sge {
         auto mono_property = (MonoProperty*)property;
         auto mono_class = mono_property_get_parent(mono_property);
 
-        return mono_property_get_object(script_engine_data->root_domain, mono_class, mono_property);
+        return mono_property_get_object(script_engine_data->script_domain, mono_class,
+                                        mono_property);
     }
 
     void* script_engine::get_property_value(void* object, void* property, void** arguments) {
@@ -637,7 +912,7 @@ namespace sge {
         auto mono_object = (MonoObject*)object;
         auto mono_field = (MonoClassField*)field;
 
-        return mono_field_get_value_object(script_engine_data->root_domain, mono_field,
+        return mono_field_get_value_object(script_engine_data->script_domain, mono_field,
                                            mono_object);
     }
 

@@ -46,7 +46,7 @@ add_subdirectory("tools")
 # mono DLL macro
 macro(copy_required_dlls TARGET_NAME)
     if(WIN32)
-        set(DLLS_TO_COPY "${CMAKE_SOURCE_DIR}/vendor/mono/bin/windows/coreclr.dll")
+        set(DLLS_TO_COPY "${CMAKE_SOURCE_DIR}/vendor/mono/bin/windows/mono-2.0-sgen.dll")
         if(SGE_USE_AFTERMATH)
             list(APPEND DLLS_TO_COPY ${Aftermath_DLLS})
         endif()
@@ -57,20 +57,6 @@ macro(copy_required_dlls TARGET_NAME)
         endforeach()
     endif()
 endmacro()
-
-# source group function
-macro(dir_source_groups_impl CURRENT_DIRECTORY BASE_DIRECTORY)
-    message(STATUS ${CURRENT_DIRECTORY})
-    get_directory_property(SUBDIRS DIRECTORY ${CURRENT_DIRECTORY} SUBDIRECTORIES)
-    foreach(SUBDIR ${SUBDIRS})
-        dir_source_groups_impl(${SUBDIR} ${BASE_DIRECTORY})
-    endforeach()
-
-endmacro()
-
-function(dir_source_groups DIRECTORY)
-    dir_source_groups_impl(${DIRECTORY} ${DIRECTORY})
-endfunction()
 
 # sge targets
 add_subdirectory("sge")
@@ -87,14 +73,19 @@ if(SGE_BUILD_SCRIPTCORE)
         include_external_msproject(scriptcore "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj")
         set_target_properties(scriptcore PROPERTIES FOLDER "core")
     else()
-        find_program(dotnet_EXECUTABLE NAMES dotnet
-                     PATHS "/usr/share" "/usr/local/share"
-                           "C:\\Program Files" "C:\\Program Files (x86)"
-                     PATH_SUFFIXES dotnet)
+        find_program(mono_EXECUTABLE NAMES mono
+                     PATHS "/usr/bin" "/usr/local/bin")
         
-        if(NOT ${dotnet_EXECUTABLE} STREQUAL "dotnet_EXECUTABLE-NOTFOUND")
+        find_file(MSBuild_ASSEMBLY MSBuild.dll
+                  PATHS "/usr/lib" "/usr/local/lib"
+                  "/Library/Frameworks/Mono.framework/Versions/Current/lib"
+                  PATH_SUFFIXES "mono/msbuild/Current/bin")
+        
+        if(NOT ${mono_EXECUTABLE} STREQUAL "mono_EXECUTABLE-NOTFOUND" AND
+           NOT ${MSBuild_ASSEMBLY} STREQUAL "MSBuild_ASSEMBLY-NOTFOUND")
             add_custom_target(scriptcore ALL
-                COMMAND ${dotnet_EXECUTABLE} build -nologo -v:m -c $<CONFIG>
+                COMMAND ${mono_EXECUTABLE} ${MSBuild_ASSEMBLY}
+                -noLogo -v:m -p:Configuration=$<CONFIG>
                 "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj"
                 COMMENT "Building SGE.Scriptcore.dll")
         else()

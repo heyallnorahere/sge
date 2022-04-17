@@ -22,6 +22,11 @@ namespace sge {
     static void* managed_helpers_class = nullptr;
     void script_helpers::init(void* helpers_class) { managed_helpers_class = helpers_class; }
 
+    void script_helpers::report_exception(void* exception) {
+        void* method = script_engine::get_method(managed_helpers_class, "ReportException");
+        script_engine::call_method(nullptr, method, exception);
+    }
+
     bool script_helpers::property_has_attribute(void* property, void* attribute_type) {
         void* reflection_property = script_engine::to_reflection_property(property);
         void* reflection_type = script_engine::to_reflection_type(attribute_type);
@@ -133,6 +138,24 @@ namespace sge {
         return script_engine::get_class(assembly, name);
     }
 
+    std::string script_helpers::get_type_name_safe(void* _class) {
+        void* method = script_engine::get_method(managed_helpers_class, "GetTypeNameSafe");
+        void* reflection_type = script_engine::to_reflection_type(_class);
+
+        void* returned = script_engine::call_method(nullptr, method, reflection_type);
+        return script_engine::from_managed_string(returned);
+    }
+
+    bool script_helpers::type_is_array(void* _class) {
+        void* type_class = get_core_type("System.Type");
+        void* property = script_engine::get_property(type_class, "IsArray");
+
+        void* reflection_type = script_engine::to_reflection_type(_class);
+        void* returned = script_engine::get_property_value(reflection_type, property);
+
+        return script_engine::unbox_object<bool>(returned);
+    }
+
     void* script_helpers::create_event_object(event& e) {
         void* method = script_engine::get_method(managed_helpers_class, "CreateEvent");
 
@@ -140,5 +163,12 @@ namespace sge {
         void* ptr = &e;
 
         return script_engine::call_method(nullptr, method, &ptr, &id);
+    }
+
+    void* script_helpers::create_list_object(void* element_type) {
+        void* method = script_engine::get_method(managed_helpers_class, "CreateListObject");
+        void* reflection_type = script_engine::to_reflection_type(element_type);
+
+        return script_engine::call_method(nullptr, method, reflection_type);
     }
 } // namespace sge

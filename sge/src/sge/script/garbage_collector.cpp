@@ -112,39 +112,4 @@ namespace sge {
             handles.push_back(handle);
         }
     }
-
-    bool garbage_collector::add_ref_ptr(uint32_t& ptr) {
-        if (get_ref_data(ptr) == nullptr) {
-            return false;
-        }
-
-        if (gc_data->ref_ptrs.find(ptr) == gc_data->ref_ptrs.end()) {
-            gc_data->ref_ptrs.insert(std::make_pair(ptr, std::vector<uint32_t*>()));
-        }
-
-        gc_data->ref_ptrs[ptr].push_back(&ptr);
-        return true;
-    }
-
-    void garbage_collector::remove_ref_ptr(uint32_t& ptr) {
-        if (gc_data->ref_ptrs.find(ptr) == gc_data->ref_ptrs.end()) {
-            return;
-        }
-
-        auto& ptrs = gc_data->ref_ptrs[ptr];
-        std::vector<uint32_t*>::iterator it;
-
-        while ((it = std::find(ptrs.begin(), ptrs.end(), &ptr)) != ptrs.end()) {
-            ptrs.erase(it);
-        }
-    }
-
-    void garbage_collector::get_ref_ptrs(uint32_t handle, std::vector<uint32_t*>& ptrs) {
-        if (gc_data->ref_ptrs.find(handle) == gc_data->ref_ptrs.end()) {
-            ptrs.clear();
-            return;
-        }
-
-        ptrs = gc_data->ref_ptrs[handle];
-    }
 } // namespace sge

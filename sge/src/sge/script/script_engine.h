@@ -48,7 +48,10 @@ namespace sge {
 
         static void init();
         static void shutdown();
+        static void register_internal_script_calls();
         static void register_internal_call(const std::string& name, const void* callback);
+
+        static bool compile_app_assembly();
 
         static std::optional<size_t> load_assembly(const fs::path& path);
         static bool unload_assembly(size_t index);
@@ -84,6 +87,10 @@ namespace sge {
             const void* ptr = unbox_object(object);
             return *(const T*)ptr;
         }
+
+        static size_t get_array_length(void* array);
+        static void* get_array_element_type(void* array);
+        static void* get_array_element(void* array, size_t index);
 
         static void* get_method(void* _class, const std::string& name);
         static std::string get_method_name(void* method);
@@ -147,8 +154,5 @@ namespace sge {
 
         static void* get_field_value(void* object, void* field);
         static void set_field_value(void* object, void* field, void* value);
-
-    private:
-        static void register_internal_script_calls();
     };
 } // namespace sge

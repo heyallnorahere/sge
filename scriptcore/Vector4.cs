@@ -80,37 +80,35 @@ namespace SGE
 
         public float X, Y, Z, W;
 
-        public Vector2 XY => (X, Y);
-        public Vector2 YZ => (Y, Z);
-        public Vector2 ZW => (Z, W);
-        public Vector2 XZ => (X, Z);
-        public Vector2 XW => (X, W);
-        public Vector2 YW => (Y, W);
+        public Vector2 XY => new Vector2(X, Y);
+        public Vector2 YZ => new Vector2(Y, Z);
+        public Vector2 ZW => new Vector2(Z, W);
+        public Vector2 XZ => new Vector2(X, Z);
+        public Vector2 XW => new Vector2(X, W);
+        public Vector2 YW => new Vector2(Y, W);
 
         public float Length
         {
             get
             {
-                float x2 = MathF.Pow(X, 2);
-                float y2 = MathF.Pow(Y, 2);
-                float z2 = MathF.Pow(Z, 2);
-                float w2 = MathF.Pow(W, 2);
-                return MathF.Sqrt(x2 + y2 + z2 + w2);
+                double x2 = Math.Pow(X, 2);
+                double y2 = Math.Pow(Y, 2);
+                double z2 = Math.Pow(Z, 2);
+                double w2 = Math.Pow(W, 2);
+                return (float)Math.Sqrt(x2 + y2 + z2 + w2);
             }
         }
 
         public Vector4 Normalized => this / Length;
 
-        public static Vector4 operator +(Vector4 lhs, Vector4 rhs) => (lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z, lhs.W + rhs.W);
+        public static Vector4 operator +(Vector4 lhs, Vector4 rhs) => new Vector4(lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z, lhs.W + rhs.W);
         public static Vector4 operator +(Vector4 lhs, float rhs) => lhs + new Vector4(rhs);
-        public static Vector4 operator -(Vector4 vector) => (-vector.X, -vector.Y, -vector.Z, -vector.W);
+        public static Vector4 operator -(Vector4 vector) => new Vector4(-vector.X, -vector.Y, -vector.Z, -vector.W);
         public static Vector4 operator -(Vector4 lhs, Vector4 rhs) => lhs + -rhs;
         public static Vector4 operator -(Vector4 lhs, float rhs) => lhs + -rhs;
-        public static Vector4 operator *(Vector4 lhs, Vector4 rhs) => (lhs.X * rhs.X, lhs.Y * rhs.Y, lhs.Z * rhs.Z, lhs.W * rhs.W);
+        public static Vector4 operator *(Vector4 lhs, Vector4 rhs) => new Vector4(lhs.X * rhs.X, lhs.Y * rhs.Y, lhs.Z * rhs.Z, lhs.W * rhs.W);
         public static Vector4 operator *(Vector4 lhs, float rhs) => lhs * new Vector4(rhs);
-        public static Vector4 operator /(Vector4 lhs, Vector4 rhs) => (lhs.X / rhs.X, lhs.Y / rhs.Y, lhs.Z / rhs.Z, lhs.W / rhs.W);
+        public static Vector4 operator /(Vector4 lhs, Vector4 rhs) => new Vector4(lhs.X / rhs.X, lhs.Y / rhs.Y, lhs.Z / rhs.Z, lhs.W / rhs.W);
         public static Vector4 operator /(Vector4 lhs, float rhs) => lhs / new Vector4(rhs);
-
-        public static implicit operator Vector4((float x, float y, float z, float w) tuple) => new Vector4(tuple.x, tuple.y, tuple.z, tuple.w);
     }
 }
