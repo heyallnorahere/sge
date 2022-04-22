@@ -48,7 +48,7 @@ namespace sge {
 
     static void script_engine_init_internal() {
         char domain_name[16];
-        strcpy_s(domain_name, "SGE-Runtime");
+        strcpy(domain_name, "SGE-Runtime");
 
         script_engine_data->script_domain = mono_domain_create_appdomain(domain_name, nullptr);
         garbage_collector::init();
