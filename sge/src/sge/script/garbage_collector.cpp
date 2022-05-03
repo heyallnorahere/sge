@@ -22,12 +22,13 @@ namespace sge {
     struct gc_data_t {
         std::unordered_map<uint32_t, void*> strong_map, weak_map;
     };
-    static std::unique_ptr<gc_data_t> gc_data;
 
+    static std::unique_ptr<gc_data_t> gc_data;
     void garbage_collector::init() {
         if (gc_data) {
             throw std::runtime_error("the garbage collector has already been initialized!");
         }
+
         gc_data = std::make_unique<gc_data_t>();
     }
 

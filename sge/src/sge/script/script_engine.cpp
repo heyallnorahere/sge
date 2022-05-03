@@ -186,7 +186,7 @@ namespace sge {
             auto& data = script_engine_data->assemblies[index];
 
             if (data.assembly != nullptr) {
-                mono_assembly_close(data.assembly);
+                //mono_assembly_close(data.assembly);
 
                 data.assembly = nullptr;
                 data.image = nullptr;
@@ -214,6 +214,7 @@ namespace sge {
         script_engine_data->assemblies.resize(additional_assemblies.size() + 1);
         for (size_t i = 0; i < additional_assemblies.size(); i++) {
             const auto& path = additional_assemblies[i];
+            
             if (!path.empty()) {
                 assembly_t data;
 
