@@ -21,7 +21,6 @@
 namespace sge {
     struct gc_data_t {
         std::unordered_map<uint32_t, void*> strong_map, weak_map;
-        std::unordered_map<uint32_t, std::vector<uint32_t*>> ref_ptrs;
     };
     static std::unique_ptr<gc_data_t> gc_data;
 
@@ -45,6 +44,7 @@ namespace sge {
             }
         }
 
+        collect(true);
         gc_data.reset();
     }
 
@@ -83,14 +83,6 @@ namespace sge {
 
         gc_data->strong_map.erase(gc_handle);
         mono_gchandle_free(gc_handle);
-
-        if (gc_data->ref_ptrs.find(gc_handle) != gc_data->ref_ptrs.end()) {
-            for (uint32_t* ptr : gc_data->ref_ptrs[gc_handle]) {
-                *ptr = 0;
-            }
-
-            gc_data->ref_ptrs.erase(gc_handle);
-        }
     }
 
     void* garbage_collector::get_ref_data(uint32_t gc_handle) {

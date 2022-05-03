@@ -95,6 +95,17 @@ add_custom_command(OUTPUT ${TYPE_FACE_DIRECTORY_FILE}
     COMMENT "Generating embedded SGE type face directory"
     DEPENDS "${CMAKE_SOURCE_DIR}/assets/fonts/" embed_type_faces)
 
+if(SGE_BUILD_SCRIPTCORE)
+    set(SGE_MSBUILD_ARGS "")
+    foreach(ARGUMENT ${MSBUILD_ARGS})
+        set(SGE_MSBUILD_ARGS "${SGE_MSBUILD_ARGS}${ARGUMENT} ")
+    endforeach()
+
+    list(APPEND SGE_DEFINES SGE_BUILD_SCRIPT_ASSEMBLY
+        SGE_MSBUILD_EXE="${MSBUILD_EXE}"
+        SGE_MSBUILD_ARGS="${SGE_MSBUILD_ARGS}")
+endif()
+
 # add target
 set(SGE_MANIFEST ${SGE_SOURCE} ${SGE_SHADERS} ${TYPE_FACE_DIRECTORY_FILE} ${SGE_CONFIG})
 add_library(sge STATIC ${SGE_MANIFEST})

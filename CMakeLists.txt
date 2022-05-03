@@ -58,6 +58,10 @@ macro(copy_required_dlls TARGET_NAME)
     endif()
 endmacro()
 
+if(SGE_BUILD_SCRIPTCORE)
+    find_package(MSBuild REQUIRED)
+endif()
+
 # sge targets
 add_subdirectory("sge")
 add_subdirectory("sgm")
@@ -73,24 +77,11 @@ if(SGE_BUILD_SCRIPTCORE)
         include_external_msproject(scriptcore "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj")
         set_target_properties(scriptcore PROPERTIES FOLDER "core")
     else()
-        find_program(mono_EXECUTABLE NAMES mono
-                     PATHS "/usr/bin" "/usr/local/bin")
-        
-        find_file(MSBuild_ASSEMBLY MSBuild.dll
-                  PATHS "/usr/lib" "/usr/local/lib"
-                  "/Library/Frameworks/Mono.framework/Versions/Current/lib"
-                  PATH_SUFFIXES "mono/msbuild/Current/bin")
-        
-        if(NOT ${mono_EXECUTABLE} STREQUAL "mono_EXECUTABLE-NOTFOUND" AND
-           NOT ${MSBuild_ASSEMBLY} STREQUAL "MSBuild_ASSEMBLY-NOTFOUND")
-            add_custom_target(scriptcore ALL
-                COMMAND ${mono_EXECUTABLE} ${MSBuild_ASSEMBLY}
-                -noLogo -v:m -p:Configuration=$<CONFIG>
-                "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj"
-                COMMENT "Building SGE.Scriptcore.dll")
-        else()
-            message(STATUS "Could not find the .NET Core executable - skipping build target")
-        endif()
+        add_custom_target(scriptcore ALL
+            COMMAND ${MSBUILD_ARGS}
+            -noLogo -v:m -p:Configuration=$<CONFIG>
+            "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj"
+            COMMENT "Building SGE.Scriptcore.dll")
     endif()
 
     if(TARGET scriptcore)

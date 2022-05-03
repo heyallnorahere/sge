@@ -48,8 +48,10 @@ namespace sge {
 
         static void init();
         static void shutdown();
-        static void register_internal_script_calls();
         static void register_internal_call(const std::string& name, const void* callback);
+
+        static void register_internal_script_calls();
+        static void register_component_types();
 
         static bool compile_app_assembly();
 

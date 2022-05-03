@@ -44,12 +44,10 @@ namespace sge {
         callbacks.has = [](entity e) { return e.has_all<T>(); };
         callbacks.get = [](entity e) { return &e.get_component<T>(); };
 
-        auto reflection_type = script_engine::to_reflection_type(_class);
-        internal_script_call_data.component_callbacks.insert(
-            std::make_pair(reflection_type, callbacks));
+        internal_script_call_data.component_callbacks.insert(std::make_pair(_class, callbacks));
     }
 
-    static void register_component_types() {
+    void script_engine::register_component_types() {
         register_component_type<tag_component>("TagComponent");
         register_component_type<transform_component>("TransformComponent");
         register_component_type<sprite_renderer_component>("SpriteRendererComponent");
@@ -59,9 +57,9 @@ namespace sge {
     }
 
     static void verify_component_type_validity(void* reflection_type) {
-        if (internal_script_call_data.component_callbacks.find(reflection_type) ==
+        void* _class = script_engine::from_reflection_type(reflection_type);
+        if (internal_script_call_data.component_callbacks.find(_class) ==
             internal_script_call_data.component_callbacks.end()) {
-            void* _class = script_engine::from_reflection_type(reflection_type);
 
             class_name_t name_data;
             script_engine::get_class_name(_class, name_data);
@@ -69,6 +67,11 @@ namespace sge {
             throw std::runtime_error("managed type " + script_engine::get_string(name_data) +
                                      " is not registered as a component type!");
         }
+    }
+
+    static const component_callbacks_t& get_component_callbacks(void* component_type) {
+        void* _class = script_engine::from_reflection_type(component_type);
+        return internal_script_call_data.component_callbacks[_class];
     }
 
     namespace internal_script_calls {
@@ -115,7 +118,7 @@ namespace sge {
             verify_component_type_validity(componentType);
             entity e = script_helpers::get_entity_from_object(_entity);
 
-            const auto& callbacks = internal_script_call_data.component_callbacks[componentType];
+            const auto& callbacks = get_component_callbacks(componentType);
             return callbacks.has(e);
         }
 
@@ -123,7 +126,7 @@ namespace sge {
             verify_component_type_validity(componentType);
             entity e = script_helpers::get_entity_from_object(_entity);
 
-            const auto& callbacks = internal_script_call_data.component_callbacks[componentType];
+            const auto& callbacks = get_component_callbacks(componentType);
             return callbacks.get(e);
         }
 

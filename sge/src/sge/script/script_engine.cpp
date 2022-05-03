@@ -22,6 +22,7 @@
 #include "sge/script/script_helpers.h"
 #include "sge/script/value_wrapper.h"
 #include "sge/scene/components.h"
+#include "sge/core/environment.h"
 
 namespace sge {
     struct assembly_t {
@@ -37,15 +38,6 @@ namespace sge {
     };
 
     static std::unique_ptr<script_engine_data_t> script_engine_data;
-
-#ifdef SGE_PLATFORM_WINDOWS
-#define NATIVE_DOTNET_DIRNAME "windows"
-#define DOTNET_LIST_SEPARATOR ';'
-#else
-#define NATIVE_DOTNET_DIRNAME "unix"
-#define DOTNET_LIST_SEPARATOR ':'
-#endif
-
     static void script_engine_init_internal() {
         char domain_name[16];
         strcpy(domain_name, "SGE-Runtime");
@@ -53,13 +45,15 @@ namespace sge {
         script_engine_data->script_domain = mono_domain_create_appdomain(domain_name, nullptr);
         garbage_collector::init();
 
-        script_engine::load_assembly(fs::current_path() / "assets" / "assemblies" /
-                                     "SGE.Scriptcore.dll");
-        script_engine::register_internal_script_calls();
+        if (script_engine_data->assemblies.empty()) {
+            script_engine::load_assembly(fs::current_path() / "assets" / "assemblies" /
+                                         "SGE.Scriptcore.dll");
+            script_engine::register_internal_script_calls();
 
-        void* helpers_class =
-            script_engine::get_class(script_engine_data->assemblies[0].image, "SGE.Helpers");
-        script_helpers::init(helpers_class);
+            void* helpers_class =
+                script_engine::get_class(script_engine_data->assemblies[0].image, "SGE.Helpers");
+            script_helpers::init(helpers_class);
+        }
     }
 
     void script_engine::init() {
@@ -77,8 +71,8 @@ namespace sge {
     }
 
     static void script_engine_shutdown_internal() {
-        mono_domain_free(script_engine_data->script_domain, true);
         garbage_collector::shutdown();
+        mono_domain_unload(script_engine_data->script_domain);
     }
 
     void script_engine::shutdown() {
@@ -97,64 +91,24 @@ namespace sge {
 
     static bool load_assembly_raw(const fs::path& path, assembly_t& assembly);
     bool script_engine::compile_app_assembly() {
+#ifdef SGE_BUILD_SCRIPT_ASSEMBLY
         auto& _project = project::get();
         fs::path project_path = _project.get_script_project_path();
+        if (!fs::exists(project_path)) {
+            return false;
+        }
 
-        static fs::path msbuild_path;
-        if (msbuild_path.empty()) {
-#ifdef SGE_PLATFORM_WINDOWS
-            std::string msbuild_platform = "vs";
-            std::string ext = "exe";
-#else
-            std::string msbuild_platform = "mono";
-            std::string ext = "dll";
+        std::stringstream args;
+        args << SGE_MSBUILD_ARGS << "-r -nologo -p:Configuration=" << project::get_config() << " "
+             << std::quoted(project_path.string());
+
+        process_info p_info;
+        p_info.executable = SGE_MSBUILD_EXE;
+        p_info.cmdline = args.str();
+
+        environment::run_command(p_info);
 #endif
-
-            msbuild_path = fs::current_path() / "assets" / "mono" / "msbuild" / msbuild_platform /
-                           ("MSBuild." + ext);
-        }
-        
-        if (!fs::exists(msbuild_path)) {
-            spdlog::warn("msbuild ({0}) not found!", msbuild_path.string());
-            return false;
-        }
-
-        assembly_t msbuild;
-        if (!load_assembly_raw(msbuild_path, msbuild)) {
-            spdlog::warn("could not load msbuild! ({0})", msbuild_path.string());
-            return false;
-        }
-
-        class_name_t entrypoint_name;
-        entrypoint_name.namespace_name = "Microsoft.Build.CommandLine";
-        entrypoint_name.class_name = "MSBuildApp";
-
-        void* _class = get_class(msbuild.image, entrypoint_name);
-        if (_class == nullptr) {
-            spdlog::warn("could not find {0}.{1} in the msbuild assembly!",
-                         entrypoint_name.namespace_name, entrypoint_name.class_name);
-
-            mono_assembly_close(msbuild.assembly);
-            return false;
-        }
-
-        void* entrypoint = get_method(_class, "Main");
-        if (entrypoint == nullptr) {
-            spdlog::warn("could not find the entrypoint in the msbuild assembly!");
-
-            mono_assembly_close(msbuild.assembly);
-            return false;
-        }
-
-        void* result = call_method(nullptr, entrypoint);
-        int32_t return_code = 1;
-
-        if (result != nullptr) {
-            return_code = unbox_object<int32_t>(result);
-        }
-
-        mono_assembly_close(msbuild.assembly);
-        return return_code == 0;
+        return true;
     }
 
     static std::optional<size_t> find_viable_assembly_index() {
@@ -197,7 +151,8 @@ namespace sge {
     std::optional<size_t> script_engine::load_assembly(const fs::path& path) {
         std::string string_path = path.string();
         for (size_t i = 0; i < script_engine_data->assemblies.size(); i++) {
-            if (script_engine_data->assemblies[i].path == path) {
+            if (script_engine_data->assemblies[i].path == path &&
+                script_engine_data->assemblies[i].assembly != nullptr) {
                 spdlog::warn("attempted to load {0} more than once", string_path);
                 return i;
             }
@@ -246,9 +201,11 @@ namespace sge {
 
     static void reinitialize_script_engine() {
         std::vector<fs::path> additional_assemblies;
-        for (size_t i = 0; i < script_engine_data->assemblies.size(); i++) {
+        for (size_t i = 1; i < script_engine_data->assemblies.size(); i++) {
             const auto& assembly = script_engine_data->assemblies[i];
             additional_assemblies.push_back(assembly.path);
+
+            script_engine::unload_assembly(i);
         }
 
         script_engine_shutdown_internal();
@@ -265,6 +222,9 @@ namespace sge {
                 }
             }
         }
+
+        // what with reloading assemblies
+        script_engine::register_component_types();
     }
 
     enum class script_property_type { value, entity_, array, list };
@@ -460,7 +420,9 @@ namespace sge {
                         set_property_value(script_object, property, mono_array);
                     } break;
                     case script_property_type::entity_: {
-                        entity value = data.data.get<entity>();
+                        guid id = data.data.get<guid>();
+                        entity value = _scene->find_guid(id);
+
                         void* entity_object = script_helpers::create_entity_object(value);
                         set_property_value(script_object, property, entity_object);
                     } break;
