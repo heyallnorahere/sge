@@ -17,6 +17,17 @@
 #include "include.h"
 #include "utils.h"
 
+static bool write(const fs::path& path, const std::string& content) {
+    std::string existing_content;
+    if (read_file(path, &existing_content, nullptr)) {
+        if (content == existing_content) {
+            return true;
+        }
+    }
+
+    return write_file(path, content);
+}
+
 int32_t main(int32_t argc, const char** argv) {
     if (argc < 3) {
         std::cerr << "please provide at least 2 arguments!" << std::endl;
@@ -75,13 +86,13 @@ int32_t main(int32_t argc, const char** argv) {
         output_source << "\t{ " << std::quoted(embedded_path) << ", " << embedding << " },\n";
     }
 
-    output_source << "};";
+    output_source << "};\n";
     std::string file_data = output_source.str();
 
     std::string output_path_string = output.string();
     std::cout << "writing data to source file " << output_path_string << "..." << std::endl;
 
-    if (!write_file(output, file_data)) {
+    if (!write(output, file_data)) {
         std::cerr << "could not write to file: " << output_path_string << std::endl;
         return EXIT_FAILURE;
     }
