@@ -88,7 +88,7 @@ namespace sge {
 
     void* garbage_collector::get_ref_data(uint32_t gc_handle) {
         MonoObject* object = mono_gchandle_get_target(gc_handle);
-        if (mono_object_get_vtable(object) == nullptr) {
+        if (object != nullptr && mono_object_get_vtable(object) == nullptr) {
             return nullptr;
         }
 

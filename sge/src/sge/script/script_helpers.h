@@ -35,6 +35,7 @@ namespace sge {
         static void* get_core_type(const std::string& name, bool scriptcore = false);
 
         static std::string get_type_name_safe(void* _class);
+        static size_t get_type_size(void* _class);
         static bool type_is_array(void* _class);
         
         static void* create_event_object(event& e);

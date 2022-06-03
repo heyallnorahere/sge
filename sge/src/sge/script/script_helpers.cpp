@@ -146,6 +146,14 @@ namespace sge {
         return script_engine::from_managed_string(returned);
     }
 
+    size_t script_helpers::get_type_size(void* _class) {
+        void* method = script_engine::get_method(managed_helpers_class, "GetTypeSize");
+        void* reflection_type = script_engine::to_reflection_type(_class);
+
+        void* returned = script_engine::call_method(nullptr, method, reflection_type);
+        return (size_t)script_engine::unbox_object<int32_t>(returned);
+    }
+
     bool script_helpers::type_is_array(void* _class) {
         void* type_class = get_core_type("System.Type");
         void* property = script_engine::get_property(type_class, "IsArray");

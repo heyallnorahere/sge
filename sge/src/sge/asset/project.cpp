@@ -137,26 +137,33 @@ namespace sge {
 
     void project::reload_assembly(const std::vector<ref<scene>>& active_scenes) {
         auto& instance = get();
+        auto compile = [&]() {
+            bool load = true;
+            if (project_data->editor) {
+                load = script_engine::compile_app_assembly();
+            }
 
-        bool load = true;
-        if (project_data->editor) {
-            load = script_engine::compile_app_assembly();
-        }
+            if (!load) {
+                instance.m_assembly_index.reset();
+                return false;
+            }
 
-        if (!load) {
-            instance.m_assembly_index.reset();
-            return;
-        }
+            return true;
+        };
 
         fs::path current_path = instance.get_assembly_path();
         if (instance.m_assembly_index.has_value()) {
             try {
-                script_engine::reload_assemblies(active_scenes);
+                script_engine::reload_assemblies(active_scenes, compile);
             } catch (const std::runtime_error& exc) {
                 spdlog::warn("failed to reload assemblies: {0}", exc.what());
                 instance.m_assembly_index.reset();
             }
         } else {
+            if (!compile()) {
+                return;
+            }
+
             instance.m_assembly_index = script_engine::load_assembly(current_path);
         }
     }

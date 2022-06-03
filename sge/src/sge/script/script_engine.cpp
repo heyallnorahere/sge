@@ -43,6 +43,7 @@ namespace sge {
         strcpy(domain_name, "SGE-Runtime");
 
         script_engine_data->script_domain = mono_domain_create_appdomain(domain_name, nullptr);
+        mono_domain_set(script_engine_data->script_domain, false);
         garbage_collector::init();
 
         if (script_engine_data->assemblies.empty()) {
@@ -72,6 +73,8 @@ namespace sge {
 
     static void script_engine_shutdown_internal() {
         garbage_collector::shutdown();
+
+        mono_domain_set(script_engine_data->root_domain, false);
         mono_domain_unload(script_engine_data->script_domain);
     }
 
@@ -177,49 +180,58 @@ namespace sge {
         return assembly_index;
     }
 
+    static bool unload_assembly_raw(size_t index) {
+        if (index >= script_engine_data->assemblies.size()) {
+            return false;
+        }
+
+        auto& data = script_engine_data->assemblies[index];
+        if (data.assembly == nullptr) {
+            return false;
+        }
+
+        data.assembly = nullptr;
+        data.image = nullptr;
+
+        return true;
+    }
+
     bool script_engine::unload_assembly(size_t index) {
         if (index == 0) {
             throw std::runtime_error("index 0 is reserved!");
         }
 
-        if (index < script_engine_data->assemblies.size()) {
-            auto& data = script_engine_data->assemblies[index];
+        bool succeeded = unload_assembly_raw(index);
+        if (succeeded) {
+            script_engine_data->assemblies[index].path.clear();
+        }
 
-            if (data.assembly != nullptr) {
-                //mono_assembly_close(data.assembly);
+        return succeeded;
+    }
 
-                data.assembly = nullptr;
-                data.image = nullptr;
-                data.path.clear();
-
-                return true;
+    static void reinitialize_script_engine(const std::optional<std::function<bool()>>& pre_reload) {
+        for (size_t i = 0; i < script_engine_data->assemblies.size(); i++) {
+            if (!unload_assembly_raw(i)) {
+                throw std::runtime_error("Failed to unload assembly " + std::to_string(i) + "!");
             }
         }
 
-        return false;
-    }
-
-    static void reinitialize_script_engine() {
-        std::vector<fs::path> additional_assemblies;
-        for (size_t i = 1; i < script_engine_data->assemblies.size(); i++) {
-            const auto& assembly = script_engine_data->assemblies[i];
-            additional_assemblies.push_back(assembly.path);
-
-            script_engine::unload_assembly(i);
+        script_engine_shutdown_internal();
+        if (pre_reload.has_value() && !pre_reload.value()()) {
+            throw std::runtime_error("Pre-reload callback failed!");
         }
 
-        script_engine_shutdown_internal();
         script_engine_init_internal();
+        for (auto& assembly : script_engine_data->assemblies) {
+            const auto& path = assembly.path;
 
-        script_engine_data->assemblies.resize(additional_assemblies.size() + 1);
-        for (size_t i = 0; i < additional_assemblies.size(); i++) {
-            const auto& path = additional_assemblies[i];
-            
             if (!path.empty()) {
                 assembly_t data;
 
                 if (load_assembly_raw(path, data)) {
-                    script_engine_data->assemblies[i + 1] = data;
+                    assembly = data;
+                } else {
+                    throw std::runtime_error("Failed to reload assembly!");
                 }
             }
         }
@@ -239,7 +251,8 @@ namespace sge {
     };
 
     // based on Hazel::ScriptEngine::ReloadAssembly, Hazel-dev branch dotnet6
-    void script_engine::reload_assemblies(const std::vector<ref<scene>>& current_scenes) {
+    void script_engine::reload_assemblies(const std::vector<ref<scene>>& current_scenes,
+                                          const std::optional<std::function<bool()>>& pre_reload) {
         std::vector<
             std::unordered_map<guid, std::unordered_map<std::string, script_property_data_t>>>
             old_property_values;
@@ -272,7 +285,7 @@ namespace sge {
 
                     void* property_data = get_property_value(instance, property);
                     if (is_value_type(type)) {
-                        size_t size = get_type_size(type);
+                        size_t size = script_helpers::get_type_size(type);
 
                         const void* unboxed = unbox_object(property_data);
                         result.data = value_wrapper(unboxed, size);
@@ -306,7 +319,8 @@ namespace sge {
                                 continue;
                             }
 
-                            size_t item_size = get_type_size(result.array_element_type);
+                            size_t item_size =
+                                script_helpers::get_type_size(result.array_element_type);
                             for (int32_t i = 0; i < count; i++) {
                                 void* item = get_property_value(property_data, item_property, &i);
                                 const void* unboxed_data = unbox_object(item);
@@ -328,7 +342,8 @@ namespace sge {
                             }
 
                             size_t size = get_array_length(property_data);
-                            size_t element_size = get_type_size(result.array_element_type);
+                            size_t element_size =
+                                script_helpers::get_type_size(result.array_element_type);
 
                             for (size_t i = 0; i < size; i++) {
                                 void* boxed = get_array_element(property_data, i);
@@ -356,8 +371,7 @@ namespace sge {
             old_property_values.push_back(entity_data);
         }
 
-        reinitialize_script_engine();
-
+        reinitialize_script_engine(pre_reload);
         for (size_t scene_index = 0; scene_index < old_property_values.size(); scene_index++) {
             auto _scene = current_scenes[scene_index];
             const auto& entity_map = old_property_values[scene_index];
@@ -386,8 +400,18 @@ namespace sge {
                         "between reloads, script class {0} was deleted - deleting script data",
                         sc.class_name);
 
+                    std::vector<void*> classes;
+                    iterate_classes(script_engine_data->assemblies[1].image, classes);
+
+                    spdlog::info("classes in the user script assembly:");
+                    for (void* _class : classes) {
+                        class_name_t name;
+                        get_class_name(_class, name);
+                        spdlog::info("\t{0}", get_string(name));
+                    }
+
                     sc.class_name.clear();
-                    break;
+                    continue;
                 }
 
                 sc.verify_script(current_entity);
@@ -547,11 +571,6 @@ namespace sge {
     bool script_engine::is_value_type(void* _class) {
         auto mono_class = (MonoClass*)_class;
         return mono_class_is_valuetype(mono_class);
-    }
-
-    size_t script_engine::get_type_size(void* _class) {
-        auto mono_class = (MonoClass*)_class;
-        return (size_t)mono_class_data_size(mono_class);
     }
 
     void* script_engine::alloc_object(void* _class) {

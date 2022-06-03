@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace SGE
 {
@@ -72,6 +73,7 @@ namespace SGE
         }
 
         internal static string GetTypeNameSafe(Type type) => type.FullName ?? type.Name;
+        internal static int GetTypeSize(Type type) => Marshal.SizeOf(type);
 
         internal static Event CreateEvent(IntPtr address, EventID id)
         {

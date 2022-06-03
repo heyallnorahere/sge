@@ -57,7 +57,8 @@ namespace sge {
 
         static std::optional<size_t> load_assembly(const fs::path& path);
         static bool unload_assembly(size_t index);
-        static void reload_assemblies(const std::vector<ref<scene>>& current_scenes);
+        static void reload_assemblies(const std::vector<ref<scene>>& current_scenes,
+                                      const std::optional<std::function<bool()>>& pre_reload = {});
 
         static size_t get_assembly_count();
         static fs::path get_assembly_path(size_t index);
@@ -77,7 +78,6 @@ namespace sge {
         static void* get_base_class(void* derived);
 
         static bool is_value_type(void* _class);
-        static size_t get_type_size(void* _class);
 
         static void* alloc_object(void* _class);
         static void* clone_object(void* original);
