@@ -90,14 +90,15 @@ namespace sgm {
 
     editor_panel::editor_panel(const std::function<void(const std::string&)>& popup_callback) {
         m_popup_callback = popup_callback;
-        m_script_controls = {
-            { script_helpers::get_core_type("System.Int32"), edit_int },
-            { script_helpers::get_core_type("System.Single"), edit_float },
-            { script_helpers::get_core_type("System.Boolean"), edit_bool },
-            { script_helpers::get_core_type("System.String"), edit_string },
-            { script_helpers::get_core_type("SGE.Entity", true), edit_entity_field },
-        };
+        populate_script_controls();
+
+        m_callback_index = script_engine::add_on_reload_callback([this]() mutable {
+            clear_section_header_cache();
+            populate_script_controls();
+        });
     }
+
+    editor_panel::~editor_panel() { script_engine::remove_on_reload_callback(m_callback_index); }
 
     template <typename T, typename Func>
     static void draw_component(const std::string& name, entity e, const Func& callback) {
@@ -485,6 +486,16 @@ namespace sgm {
         }
 
         m_popup_manager = &popup_manager_;
+    }
+
+    void editor_panel::populate_script_controls() {
+        m_script_controls = {
+            { script_helpers::get_core_type("System.Int32"), edit_int },
+            { script_helpers::get_core_type("System.Single"), edit_float },
+            { script_helpers::get_core_type("System.Boolean"), edit_bool },
+            { script_helpers::get_core_type("System.String"), edit_string },
+            { script_helpers::get_core_type("SGE.Entity", true), edit_entity_field },
+        };
     }
 
     void editor_panel::cache_script_class(void* _class) {

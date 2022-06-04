@@ -60,6 +60,9 @@ namespace sge {
         static void reload_assemblies(const std::vector<ref<scene>>& current_scenes,
                                       const std::optional<std::function<bool()>>& pre_reload = {});
 
+        static size_t add_on_reload_callback(const std::function<void()>& callback);
+        static bool remove_on_reload_callback(size_t index);
+
         static size_t get_assembly_count();
         static fs::path get_assembly_path(size_t index);
         static std::string get_assembly_name(void* assembly);

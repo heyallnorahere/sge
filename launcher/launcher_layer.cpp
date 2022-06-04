@@ -366,7 +366,7 @@ namespace sgm::launcher {
         try {
             file >> data;
             file.close();
-        } catch (const std::exception& exc) {
+        } catch (const std::exception&) {
             spdlog::error("invalid json file: {0}", path.string());
             file.close();
             return std::optional<std::string>();

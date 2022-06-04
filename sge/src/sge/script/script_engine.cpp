@@ -35,6 +35,9 @@ namespace sge {
         MonoDomain* root_domain = nullptr;
         MonoDomain* script_domain = nullptr;
         std::vector<assembly_t> assemblies;
+
+        bool reload_callbacks_locked = false;
+        std::vector<std::optional<std::function<void()>>> reload_callbacks;
     };
 
     static std::unique_ptr<script_engine_data_t> script_engine_data;
@@ -473,6 +476,52 @@ namespace sge {
                 }
             }
         }
+
+        script_engine_data->reload_callbacks_locked = true;
+        for (const auto& callback : script_engine_data->reload_callbacks) {
+            if (callback.has_value()) {
+                callback.value()();
+            }
+        }
+
+        script_engine_data->reload_callbacks_locked = false;
+    }
+
+    size_t script_engine::add_on_reload_callback(const std::function<void()>& callback) {
+        if (script_engine_data->reload_callbacks_locked) {
+            throw std::runtime_error("reload callbacks have been locked!");
+        }
+
+        for (size_t i = 0; i < script_engine_data->reload_callbacks.size(); i++) {
+            auto& element = script_engine_data->reload_callbacks[i];
+
+            if (!element.has_value()) {
+                element = callback;
+                return i;
+            }
+        }
+
+        size_t index = script_engine_data->reload_callbacks.size();
+        script_engine_data->reload_callbacks.emplace_back(callback);
+        return index;
+    }
+
+    bool script_engine::remove_on_reload_callback(size_t index) {
+        if (script_engine_data->reload_callbacks_locked) {
+            throw std::runtime_error("reload callbacks have been locked!");
+        }
+
+        if (index >= script_engine_data->reload_callbacks.size()) {
+            return false;
+        }
+
+        auto& callback = script_engine_data->reload_callbacks[index];
+        if (!callback.has_value()) {
+            return false;
+        }
+
+        callback.reset();
+        return true;
     }
 
     size_t script_engine::get_assembly_count() { return script_engine_data->assemblies.size(); }
