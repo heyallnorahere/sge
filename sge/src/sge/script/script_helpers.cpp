@@ -20,7 +20,7 @@
 #include "sge/script/garbage_collector.h"
 namespace sge {
     static void* managed_helpers_class = nullptr;
-    void script_helpers::init(void* helpers_class) { managed_helpers_class = helpers_class; }
+    void script_helpers::init() { managed_helpers_class = get_core_type("SGE.Helpers", true); }
 
     void script_helpers::report_exception(void* exception) {
         void* method = script_engine::get_method(managed_helpers_class, "ReportException");
@@ -58,7 +58,8 @@ namespace sge {
         bool serializable = true;
 
         void* scriptcore = script_engine::get_assembly(0);
-        void* unserialized_attribute = script_engine::get_class(scriptcore, "SGE.UnserializedAttribute");
+        void* unserialized_attribute =
+            script_engine::get_class(scriptcore, "SGE.UnserializedAttribute");
         serializable &= !property_has_attribute(property, unserialized_attribute);
 
         uint32_t accessors = script_engine::get_property_accessors(property);

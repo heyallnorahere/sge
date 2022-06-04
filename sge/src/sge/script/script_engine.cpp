@@ -49,11 +49,9 @@ namespace sge {
         if (script_engine_data->assemblies.empty()) {
             script_engine::load_assembly(fs::current_path() / "assets" / "assemblies" /
                                          "SGE.Scriptcore.dll");
-            script_engine::register_internal_script_calls();
 
-            void* helpers_class =
-                script_engine::get_class(script_engine_data->assemblies[0].image, "SGE.Helpers");
-            script_helpers::init(helpers_class);
+            script_engine::register_internal_script_calls();
+            script_helpers::init();
         }
     }
 
@@ -101,8 +99,13 @@ namespace sge {
             return false;
         }
 
+        static const std::vector<std::string> msbuild_args = SGE_MSBUILD_ARGS;
         std::stringstream args;
-        args << SGE_MSBUILD_ARGS << "-r -nologo -p:Configuration=" << project::get_config() << " "
+        for (const auto& argument : msbuild_args) {
+            args << std::quoted(argument) << " ";
+        }
+
+        args << "-r -nologo -p:Configuration=" << project::get_config() << " "
              << std::quoted(project_path.string());
 
         process_info p_info;
@@ -238,6 +241,7 @@ namespace sge {
 
         // what with reloading assemblies
         script_engine::register_component_types();
+        script_helpers::init();
     }
 
     enum class script_property_type { value, entity_, array, list };

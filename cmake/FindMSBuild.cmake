@@ -4,7 +4,7 @@ if(WIN32)
     find_program(MSBUILD_EXE "MSBuild" PATHS
         "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\")
 
-    set(MSBUILD_ARGS ${MSBUILD_EXE})
+    set(MSBUILD_ARGS "${MSBUILD_EXE}")
     set(MSBUILD_ERR_MESSAGE "Visual Studio 2022 (Community Edition) not found! Please install Visual Studio at https://visualstudio.microsoft.com/downloads/.")
 elseif(UNIX)
     set(MONO_PATHS
@@ -22,7 +22,7 @@ elseif(UNIX)
         PATH_SUFFIXES "lib/mono/msbuild/Current/bin/")
 
     if(NOT "${MSBUILD_DLL}" STREQUAL "MSBUILD_DLL-NOTFOUND")
-        set(MSBUILD_ARGS ${MSBUILD_EXE} ${MSBUILD_DLL})
+        set(MSBUILD_ARGS "${MSBUILD_EXE}" "${MSBUILD_DLL}")
     endif()
 
     set(MSBUILD_ERR_MESSAGE "Mono not found! Please install Mono at https://www.mono-project.com/download/stable/.")

@@ -22,7 +22,7 @@ namespace sge {
     public:
         script_helpers() = delete;
 
-        static void init(void* helpers_class);
+        static void init();
         static void report_exception(void* exception);
 
         static bool property_has_attribute(void* property, void* attribute_type);
