@@ -31,6 +31,26 @@ namespace SGE
         }
 
         /// <summary>
+        /// Adds a new component if there is not already one of the specified type;
+        /// otherwise, returns the attached component.
+        /// </summary>
+        /// <typeparam name="T">The type of component to add.</typeparam>
+        /// <returns>The created component.</returns>
+        public T AddComponent<T>() where T : Component<T>, new()
+        {
+            if (HasComponent<T>())
+            {
+                return GetComponent<T>();
+            }
+
+            return new T
+            {
+                Address = InternalCalls.AddComponent(typeof(T), this),
+                Parent = this
+            };
+        }
+
+        /// <summary>
         /// Checks if this entity has a component of the specified type.
         /// </summary>
         /// <typeparam name="T">A type of a component.</typeparam>
@@ -41,9 +61,14 @@ namespace SGE
         /// Retrieves a component of the specified type.
         /// </summary>
         /// <typeparam name="T">The type of component to search for.</typeparam>
-        /// <returns>The component.</returns>
+        /// <returns>The component, or if none exists on this entity, null.</returns>
         public T GetComponent<T>() where T : Component<T>, new()
         {
+            if (!HasComponent<T>())
+            {
+                return null;
+            }
+
             return new T
             {
                 Address = InternalCalls.GetComponent(typeof(T), this),

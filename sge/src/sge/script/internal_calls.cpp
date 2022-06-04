@@ -23,7 +23,7 @@
 #include "sge/core/input.h"
 namespace sge {
     struct component_callbacks_t {
-        std::function<void*(entity)> get;
+        std::function<void*(entity)> add, get;
         std::function<bool(entity)> has;
     };
 
@@ -41,6 +41,7 @@ namespace sge {
         void* _class = script_engine::get_class(scriptcore, name);
 
         component_callbacks_t callbacks;
+        callbacks.add = [](entity e) { return &e.add_component<T>(); };
         callbacks.has = [](entity e) { return e.has_all<T>(); };
         callbacks.get = [](entity e) { return &e.get_component<T>(); };
 
@@ -112,6 +113,14 @@ namespace sge {
         static void* GetCollisionCategoryName(scene* _scene, int32_t index) {
             std::string name = _scene->collision_category_name(index);
             return script_engine::to_managed_string(name);
+        }
+
+        static void* AddComponent(void* componentType, void* _entity) {
+            verify_component_type_validity(componentType);
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            const auto& callbacks = get_component_callbacks(componentType);
+            return callbacks.add(e);
         }
 
         static bool HasComponent(void* componentType, void* _entity) {
@@ -477,6 +486,7 @@ namespace sge {
         REGISTER_FUNC(GetCollisionCategoryName);
 
         // entity
+        REGISTER_FUNC(AddComponent);
         REGISTER_FUNC(HasComponent);
         REGISTER_FUNC(GetComponent);
         REGISTER_FUNC(GetGUID);

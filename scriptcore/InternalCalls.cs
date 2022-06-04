@@ -41,6 +41,8 @@ namespace SGE
 
         // entity
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern IntPtr AddComponent(Type componentType, Entity entity);
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool HasComponent(Type componentType, Entity entity);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr GetComponent(Type componentType, Entity entity);
