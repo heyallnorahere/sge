@@ -13,7 +13,7 @@ namespace %project%.Assets.Scripts
             }
 
             float timestep = (float)ts;
-            Vector2 force = (Speed * timestep, 0f);
+            Vector2 force = new Vector2(Speed * timestep, 0f);
 
             float modifier = 0f;
             modifier += Input.GetKey(KeyCode.D) ? 1f : 0f;
