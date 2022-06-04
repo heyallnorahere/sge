@@ -13,6 +13,7 @@
             "guid": 3870644523294331669,
             "rigid_body": null,
             "script": {
+                "enabled": true,
                 "properties": {
                     "Target": 3059179188644698116
                 },
@@ -52,6 +53,7 @@
                 "type": "dynamic"
             },
             "script": {
+                "enabled": true,
                 "properties": {
                     "Speed": 750.0
                 },

@@ -88,7 +88,7 @@ namespace sge {
                 m_scene->verify_script(entity_a);
 
                 auto& sc = entity_a.get_component<script_component>();
-                if (sc._class != nullptr) {
+                if (sc._class != nullptr && sc.enabled) {
                     void* OnCollision = script_engine::get_method(sc._class, event_name);
 
                     if (OnCollision != nullptr) {
@@ -104,7 +104,7 @@ namespace sge {
                 m_scene->verify_script(entity_b);
 
                 auto& sc = entity_b.get_component<script_component>();
-                if (sc._class != nullptr) {
+                if (sc._class != nullptr && sc.enabled) {
                     void* OnCollision = script_engine::get_method(sc._class, event_name);
 
                     if (OnCollision != nullptr) {
@@ -574,7 +574,7 @@ namespace sge {
                 verify_script(e);
 
                 auto& sc = e.get_component<script_component>();
-                if (sc._class == nullptr) {
+                if (sc._class == nullptr || !sc.enabled) {
                     continue;
                 }
 

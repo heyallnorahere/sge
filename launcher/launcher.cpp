@@ -45,6 +45,10 @@ namespace sgm::launcher {
             delete m_layer;
         }
 
+        virtual fs::path get_imgui_config_path() override {
+            return fs::current_path() / "launcher.ini";
+        }
+
     private:
         void migrate_file(const fs::path& src, const fs::path& dst,
                           const std::string& project_name) {
@@ -87,7 +91,8 @@ namespace sgm::launcher {
             out_stream.close();
         }
 
-        bool create_project(const launcher_layer::project_info_t& project_info, std::string& error) {
+        bool create_project(const launcher_layer::project_info_t& project_info,
+                            std::string& error) {
             std::string project_name = project_info.name;
             for (size_t i = 0; i < project_name.length(); i++) {
                 // i dont know how else to do this

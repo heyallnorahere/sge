@@ -389,6 +389,9 @@ namespace sgm {
 
                 if (invalid_name) {
                     ImGui::PopStyleColor();
+                    component.enabled = true;
+                } else {
+                    ImGui::Checkbox("Enabled", &component.enabled);
                 }
 
                 if (valid_script) {

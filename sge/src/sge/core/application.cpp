@@ -90,6 +90,10 @@ namespace sge {
         }
     }
 
+    struct imgui_app_data {
+        std::string config_path;
+    };
+
     void application::init() {
         spdlog::info("using SGE v{0}", get_engine_version());
         spdlog::info("initializing application: {0}...", m_title);
@@ -118,6 +122,16 @@ namespace sge {
         m_imgui_layer = new imgui_layer;
         push_overlay(m_imgui_layer);
 
+        ImGuiIO& io = ImGui::GetIO();
+        auto imgui_data = new imgui_app_data;
+        io.UserData = imgui_data;
+
+        fs::path config_path = get_imgui_config_path();
+        if (!config_path.empty()) {
+            imgui_data->config_path = config_path.string();
+            io.IniFilename = imgui_data->config_path.c_str();
+        }
+
         if ((m_disabled_subsystems &
              (subsystem_asset | subsystem_script_engine | subsystem_project)) == 0) {
             project::init(is_editor());
@@ -137,8 +151,12 @@ namespace sge {
             project::shutdown();
         }
 
+        ImGuiIO& io = ImGui::GetIO();
+        auto imgui_data = (imgui_app_data*)io.UserData;
+
         pop_overlay(m_imgui_layer);
         delete m_imgui_layer;
+        delete imgui_data;
         m_imgui_layer = nullptr;
 
         if (is_subsystem_initialized(subsystem_script_engine)) {

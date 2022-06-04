@@ -223,6 +223,7 @@ namespace sge {
         }
 
         data["script_name"] = component.class_name;
+        data["enabled"] = component.enabled;
         data["properties"] = nullptr;
 
         if (component.gc_handle != 0) {
@@ -337,6 +338,7 @@ namespace sge {
 
     void from_json(const json& data, script_component& component) {
         component.class_name = data["script_name"].get<std::string>();
+        component.enabled = data["enabled"].get<bool>();
 
         std::optional<size_t> assembly_index = project::get().get_assembly_index();
         if (!assembly_index.has_value()) {

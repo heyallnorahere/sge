@@ -242,6 +242,7 @@ namespace sge {
         uint32_t gc_handle = 0;
         void* _class = nullptr;
         std::string class_name;
+        bool enabled = true;
 
         void verify_script(entity e);
         void remove_script();

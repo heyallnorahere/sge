@@ -216,5 +216,13 @@ namespace SGE
         public static extern TextureFilter GetFilterTexture2D(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern string GetPathTexture2D(IntPtr address);
+
+        // script component
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool IsScriptEnabled(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetScriptEnabled(IntPtr address, bool enabled);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern Script GetScript(IntPtr address, Entity entity);
     }
 }

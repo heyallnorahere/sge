@@ -40,6 +40,7 @@ namespace sge {
         script_component cdst;
         cdst._class = csrc._class;
         cdst.class_name = csrc.class_name;
+        cdst.enabled = csrc.enabled;
 
         if (csrc.gc_handle != 0) {
             cdst.verify_script(dst);

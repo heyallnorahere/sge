@@ -17,6 +17,7 @@
 #include "sgepch.h"
 #include "sge/script/script_engine.h"
 #include "sge/script/script_helpers.h"
+#include "sge/script/garbage_collector.h"
 #include "sge/scene/scene.h"
 #include "sge/scene/entity.h"
 #include "sge/scene/components.h"
@@ -55,6 +56,7 @@ namespace sge {
         register_component_type<camera_component>("CameraComponent");
         register_component_type<rigid_body_component>("RigidBodyComponent");
         register_component_type<box_collider_component>("BoxColliderComponent");
+        register_component_type<script_component>("ScriptComponent");
     }
 
     static void verify_component_type_validity(void* reflection_type) {
@@ -452,6 +454,27 @@ namespace sge {
             std::string path = address->get_path().string();
             return script_engine::to_managed_string(path);
         }
+
+        static bool IsScriptEnabled(script_component* component) { return component->enabled; }
+
+        static void SetScriptEnabled(script_component* component, bool enabled) {
+            if (component->gc_handle == 0) {
+                return;
+            }
+
+            component->enabled = enabled;
+        }
+
+        static void* GetScript(script_component* component, void* _entity) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+            component->verify_script(e);
+
+            if (component->gc_handle == 0) {
+                return nullptr;
+            }
+
+            return garbage_collector::get_ref_data(component->gc_handle);
+        }
     } // namespace internal_script_calls
 
     template <typename T>
@@ -584,6 +607,11 @@ namespace sge {
         REGISTER_FUNC(GetWrapTexture2D);
         REGISTER_FUNC(GetFilterTexture2D);
         REGISTER_FUNC(GetPathTexture2D);
+
+        // script component
+        REGISTER_FUNC(IsScriptEnabled);
+        REGISTER_FUNC(SetScriptEnabled);
+        REGISTER_FUNC(GetScript);
 
 #undef REGISTER_CALL
 #undef REGISTER_FUNC

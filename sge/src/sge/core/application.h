@@ -67,6 +67,7 @@ namespace sge {
         virtual void on_shutdown() {}
 
         virtual std::string get_window_title() { return m_title; }
+        virtual fs::path get_imgui_config_path() { return fs::path(); }
         virtual bool is_editor() { return false; }
 
         void disable_subsystem(subsystem id);
