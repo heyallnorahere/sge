@@ -475,6 +475,20 @@ namespace sge {
 
             return garbage_collector::get_ref_data(component->gc_handle);
         }
+
+        static void* GetChangedFilePath(file_changed_event* e) {
+            const auto& path = e->get_path();
+            return script_engine::to_managed_string(path.string());
+        }
+
+        static void* GetWatchedDirectory(file_changed_event* e) {
+            const auto& directory = e->get_watched_directory();
+            return script_engine::to_managed_string(directory.string());
+        }
+
+        static void GetFileStatus(file_changed_event* e, file_status* status) {
+            *status = e->get_status();
+        }
     } // namespace internal_script_calls
 
     template <typename T>
@@ -587,11 +601,15 @@ namespace sge {
         REGISTER_FUNC(GetMouseButton);
         REGISTER_FUNC(GetMousePosition);
 
-        // events
+        // event
         REGISTER_FUNC(IsEventHandled);
         REGISTER_FUNC(SetEventHandled);
+
+        // window events
         REGISTER_FUNC(GetResizeWidth);
         REGISTER_FUNC(GetResizeHeight);
+
+        // input events
         REGISTER_FUNC(GetPressedEventKey);
         REGISTER_FUNC(GetRepeatCount);
         REGISTER_FUNC(GetReleasedEventKey);
@@ -612,6 +630,11 @@ namespace sge {
         REGISTER_FUNC(IsScriptEnabled);
         REGISTER_FUNC(SetScriptEnabled);
         REGISTER_FUNC(GetScript);
+
+        // file changed event
+        REGISTER_FUNC(GetChangedFilePath);
+        REGISTER_FUNC(GetWatchedDirectory);
+        REGISTER_FUNC(GetFileStatus);
 
 #undef REGISTER_CALL
 #undef REGISTER_FUNC

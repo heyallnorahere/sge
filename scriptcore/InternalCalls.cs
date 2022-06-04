@@ -15,6 +15,7 @@
 */
 
 using SGE.Components;
+using SGE.Events;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -224,5 +225,13 @@ namespace SGE
         public static extern void SetScriptEnabled(IntPtr address, bool enabled);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern Script GetScript(IntPtr address, Entity entity);
+
+        // file changed event
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetChangedFilePath(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetWatchedDirectory(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetFileStatus(IntPtr address, out FileStatus status);
     }
 }

@@ -90,6 +90,43 @@ namespace sge {
         }
     }
 
+    bool application::is_watching(const fs::path& path) {
+        if (path.empty()) {
+            return false;
+        }
+
+        for (const auto& [directory, watcher] : m_watchers) {
+            auto relative_path = fs::relative(path, directory);
+            if (relative_path.empty() || *relative_path.begin() != "..") {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool application::watch_directory(const fs::path& path) {
+        if (is_watching(path)) {
+            return false;
+        }
+
+        if (path.empty()) {
+            return false;
+        }
+
+        m_watchers[path] = std::make_unique<directory_watcher>(path);
+        return true;
+    }
+
+    bool application::remove_watched_directory(const fs::path& path) {
+        if (m_watchers.find(path) == m_watchers.end()) {
+            return false;
+        }
+
+        m_watchers.erase(path);
+        return true;
+    }
+
     struct imgui_app_data {
         std::string config_path;
     };
@@ -179,6 +216,11 @@ namespace sge {
 
         m_running = true;
         while (m_running) {
+            for (const auto& [path, watcher] : m_watchers) {
+                watcher->update();
+                watcher->process_events(SGE_BIND_EVENT_FUNC(application::on_event));
+            }
+
             if (!m_minimized) {
                 m_swapchain->new_frame();
                 renderer::new_frame();

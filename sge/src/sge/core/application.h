@@ -15,6 +15,7 @@
 */
 
 #pragma once
+#include "sge/core/directory_watcher.h"
 #include "sge/core/window.h"
 #include "sge/core/layer_stack.h"
 #include "sge/events/event.h"
@@ -60,6 +61,10 @@ namespace sge {
         swapchain& get_swapchain() { return *m_swapchain; }
         imgui_layer& get_imgui_layer() { return *m_imgui_layer; }
 
+        bool is_watching(const fs::path& path);
+        bool watch_directory(const fs::path& path);
+        bool remove_watched_directory(const fs::path& path);
+
         bool is_subsystem_initialized(subsystem id) { return (m_initialized_subsystems & id) != 0; }
 
     protected:
@@ -75,6 +80,7 @@ namespace sge {
 
         layer_stack m_layer_stack;
         std::string m_title;
+        std::unordered_map<fs::path, std::unique_ptr<directory_watcher>, path_hasher> m_watchers;
 
         ref<window> m_window;
         std::unique_ptr<swapchain> m_swapchain;

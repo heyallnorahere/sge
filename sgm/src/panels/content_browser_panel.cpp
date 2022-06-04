@@ -18,6 +18,8 @@
 #include "panels/panels.h"
 #include "icon_directory.h"
 #include "texture_cache.h"
+#include <sge/asset/asset_serializers.h>
+
 namespace sgm {
     content_browser_panel::content_browser_panel() {
         m_current = m_root = project::get().get_asset_dir();
@@ -26,6 +28,16 @@ namespace sgm {
 
         build_extension_data();
         build_directory_data(m_root, m_root_data);
+
+        auto& app = application::get();
+        m_remove_watcher = app.watch_directory(m_root);
+    }
+
+    content_browser_panel::~content_browser_panel() {
+        if (m_remove_watcher) {
+            auto& app = application::get();
+            app.remove_watched_directory(m_root);
+        }
     }
 
     void content_browser_panel::render() {
@@ -44,8 +56,8 @@ namespace sgm {
         if (column_count < 1) {
             column_count = 1;
         }
-        ImGui::Columns(column_count, nullptr, false);
 
+        ImGui::Columns(column_count, nullptr, false);
         for (const auto& entry : fs::directory_iterator(m_current)) {
             fs::path path = fs::absolute(entry.path());
             fs::path asset_path = path.lexically_relative(m_root);
@@ -118,6 +130,64 @@ namespace sgm {
         ImGui::Columns(1);
     }
 
+    void content_browser_panel::on_event(event& e) {
+        event_dispatcher dispatcher(e);
+        dispatcher.dispatch<file_changed_event>(
+            SGE_BIND_EVENT_FUNC(content_browser_panel::on_file_changed));
+    }
+
+    bool content_browser_panel::on_file_changed(file_changed_event& e) {
+        if (e.get_watched_directory() != m_root) {
+            return false;
+        }
+
+        const auto& path = e.get_path();
+        auto& registry = project::get().get_asset_manager().registry;
+
+        bool handled = false;
+        bool tree_changed = false;
+
+        switch (e.get_status()) {
+        case file_status::created: {
+            std::optional<asset_type> type;
+            if (path.has_extension()) {
+                fs::path extension = path.extension();
+
+                if (m_extension_data.find(extension) != m_extension_data.end()) {
+                    type = m_extension_data.at(extension).type;
+                }
+            }
+
+            if (type.has_value()) {
+                asset_desc desc;
+                desc.id = guid();
+                desc.path = path;
+                desc.type = type;
+
+                ref<asset> loaded;
+                if (asset_serializer::deserialize(desc, loaded)) {
+                    tree_changed |= registry.register_asset(loaded);
+                }
+            } else {
+                tree_changed |= registry.register_asset(path);
+            }
+
+        } break;
+        case file_status::deleted: {
+            fs::path asset_path = fs::relative(path, m_root);
+
+            handled = true;
+            tree_changed |= registry.remove_asset(asset_path);
+        } break;
+        }
+
+        if (tree_changed) {
+            build_directory_data(m_root, m_root_data);
+        }
+
+        return handled;
+    }
+
     void content_browser_panel::build_extension_data() {
         if (!m_extension_data.empty()) {
             m_extension_data.clear();
@@ -147,6 +217,7 @@ namespace sgm {
             asset_extension_data data;
             data.drag_drop_id = "scene";
             data.icon_name = "file"; // for now
+
             add_extension_entry(".sgescene", data);
         }
 
@@ -161,6 +232,15 @@ namespace sgm {
             for (fs::path extension : shader_extensions) {
                 add_extension_entry(extension, data);
             }
+        }
+
+        // scripts
+        {
+            asset_extension_data data;
+            data.drag_drop_id = "script";
+            data.icon_name = "file"; // for now
+
+            add_extension_entry(".cs", data);
         }
     }
 

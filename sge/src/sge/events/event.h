@@ -16,7 +16,7 @@
 
 #pragma once
 namespace sge {
-    enum class event_id {
+    enum class event_id : int32_t {
         none = 0,
         window_close,
         window_resize,
@@ -25,7 +25,8 @@ namespace sge {
         key_typed,
         mouse_moved,
         mouse_scrolled,
-        mouse_button
+        mouse_button,
+        file_changed
     };
 
 #define EVENT_ID_DECL(id)                                                                          \
@@ -47,7 +48,8 @@ namespace sge {
     public:
         event_dispatcher(event& e) : m_event(e) {}
 
-        template <typename T, typename Func> bool dispatch(const Func& func) {
+        template <typename T, typename Func>
+        bool dispatch(const Func& func) {
             if (m_event.get_id() == T::get_static_id()) {
                 m_event.handled |= func((T&)m_event);
                 return true;
@@ -60,7 +62,22 @@ namespace sge {
     };
 
 #define SGE_BIND_EVENT_FUNC(func)                                                                  \
-    [this](auto&&... args) -> decltype(auto) {                                                     \
-        return func(std::forward<decltype(args)>(args)...);                                  \
-    }
+    [this](auto&&... args) -> decltype(auto) { return func(std::forward<decltype(args)>(args)...); }
+
+    enum class file_status : int32_t { created = 0, deleted = 1, modified = 2 };
+    class file_changed_event : public event {
+    public:
+        file_changed_event(const fs::path& path, const fs::path& directory, file_status status)
+            : m_path(path), m_directory(directory), m_status(status) {}
+
+        const fs::path& get_path() { return m_path; }
+        const fs::path& get_watched_directory() { return m_directory; }
+        file_status get_status() { return m_status; }
+
+        EVENT_ID_DECL(file_changed);
+
+    private:
+        fs::path m_path, m_directory;
+        file_status m_status;
+    };
 } // namespace sge

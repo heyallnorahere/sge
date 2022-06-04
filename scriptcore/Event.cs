@@ -19,7 +19,7 @@ using System.Reflection;
 
 namespace SGE
 {
-    public enum EventID
+    public enum EventID : int
     {
         None = 0,
         WindowClose,
@@ -29,7 +29,8 @@ namespace SGE
         KeyTyped,
         MouseMoved,
         MouseScrolled,
-        MouseButton
+        MouseButton,
+        FileChanged
     }
 
     public abstract class Event

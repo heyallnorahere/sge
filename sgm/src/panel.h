@@ -24,6 +24,7 @@ namespace sge {
         virtual ~panel() = default;
 
         virtual void update(timestep ts) {}
+        virtual void on_event(event& e) {}
 
         virtual void register_popups(popup_manager& popup_manager_) { }
         virtual void begin(const char* title, bool* open) { ImGui::Begin(title, open); }

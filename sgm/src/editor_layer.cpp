@@ -56,6 +56,14 @@ namespace sgm {
         if (!e.handled) {
             editor_scene::on_event(e);
         }
+
+        for (const auto& _panel : m_panels) {
+            if (e.handled) {
+                return;
+            }
+
+            _panel->on_event(e);
+        }
     }
 
     static bool demo_window = false;

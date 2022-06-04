@@ -17,6 +17,7 @@
 #pragma once
 #include "panel.h"
 #include <sge/renderer/texture.h>
+
 namespace sgm {
     class renderer_info_panel : public panel {
     public:
@@ -101,8 +102,10 @@ namespace sgm {
     class content_browser_panel : public panel {
     public:
         content_browser_panel();
+        virtual ~content_browser_panel() override;
 
         virtual void render() override;
+        virtual void on_event(event& e) override;
 
         virtual std::string get_title() override { return "Content Browser"; }
         virtual panel_id get_id() override { return panel_id::content_browser; }
@@ -119,6 +122,8 @@ namespace sgm {
             std::unordered_map<fs::path, size_t, path_hasher> directories;
         };
 
+        bool on_file_changed(file_changed_event& e);
+
         void build_extension_data();
         ref<texture_2d> get_icon(const fs::path& path);
         std::string get_drag_drop_id(const fs::path& path);
@@ -132,5 +137,6 @@ namespace sgm {
 
         asset_directory_data m_root_data;
         std::vector<asset_directory_data> m_subdirectories;
+        bool m_remove_watcher;
     };
 } // namespace sgm
