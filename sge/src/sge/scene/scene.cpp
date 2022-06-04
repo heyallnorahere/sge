@@ -726,7 +726,7 @@ namespace sge {
 
                 entity current(id, this);
                 auto& sc = current.get_component<script_component>();
-                if (sc._class == nullptr) {
+                if (sc._class == nullptr || !sc.enabled) {
                     continue;
                 }
 
