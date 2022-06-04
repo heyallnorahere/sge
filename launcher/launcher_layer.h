@@ -26,7 +26,7 @@ namespace sgm::launcher {
 
             size_t hash() const {
                 size_t name_hash = std::hash<std::string>()(name);
-                size_t path_hash = std::hash<fs::path>()(path);
+                size_t path_hash = path_hasher()(path);
 
                 return (path_hash << 1) ^ name_hash;
             }

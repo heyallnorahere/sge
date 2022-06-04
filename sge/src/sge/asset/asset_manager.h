@@ -33,7 +33,7 @@ namespace sge {
     private:
         void set_path(const fs::path& path) { registry.set_path(path); }
 
-        std::unordered_map<fs::path, ref<asset>> m_cache;
+        std::unordered_map<fs::path, ref<asset>, path_hasher> m_cache;
 
         friend class project;
     };

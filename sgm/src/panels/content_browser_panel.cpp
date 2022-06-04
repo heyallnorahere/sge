@@ -135,7 +135,8 @@ namespace sgm {
             data.icon_name = "image";
             data.type = asset_type::texture_2d;
 
-            static std::unordered_set<fs::path> image_extensions = { ".png", ".jpg", ".jpeg" };
+            static std::unordered_set<fs::path, path_hasher> image_extensions = { ".png", ".jpg",
+                                                                                  ".jpeg" };
             for (fs::path extension : image_extensions) {
                 add_extension_entry(extension, data);
             }
@@ -155,7 +156,8 @@ namespace sgm {
             data.drag_drop_id = "shader";
             data.icon_name = "file"; // for now
 
-            static std::unordered_set<fs::path> shader_extensions = { ".hlsl", ".glsl" };
+            static std::unordered_set<fs::path, path_hasher> shader_extensions = { ".hlsl",
+                                                                                   ".glsl" };
             for (fs::path extension : shader_extensions) {
                 add_extension_entry(extension, data);
             }

@@ -73,7 +73,7 @@ namespace sge {
         return nullptr;
     }
 
-    static const std::unordered_map<fs::path, shader_language> language_map = {
+    static const std::unordered_map<fs::path, shader_language, path_hasher> language_map = {
         { ".hlsl", shader_language::hlsl }, { ".glsl", shader_language::glsl }
     };
 

@@ -63,16 +63,10 @@ namespace fs = std::experimental::filesystem;
 
 #include "sge/ref.h"
 
-namespace std {
-    template <>
-    struct hash<fs::path> {
-        size_t operator()(const fs::path& path) const {
-            hash<string> hasher;
-            return hasher(path.string());
-        }
-    };
-} // namespace std
-
 namespace sge {
+    struct path_hasher {
+        size_t operator()(const fs::path& path) const { return fs::hash_value(path); }
+    };
+
     using timestep = std::chrono::duration<double>;
-}
+} // namespace sge

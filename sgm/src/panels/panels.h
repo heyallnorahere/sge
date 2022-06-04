@@ -115,8 +115,8 @@ namespace sgm {
         };
 
         struct asset_directory_data {
-            std::unordered_set<fs::path> files;
-            std::unordered_map<fs::path, size_t> directories;
+            std::unordered_set<fs::path, path_hasher> files;
+            std::unordered_map<fs::path, size_t, path_hasher> directories;
         };
 
         void build_extension_data();
@@ -128,7 +128,7 @@ namespace sgm {
 
         fs::path m_root, m_current;
         float m_padding, m_icon_size;
-        std::unordered_map<fs::path, asset_extension_data> m_extension_data;
+        std::unordered_map<fs::path, asset_extension_data, path_hasher> m_extension_data;
 
         asset_directory_data m_root_data;
         std::vector<asset_directory_data> m_subdirectories;

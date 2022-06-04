@@ -38,8 +38,13 @@ namespace sge {
         bool contains(const fs::path& path) { return m_assets.find(path) != m_assets.end(); }
         asset_desc operator[](const fs::path& path);
 
-        std::unordered_map<fs::path, asset_desc>::iterator begin() { return m_assets.begin(); }
-        std::unordered_map<fs::path, asset_desc>::iterator end() { return m_assets.end(); }
+        std::unordered_map<fs::path, asset_desc, path_hasher>::iterator begin() {
+            return m_assets.begin();
+        }
+
+        std::unordered_map<fs::path, asset_desc, path_hasher>::iterator end() {
+            return m_assets.end();
+        }
 
         const fs::path& get_path() { return m_path; }
 
@@ -52,7 +57,7 @@ namespace sge {
         void set_on_changed_callback(on_changed_callback callback);
 
         std::mutex m_mutex;
-        std::unordered_map<fs::path, asset_desc> m_assets;
+        std::unordered_map<fs::path, asset_desc, path_hasher> m_assets;
 
         on_changed_callback m_on_changed_callback;
         fs::path m_path;

@@ -40,6 +40,6 @@ namespace sge {
         void set_style();
 
         std::unique_ptr<imgui_backend> m_platform, m_renderer;
-        std::unordered_map<fs::path, ImFont*> m_fonts;
+        std::unordered_map<fs::path, ImFont*, path_hasher> m_fonts;
     };
 } // namespace sge
