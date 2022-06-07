@@ -284,19 +284,19 @@ namespace sge {
 #endif
 
         auto color_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-        spdlog::sinks_init_list list = { color_sink };
+        std::vector<spdlog::sink_ptr> sinks = { color_sink };
 
         auto log_path = get_log_file_path();
-        std::shared_ptr<spdlog::sinks::sink> file_sink;
         if (!log_path.empty()) {
             std::string path = log_path.string();
-            file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path, true);
 
+            auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path, true);
             file_sink->set_level(spdlog::level::debug);
-            list = { color_sink, file_sink };
+
+            sinks.push_back(file_sink);
         }
 
-        auto logger = std::make_shared<spdlog::logger>("SGE logger", list);
+        auto logger = std::make_shared<spdlog::logger>("SGE logger", sinks.begin(), sinks.end());
         logger->set_pattern("[%m-%d-%Y %T] [" + m_title + "] [%^%l%$] %v");
         logger->set_level(logger_level);
 
