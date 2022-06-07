@@ -20,18 +20,26 @@
 namespace sge {
     asset_manager::asset_manager() {
         registry.set_on_changed_callback(
-            [this](asset_registry::registry_action action, const fs::path& path) {
+            [this](asset_registry::registry_action action, const fs::path& path) mutable {
                 switch (action) {
                 case asset_registry::registry_action::add:
                     // nothing
                     break;
                 case asset_registry::registry_action::remove:
-                    if (m_cache.find(path) != m_cache.end()) {
-                        m_cache.erase(path);
+                    if (m_path_cache.find(path) != m_path_cache.end()) {
+                        auto _asset = m_path_cache[path];
+                        if (_asset && m_guid_cache.find(_asset->id) != m_guid_cache.end()) {
+                            m_guid_cache.erase(_asset->id);
+                        }
+
+                        m_path_cache.erase(path);
                     }
+
                     break;
                 case asset_registry::registry_action::clear:
-                    m_cache.clear();
+                    m_path_cache.clear();
+                    m_guid_cache.clear();
+
                     break;
                 default:
                     throw std::runtime_error("invalid registry action!");
@@ -40,16 +48,21 @@ namespace sge {
     }
 
     ref<asset> asset_manager::get_asset(const fs::path& path) {
-        if (m_cache.find(path) == m_cache.end()) {
+        if (m_path_cache.find(path) == m_path_cache.end()) {
             if (registry.contains(path)) {
                 const auto& desc = registry[path];
-                if (desc.type.has_value()) {
+
+                if (desc.type.has_value() && desc.id.has_value()) {
                     ref<asset> _asset;
+
                     if (asset_serializer::deserialize(desc, _asset)) {
-                        m_cache.insert(std::make_pair(path, _asset));
+                        m_path_cache.insert(std::make_pair(path, _asset));
+                        m_guid_cache.insert(std::make_pair(_asset->id, _asset));
+
                         return _asset;
                     } else {
-                        m_cache.insert(std::make_pair(path, nullptr));
+                        m_path_cache.insert(std::make_pair(path, nullptr));
+                        m_guid_cache.insert(std::make_pair(desc.id.value(), nullptr));
                     }
                 }
             }
@@ -57,6 +70,32 @@ namespace sge {
             return nullptr;
         }
 
-        return m_cache[path];
+        return m_path_cache[path];
+    }
+
+    ref<asset> asset_manager::get_asset(guid id) {
+        if (m_guid_cache.find(id) != m_guid_cache.end()) {
+            return m_guid_cache[id];
+        }
+
+        for (const auto& [path, desc] : registry) {
+            if (desc.id == id && desc.type.has_value()) {
+                ref<asset> _asset;
+
+                if (asset_serializer::deserialize(desc, _asset)) {
+                    m_path_cache.insert(std::make_pair(path, _asset));
+                    m_guid_cache.insert(std::make_pair(id, _asset));
+
+                    return _asset;
+                } else {
+                    m_path_cache.insert(std::make_pair(path, nullptr));
+                    m_guid_cache.insert(std::make_pair(id, nullptr));
+
+                    break;
+                }
+            }
+        }
+
+        return nullptr;
     }
 } // namespace sge

@@ -29,11 +29,13 @@ namespace sge {
         asset_manager operator=(const asset_manager&) = delete;
 
         ref<asset> get_asset(const fs::path& path);
+        ref<asset> get_asset(guid id);
 
     private:
         void set_path(const fs::path& path) { registry.set_path(path); }
 
-        std::unordered_map<fs::path, ref<asset>, path_hasher> m_cache;
+        std::unordered_map<fs::path, ref<asset>, path_hasher> m_path_cache;
+        std::unordered_map<guid, ref<asset>> m_guid_cache;
 
         friend class project;
     };
