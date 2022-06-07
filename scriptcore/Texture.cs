@@ -31,12 +31,10 @@ namespace SGE
         Nearest
     }
 
-    public sealed class Texture2D
+    public sealed class Texture2D : Asset
     {
-        internal Texture2D(IntPtr address, bool addRef = true)
+        internal Texture2D(IntPtr address, bool addRef = true) : base(address)
         {
-            mAddress = address;
-
             if (addRef)
             {
                 InternalCalls.AddRef_texture_2d(mAddress);
@@ -60,8 +58,5 @@ namespace SGE
 
         public TextureWrap Wrap => InternalCalls.GetWrapTexture2D(mAddress);
         public TextureFilter Filter => InternalCalls.GetFilterTexture2D(mAddress);
-        public string Path => InternalCalls.GetPathTexture2D(mAddress);
-
-        internal readonly IntPtr mAddress;
     }
 }

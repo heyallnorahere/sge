@@ -215,8 +215,6 @@ namespace SGE
         public static extern TextureWrap GetWrapTexture2D(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern TextureFilter GetFilterTexture2D(IntPtr address);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern string GetPathTexture2D(IntPtr address);
 
         // script component
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -233,5 +231,13 @@ namespace SGE
         public static extern string GetWatchedDirectory(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetFileStatus(IntPtr address, out FileStatus status);
+
+        // assets
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetAssetPath(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetAssetType(IntPtr address, out AssetType type);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern GUID GetAssetGUID(IntPtr address);
     }
 }

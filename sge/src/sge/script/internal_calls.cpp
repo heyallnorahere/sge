@@ -450,11 +450,6 @@ namespace sge {
             return address->get_filter();
         }
 
-        static void* GetPathTexture2D(texture_2d* address) {
-            std::string path = address->get_path().string();
-            return script_engine::to_managed_string(path);
-        }
-
         static bool IsScriptEnabled(script_component* component) { return component->enabled; }
 
         static void SetScriptEnabled(script_component* component, bool enabled) {
@@ -489,6 +484,14 @@ namespace sge {
         static void GetFileStatus(file_changed_event* e, file_status* status) {
             *status = e->get_status();
         }
+
+        static void* GetAssetPath(asset* a) {
+            const auto& path = a->get_path();
+            return script_engine::to_managed_string(path.string());
+        }
+
+        static void GetAssetType(asset* a, asset_type* type) { *type = a->get_asset_type(); }
+        static guid GetAssetGUID(asset* a) { return a->id; }
     } // namespace internal_script_calls
 
     template <typename T>
@@ -624,7 +627,6 @@ namespace sge {
         REGISTER_FUNC(LoadTexture2D);
         REGISTER_FUNC(GetWrapTexture2D);
         REGISTER_FUNC(GetFilterTexture2D);
-        REGISTER_FUNC(GetPathTexture2D);
 
         // script component
         REGISTER_FUNC(IsScriptEnabled);
@@ -635,6 +637,11 @@ namespace sge {
         REGISTER_FUNC(GetChangedFilePath);
         REGISTER_FUNC(GetWatchedDirectory);
         REGISTER_FUNC(GetFileStatus);
+
+        // assets
+        REGISTER_FUNC(GetAssetPath);
+        REGISTER_FUNC(GetAssetType);
+        REGISTER_FUNC(GetAssetGUID);
 
 #undef REGISTER_CALL
 #undef REGISTER_FUNC

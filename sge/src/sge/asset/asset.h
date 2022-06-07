@@ -17,7 +17,7 @@
 #pragma once
 #include "sge/core/guid.h"
 namespace sge {
-    enum class asset_type { shader, texture_2d };
+    enum class asset_type : int32_t { shader = 0, texture_2d };
 
     class asset : public ref_counted {
     public:
