@@ -49,6 +49,10 @@ namespace sgm::launcher {
             return fs::current_path() / "launcher.ini";
         }
 
+        virtual fs::path get_log_file_path() override {
+            return fs::current_path() / "assets" / "logs" / "launcher.log";
+        }
+
     private:
         void migrate_file(const fs::path& src, const fs::path& dst,
                           const std::string& project_name) {
@@ -179,7 +183,6 @@ namespace sgm::launcher {
             info.executable = sgm_path;
             info.cmdline = command.str();
             info.workdir = fs::current_path();
-            info.output_file = "assets/logs/sgm.log";
             info.detach = true;
 
             int32_t return_code = environment::run_command(info);

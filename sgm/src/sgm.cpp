@@ -67,6 +67,11 @@ namespace sgm {
 
         virtual std::string get_window_title() override { return sgm_title; }
         virtual fs::path get_imgui_config_path() override { return fs::current_path() / "sgm.ini"; }
+
+        virtual fs::path get_log_file_path() override {
+            return fs::current_path() / "assets" / "logs" / "sgm.log";
+        }
+
         virtual bool is_editor() override { return true; }
 
         editor_layer* m_editor_layer;

@@ -73,6 +73,7 @@ namespace sge {
 
         virtual std::string get_window_title() { return m_title; }
         virtual fs::path get_imgui_config_path() { return fs::path(); }
+        virtual fs::path get_log_file_path() { return fs::path(); }
         virtual bool is_editor() { return false; }
 
         void disable_subsystem(subsystem id);
@@ -94,6 +95,8 @@ namespace sge {
         void init();
         void shutdown();
         void run();
+
+        void init_logger();
 
         bool on_window_resize(window_resize_event& e);
         bool on_window_close(window_close_event& e);

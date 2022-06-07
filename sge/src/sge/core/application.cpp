@@ -23,6 +23,9 @@
 #include "sge/asset/asset_serializers.h"
 #include "sge/asset/project.h"
 
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/basic_file_sink.h>
+
 extern sge::application* create_app_instance();
 namespace sge {
     int32_t application::entrypoint::operator()(int32_t argc, const char** argv) {
@@ -132,6 +135,8 @@ namespace sge {
     };
 
     void application::init() {
+        init_logger();
+
         spdlog::info("using SGE v{0}", get_engine_version());
         spdlog::info("initializing application: {0}...", m_title);
 
@@ -207,6 +212,8 @@ namespace sge {
         if (is_subsystem_initialized(subsystem_input)) {
             input::shutdown();
         }
+
+        spdlog::shutdown();
     }
 
     void application::run() {
@@ -266,6 +273,34 @@ namespace sge {
 
             m_window->on_update();
         }
+    }
+
+    void application::init_logger() {
+        spdlog::level::level_enum logger_level;
+#ifdef SGE_DEBUG
+        logger_level = spdlog::level::debug;
+#else
+        logger_level = spdlog::level::info;
+#endif
+
+        auto color_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+        spdlog::sinks_init_list list = { color_sink };
+
+        auto log_path = get_log_file_path();
+        std::shared_ptr<spdlog::sinks::sink> file_sink;
+        if (!log_path.empty()) {
+            std::string path = log_path.string();
+            file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path, true);
+
+            file_sink->set_level(spdlog::level::debug);
+            list = { color_sink, file_sink };
+        }
+
+        auto logger = std::make_shared<spdlog::logger>("SGE logger", list);
+        logger->set_pattern("[%m-%d-%Y %T] [" + m_title + "] [%^%l%$] %v");
+        logger->set_level(logger_level);
+
+        spdlog::set_default_logger(logger);
     }
 
     void application::disable_subsystem(subsystem id) { m_disabled_subsystems |= id; }
