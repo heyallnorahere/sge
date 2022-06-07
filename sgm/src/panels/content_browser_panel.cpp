@@ -142,7 +142,8 @@ namespace sgm {
         }
 
         const auto& path = e.get_path();
-        auto& registry = project::get().get_asset_manager().registry;
+        auto& manager = project::get().get_asset_manager();
+        auto& registry = manager.registry;
 
         bool handled = false;
         bool tree_changed = false;
@@ -178,6 +179,10 @@ namespace sgm {
 
             handled = true;
             tree_changed |= registry.remove_asset(asset_path);
+        } break;
+        case file_status::modified: {
+            fs::path asset_path = fs::relative(path, m_root);
+            manager.clear_cache_entry(asset_path);
         } break;
         }
 

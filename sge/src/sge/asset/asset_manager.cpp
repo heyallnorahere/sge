@@ -98,4 +98,36 @@ namespace sge {
 
         return nullptr;
     }
+
+    bool asset_manager::clear_cache_entry(const fs::path& path) {
+        if (m_path_cache.find(path) != m_path_cache.end()) {
+            auto _asset = m_path_cache[path];
+            if (_asset && m_guid_cache.find(_asset->id) != m_guid_cache.end()) {
+                m_guid_cache.erase(_asset->id);                
+            }
+
+            m_path_cache.erase(path);
+            return true;
+        }
+
+        return false;
+    }
+
+    bool asset_manager::clear_cache_entry(guid id) {
+        if (m_guid_cache.find(id) != m_guid_cache.end()) {
+            auto _asset = m_guid_cache[id];
+            if (_asset) {
+                const auto& path = _asset->get_path();
+                
+                if (m_path_cache.find(path) != m_path_cache.end()) {
+                    m_path_cache.erase(path);
+                }
+            }
+
+            m_guid_cache.erase(id);
+            return true;
+        }
+
+        return false;
+    }
 } // namespace sge

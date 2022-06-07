@@ -31,6 +31,9 @@ namespace sge {
         ref<asset> get_asset(const fs::path& path);
         ref<asset> get_asset(guid id);
 
+        bool clear_cache_entry(const fs::path& path);
+        bool clear_cache_entry(guid id);
+
     private:
         void set_path(const fs::path& path) { registry.set_path(path); }
 
