@@ -29,6 +29,7 @@ namespace sge {
         ref<scene> _scene;
         entity current_entity;
     };
+
     static std::unique_ptr<serialization_data> current_serialization;
 
     void to_json(json& data, const id_component& comp) { data = comp.id; }
@@ -209,13 +210,21 @@ namespace sge {
     }
 
     void to_json(json& data, const script_component& component) {
-        static std::unordered_map<void*, json (*)(void*)> serialization_callbacks = {
-            { script_helpers::get_core_type("System.Int32"), serialize_int },
-            { script_helpers::get_core_type("System.Single"), serialize_float },
-            { script_helpers::get_core_type("System.Boolean"), serialize_bool },
-            { script_helpers::get_core_type("System.String"), serialize_string },
-            { script_helpers::get_core_type("SGE.Entity", true), serialize_entity }
-        };
+        static std::unordered_map<void*, json (*)(void*)> serialization_callbacks;
+        if (serialization_callbacks.empty()) {
+            auto populate = [&]() {
+                serialization_callbacks = {
+                    { script_helpers::get_core_type("System.Int32"), serialize_int },
+                    { script_helpers::get_core_type("System.Single"), serialize_float },
+                    { script_helpers::get_core_type("System.Boolean"), serialize_bool },
+                    { script_helpers::get_core_type("System.String"), serialize_string },
+                    { script_helpers::get_core_type("SGE.Entity", true), serialize_entity }
+                };
+            };
+
+            populate();
+            script_engine::add_on_reload_callback(populate);
+        }
 
         if (component._class == nullptr) {
             data = nullptr;
@@ -299,13 +308,21 @@ namespace sge {
     struct script_deserializer {
         void operator()(json property_data, script_component& component) {
             static std::unordered_map<void*, void (*)(void*, void*, json)>
-                deserialization_callbacks = {
-                    { script_helpers::get_core_type("System.Int32"), deserialize_int },
-                    { script_helpers::get_core_type("System.Single"), deserialize_float },
-                    { script_helpers::get_core_type("System.Boolean"), deserialize_bool },
-                    { script_helpers::get_core_type("System.String"), deserialize_string },
-                    { script_helpers::get_core_type("SGE.Entity", true), deserialize_entity },
+                deserialization_callbacks;
+            if (deserialization_callbacks.empty()) {
+                auto populate = [&]() {
+                    deserialization_callbacks = {
+                        { script_helpers::get_core_type("System.Int32"), deserialize_int },
+                        { script_helpers::get_core_type("System.Single"), deserialize_float },
+                        { script_helpers::get_core_type("System.Boolean"), deserialize_bool },
+                        { script_helpers::get_core_type("System.String"), deserialize_string },
+                        { script_helpers::get_core_type("SGE.Entity", true), deserialize_entity },
+                    };
                 };
+
+                populate();
+                script_engine::add_on_reload_callback(populate);
+            }
 
             entity current_entity = current_serialization->current_entity;
             component.verify_script(current_entity);
@@ -375,26 +392,82 @@ namespace sge {
             return;
         }
 
-        T* component;
-        if (e.has_all<T>()) {
-            component = &e.get_component<T>();
-        } else {
-            component = &e.add_component<T>();
+        data[key].get_to(e.ensure_component<T>());
+    }
+
+    static void new_serialization(ref<scene> _scene) {
+        if (current_serialization) {
+            throw std::runtime_error("please do not use two serializers at the same time!");
         }
 
-        data[key].get_to<T>(*component);
+        current_serialization = std::make_unique<serialization_data>();
+        current_serialization->_scene = _scene;
+    }
+
+    static void serialize_entity(json& data, entity current, bool id = true) {
+        current_serialization->current_entity = current;
+
+        if (id) {
+            serialize_component<id_component>(current, "guid", data);
+        }
+
+        serialize_component<tag_component>(current, "tag", data);
+        serialize_component<transform_component>(current, "transform", data);
+        serialize_component<camera_component>(current, "camera", data);
+        serialize_component<sprite_renderer_component>(current, "sprite", data);
+        serialize_component<rigid_body_component>(current, "rigid_body", data);
+        serialize_component<box_collider_component>(current, "box_collider", data);
+        serialize_component<script_component>(current, "script", data);
+    }
+
+    static entity deserialize_entity(const json& data, bool id = true) {
+        entity e = current_serialization->_scene->create_entity();
+        current_serialization->current_entity = e;
+
+        if (id) {
+            deserialize_component<id_component>(e, "guid", data);
+        }
+
+        deserialize_component<tag_component>(e, "tag", data);
+        deserialize_component<transform_component>(e, "transform", data);
+        deserialize_component<camera_component>(e, "camera", data);
+        deserialize_component<sprite_renderer_component>(e, "sprite", data);
+        deserialize_component<rigid_body_component>(e, "rigid_body", data);
+        deserialize_component<box_collider_component>(e, "box_collider", data);
+        deserialize_component<script_component>(e, "script", data);
+
+        return e;
+    }
+
+    static void run_post_deserialize_tasks() {
+        while (!current_serialization->post_deserialize.empty()) {
+            auto task = current_serialization->post_deserialize.front();
+            current_serialization->post_deserialize.pop();
+
+            task();
+        }
+    }
+
+    void entity_serializer::serialize(json& data, entity e) {
+        new_serialization(e.get_scene());
+        serialize_entity(data, e, m_serialize_guid);
+        current_serialization.reset();
+    }
+
+    entity entity_serializer::deserialize(const json& data, ref<scene> _scene) {
+        new_serialization(_scene);
+        entity e = deserialize_entity(data, m_serialize_guid);
+
+        run_post_deserialize_tasks();
+        current_serialization.reset();
+
+        return e;
     }
 
     scene_serializer::scene_serializer(ref<scene> _scene) { m_scene = _scene; }
 
     void scene_serializer::serialize(const fs::path& path) {
-        if (current_serialization) {
-            throw std::runtime_error("please do not use two serializers at the same time");
-        }
-
-        current_serialization = std::make_unique<serialization_data>();
-        current_serialization->_scene = m_scene;
-
+        new_serialization(m_scene);
         json data;
 
         // todo: global scene data
@@ -402,16 +475,7 @@ namespace sge {
         json entities;
         m_scene->for_each([&](entity current) {
             json entity_data;
-            current_serialization->current_entity = current;
-
-            serialize_component<id_component>(current, "guid", entity_data);
-            serialize_component<tag_component>(current, "tag", entity_data);
-            serialize_component<transform_component>(current, "transform", entity_data);
-            serialize_component<camera_component>(current, "camera", entity_data);
-            serialize_component<sprite_renderer_component>(current, "sprite", entity_data);
-            serialize_component<rigid_body_component>(current, "rigid_body", entity_data);
-            serialize_component<box_collider_component>(current, "box_collider", entity_data);
-            serialize_component<script_component>(current, "script", entity_data);
+            serialize_entity(entity_data, current);
 
             entities.push_back(entity_data);
         });
@@ -451,13 +515,7 @@ namespace sge {
             return;
         }
 
-        if (current_serialization) {
-            throw std::runtime_error("please do not use two serializers at the same time");
-        }
-
-        current_serialization = std::make_unique<serialization_data>();
-        current_serialization->_scene = m_scene;
-
+        new_serialization(m_scene);
         json data;
         try {
             std::ifstream stream(path);
@@ -465,7 +523,7 @@ namespace sge {
             stream.close();
         } catch (const std::exception& exc) {
             spdlog::warn("error while reading scene {0}: {1}", path.string(), exc.what());
-            
+
             current_serialization.reset();
             return;
         }
@@ -482,26 +540,10 @@ namespace sge {
         }
 
         for (const auto& entity_data : data["entities"]) {
-            entity e = m_scene->create_entity();
-            current_serialization->current_entity = e;
-
-            deserialize_component<id_component>(e, "guid", entity_data);
-            deserialize_component<tag_component>(e, "tag", entity_data);
-            deserialize_component<transform_component>(e, "transform", entity_data);
-            deserialize_component<camera_component>(e, "camera", entity_data);
-            deserialize_component<sprite_renderer_component>(e, "sprite", entity_data);
-            deserialize_component<rigid_body_component>(e, "rigid_body", entity_data);
-            deserialize_component<box_collider_component>(e, "box_collider", entity_data);
-            deserialize_component<script_component>(e, "script", entity_data);
+            deserialize_entity(entity_data);
         }
 
-        while (!current_serialization->post_deserialize.empty()) {
-            auto task = current_serialization->post_deserialize.front();
-            current_serialization->post_deserialize.pop();
-
-            task();
-        }
-
+        run_post_deserialize_tasks();
         current_serialization.reset();
     }
 } // namespace sge

@@ -16,10 +16,24 @@
 
 #pragma once
 #include "sge/scene/scene.h"
+#include "sge/asset/json.h"
 namespace sge {
+    class entity_serializer {
+    public:
+        entity_serializer(bool serialize_guid = true) : m_serialize_guid(serialize_guid) {}
+        ~entity_serializer() = default;
+
+        void serialize(json& data, entity e);
+        entity deserialize(const json& data, ref<scene> _scene);
+
+    private:
+        bool m_serialize_guid;
+    };
+
     class scene_serializer {
     public:
         scene_serializer(ref<scene> _scene);
+        ~scene_serializer() = default;
 
         void serialize(const fs::path& path);
         void deserialize(const fs::path& path);
