@@ -98,10 +98,12 @@ namespace sge {
 
     vulkan_shader::~vulkan_shader() { destroy(); }
 
-    void vulkan_shader::reload() {
+    bool vulkan_shader::reload() {
         destroy();
         create();
+
         renderer::on_shader_reloaded(id);
+        return true;
     }
 
     void vulkan_shader::create() {

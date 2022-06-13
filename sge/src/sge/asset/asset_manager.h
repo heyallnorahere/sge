@@ -28,6 +28,12 @@ namespace sge {
         asset_manager(const asset_manager&) = delete;
         asset_manager operator=(const asset_manager&) = delete;
 
+        bool is_asset_loaded(const fs::path& path) {
+            return m_path_cache.find(path) != m_path_cache.end();
+        }
+
+        bool is_asset_loaded(guid id) { return m_guid_cache.find(id) != m_guid_cache.end(); }
+
         ref<asset> get_asset(const fs::path& path);
         ref<asset> get_asset(guid id);
 

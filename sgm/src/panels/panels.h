@@ -109,6 +109,8 @@ namespace sgm {
         content_browser_panel();
         virtual ~content_browser_panel() override;
 
+        virtual void update(timestep ts) override;
+
         virtual void render() override;
         virtual void on_event(event& e) override;
 
@@ -135,6 +137,8 @@ namespace sgm {
 
         void build_directory_data(const fs::path& path, asset_directory_data& data);
         const asset_directory_data& get_directory_data(const fs::path& path);
+
+        std::unordered_set<fs::path, path_hasher> m_modified_files;
 
         fs::path m_root, m_current;
         float m_padding, m_icon_size;

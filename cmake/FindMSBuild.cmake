@@ -6,12 +6,11 @@ if(WIN32)
         list(APPEND VISUAL_STUDIO_PATHS "C:\\Program Files\\Microsoft Visual Studio\\2022\\${TYPE}")
     endforeach()
 
-    message(STATUS ${VISUAL_STUDIO_PATHS})
     find_program(MSBUILD_EXE "MSBuild"
         PATHS ${VISUAL_STUDIO_PATHS}
         PATH_SUFFIXES "\\MSBuild\\Current\\Bin\\")
 
-    set(MSBUILD_ARGS "${MSBUILD_EXE}")
+    set(MSBUILD_ARGS ${MSBUILD_EXE})
     set(MSBUILD_ERR_MESSAGE "Visual Studio 2022 not found! Please install Visual Studio at https://visualstudio.microsoft.com/downloads/.")
 elseif(UNIX)
     set(MONO_PATHS
@@ -36,6 +35,7 @@ elseif(UNIX)
 endif()
 
 set(MSBUILD_REQUIRED_VARS MSBUILD_ARGS MSBUILD_EXE)
+mark_as_advanced(${MSBUILD_REQUIRED_VARS})
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MSBuild ${MSBUILD_ERR_MESSAGE} ${MSBUILD_REQUIRED_VARS})
-mark_as_advanced(${MSBUILD_REQUIRED_VARS})

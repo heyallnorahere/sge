@@ -70,6 +70,21 @@ namespace sgm {
                 }
             }
 
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("prefab")) {
+                fs::path path =
+                    std::string((const char*)payload->Data, payload->DataSize / sizeof(char) - 1);
+
+                auto& manager = project::get().get_asset_manager();
+                auto _asset = manager.get_asset(path);
+
+                if (_asset) {
+                    auto _prefab = _asset.as<prefab>();
+                    _prefab->instantiate(editor_scene::get_scene());
+                } else {
+                    spdlog::error("could not get prefab: {0}", path.string());
+                }
+            }
+
             ImGui::EndDragDropTarget();
         }
 

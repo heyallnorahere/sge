@@ -19,35 +19,40 @@
 #include "sge/asset/json.h"
 #include "sge/asset/project.h"
 namespace sge {
+    static const std::unordered_map<std::string, asset_type> asset_type_map = {
+        { "shader", asset_type::shader },
+        { "texture_2d", asset_type::texture_2d },
+        { "prefab", asset_type::prefab }
+    };
+
+    static const std::string& get_asset_type_name(asset_type type) {
+        static std::unordered_map<asset_type, std::string> type_name_map;
+        if (type_name_map.empty()) {
+            for (const auto& [name, type] : asset_type_map) {
+                type_name_map.insert(std::make_pair(type, name));
+            }
+        }
+
+        if (type_name_map.find(type) == type_name_map.end()) {
+            throw std::runtime_error("invalid asset type!");
+        }
+
+        return type_name_map.at(type);
+    }
+
     void to_json(json& data, const asset_desc& desc) {
         data["guid"] = nullptr;
         data["path"] = desc.path;
         data["type"] = nullptr;
 
         if (desc.type.has_value()) {
-            std::string type_string;
-            switch (desc.type.value()) {
-            case asset_type::shader:
-                type_string = "shader";
-                break;
-            case asset_type::texture_2d:
-                type_string = "texture_2d";
-                break;
-            default:
-                throw std::runtime_error("invalid asset type!");
-            }
-
-            data["type"] = type_string;
+            data["type"] = get_asset_type_name(desc.type.value());
         }
 
         if (desc.id.has_value()) {
             data["guid"] = desc.id.value();
         }
     }
-
-    static const std::unordered_map<std::string, asset_type> asset_type_map = {
-        { "shader", asset_type::shader }, { "texture_2d", asset_type::texture_2d }
-    };
 
     void from_json(const json& data, asset_desc& desc) {
         auto id_node = data["guid"];

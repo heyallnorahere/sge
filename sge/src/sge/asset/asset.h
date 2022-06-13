@@ -17,7 +17,7 @@
 #pragma once
 #include "sge/core/guid.h"
 namespace sge {
-    enum class asset_type : int32_t { shader = 0, texture_2d };
+    enum class asset_type : int32_t { shader = 0, texture_2d, prefab };
 
     class asset : public ref_counted {
     public:
@@ -28,7 +28,7 @@ namespace sge {
         virtual asset_type get_asset_type() = 0;
         virtual const fs::path& get_path() = 0;
 
-        virtual void reload() = 0;
+        virtual bool reload() = 0;
     };
 
     struct asset_desc {

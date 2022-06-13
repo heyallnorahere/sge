@@ -44,6 +44,7 @@
 #include "sge/scene/components.h"
 #include "sge/scene/entity.h"
 #include "sge/scene/editor_camera.h"
+#include "sge/scene/prefab.h"
 
 // script engine
 #include "sge/script/script_engine.h"

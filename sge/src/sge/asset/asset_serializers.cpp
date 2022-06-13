@@ -18,10 +18,63 @@
 #include "sge/asset/asset_serializers.h"
 #include "sge/renderer/shader.h"
 #include "sge/renderer/texture.h"
+#include "sge/scene/prefab.h"
 #include "sge/asset/project.h"
 namespace sge {
-    static std::unordered_map<asset_type, std::unique_ptr<asset_serializer>> asset_serializers;
+    class shader_serializer : public asset_serializer {
+    protected:
+        virtual bool serialize_impl(const fs::path& path, ref<asset> _asset) override {
+            return true;
+        }
 
+        virtual bool deserialize_impl(const fs::path& path, ref<asset>& _asset) override {
+            if (!fs::exists(path)) {
+                return false;
+            }
+
+            _asset = shader::create(path);
+            return true;
+        }
+    };
+
+    class texture2d_serializer : public asset_serializer {
+    protected:
+        virtual bool serialize_impl(const fs::path& path, ref<asset> _asset) override {
+            auto texture = _asset.as<texture_2d>();
+            texture_2d::serialize_settings(texture, path);
+
+            return true;
+        }
+
+        virtual bool deserialize_impl(const fs::path& path, ref<asset>& _asset) override {
+            if (!fs::exists(path)) {
+                return false;
+            }
+
+            auto texture = texture_2d::load(path);
+            if (texture) {
+                _asset = texture;
+                return true;
+            }
+
+            return false;
+        }
+    };
+
+    class prefab_serializer : public asset_serializer {
+    protected:
+        virtual bool serialize_impl(const fs::path& path, ref<asset> _asset) override {
+            auto _prefab = _asset.as<prefab>();
+            return prefab::serialize(_prefab, path);
+        }
+
+        virtual bool deserialize_impl(const fs::path& path, ref<asset>& _asset) override {
+            _asset = ref<prefab>::create(path);
+            return true;
+        }
+    };
+
+    static std::unordered_map<asset_type, std::unique_ptr<asset_serializer>> asset_serializers;
     template <typename T>
     static void add_serializer(asset_type type) {
         static_assert(std::is_base_of_v<asset_serializer, T>,
@@ -38,6 +91,7 @@ namespace sge {
     void asset_serializer::init() {
         add_serializer<shader_serializer>(asset_type::shader);
         add_serializer<texture2d_serializer>(asset_type::texture_2d);
+        add_serializer<prefab_serializer>(asset_type::prefab);
     }
 
     bool asset_serializer::serialize(ref<asset> _asset) {
@@ -86,35 +140,5 @@ namespace sge {
         }
 
         return succeeded;
-    }
-
-    bool shader_serializer::deserialize_impl(const fs::path& path, ref<asset>& _asset) {
-        if (!fs::exists(path)) {
-            return false;
-        }
-
-        _asset = shader::create(path);
-        return true;
-    }
-
-    bool texture2d_serializer::serialize_impl(const fs::path& path, ref<asset> _asset) {
-        auto texture = _asset.as<texture_2d>();
-        texture_2d::serialize_settings(texture, path);
-
-        return true;
-    }
-
-    bool texture2d_serializer::deserialize_impl(const fs::path& path, ref<asset>& _asset) {
-        if (!fs::exists(path)) {
-            return false;
-        }
-
-        auto texture = texture_2d::load(path);
-        if (texture) {
-            _asset = texture;
-            return true;
-        }
-
-        return false;
     }
 } // namespace sge

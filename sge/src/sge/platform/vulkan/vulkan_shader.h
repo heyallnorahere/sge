@@ -46,7 +46,7 @@ namespace sge {
         vulkan_shader(const fs::path& path, shader_language language);
         virtual ~vulkan_shader() override;
 
-        virtual void reload() override;
+        virtual bool reload() override;
         virtual const fs::path& get_path() override { return m_path; }
 
         const std::vector<VkPipelineShaderStageCreateInfo>& get_pipeline_info() {

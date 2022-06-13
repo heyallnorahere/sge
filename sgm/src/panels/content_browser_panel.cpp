@@ -18,7 +18,9 @@
 #include "panels/panels.h"
 #include "icon_directory.h"
 #include "texture_cache.h"
+
 #include <sge/asset/asset_serializers.h>
+#include <sge/renderer/renderer.h>
 
 namespace sgm {
     content_browser_panel::content_browser_panel() {
@@ -38,6 +40,28 @@ namespace sgm {
             auto& app = application::get();
             app.remove_watched_directory(m_root);
         }
+    }
+
+    void content_browser_panel::update(timestep ts) {
+        if (m_modified_files.empty()) {
+            return;
+        }
+
+        renderer::wait();
+        auto& manager = project::get().get_asset_manager();
+        for (const auto& path : m_modified_files) {
+            if (manager.is_asset_loaded(path)) {
+                auto _asset = manager.get_asset(path);
+
+                if (_asset->reload()) {
+                    continue;
+                }
+            }
+
+            manager.clear_cache_entry(path);
+        }
+
+        m_modified_files.clear();
     }
 
     void content_browser_panel::render() {
@@ -142,8 +166,7 @@ namespace sgm {
         }
 
         const auto& path = e.get_path();
-        auto& manager = project::get().get_asset_manager();
-        auto& registry = manager.registry;
+        auto& registry = project::get().get_asset_manager().registry;
 
         bool handled = false;
         bool tree_changed = false;
@@ -176,13 +199,18 @@ namespace sgm {
         } break;
         case file_status::deleted: {
             fs::path asset_path = fs::relative(path, m_root);
+            if (m_modified_files.find(asset_path) != m_modified_files.end()) {
+                m_modified_files.erase(asset_path);
+            }
 
             handled = true;
             tree_changed |= registry.remove_asset(asset_path);
         } break;
         case file_status::modified: {
             fs::path asset_path = fs::relative(path, m_root);
-            manager.clear_cache_entry(asset_path);
+            if (m_modified_files.find(asset_path) == m_modified_files.end()) {
+                m_modified_files.insert(asset_path);
+            }
         } break;
         }
 
@@ -231,6 +259,7 @@ namespace sgm {
             asset_extension_data data;
             data.drag_drop_id = "shader";
             data.icon_name = "file"; // for now
+            data.type = asset_type::shader;
 
             static std::unordered_set<fs::path, path_hasher> shader_extensions = { ".hlsl",
                                                                                    ".glsl" };
@@ -246,6 +275,16 @@ namespace sgm {
             data.icon_name = "file"; // for now
 
             add_extension_entry(".cs", data);
+        }
+
+        // prefabs
+        {
+            asset_extension_data data;
+            data.drag_drop_id = "prefab";
+            data.icon_name = "file"; // for now
+            data.type = asset_type::prefab;
+
+            add_extension_entry(".sgeprefab", data);
         }
     }
 

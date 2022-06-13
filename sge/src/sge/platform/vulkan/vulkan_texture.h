@@ -23,7 +23,7 @@ namespace sge {
         vulkan_texture_2d(const texture_spec& spec);
         virtual ~vulkan_texture_2d() override;
 
-        virtual void reload() override;
+        virtual bool reload() override { return false; }
 
         virtual ref<image_2d> get_image() override { return m_image; }
         virtual texture_wrap get_wrap() override { return m_wrap; }

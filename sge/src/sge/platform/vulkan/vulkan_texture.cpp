@@ -58,10 +58,6 @@ namespace sge {
         vkDestroySampler(device, m_sampler, nullptr);
     }
 
-    void vulkan_texture_2d::reload() {
-        throw std::runtime_error("not implemented yet");
-    }
-
     ImTextureID vulkan_texture_2d::get_imgui_id() {
         if (m_imgui_id == (ImTextureID)nullptr) {
             VkImageView view = m_image->get_view();
