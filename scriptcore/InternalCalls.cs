@@ -239,5 +239,15 @@ namespace SGE
         public static extern void GetAssetType(IntPtr address, out AssetType type);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern GUID GetAssetGUID(IntPtr address);
+
+        // prefab
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void AddRef_prefab(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveRef_prefab(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void CreatePrefab(Entity entity, out IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern Entity InstantiatePrefab(IntPtr address, IntPtr scene);
     }
 }

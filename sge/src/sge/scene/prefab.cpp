@@ -17,6 +17,7 @@
 #include "sgepch.h"
 #include "sge/scene/prefab.h"
 #include "sge/scene/scene_serializer.h"
+#include "sge/asset/project.h"
 
 namespace sge {
     static entity_serializer s_prefab_serializer = entity_serializer(false);
@@ -28,9 +29,25 @@ namespace sge {
             return nullptr;
         }
 
-        ref<prefab> result = new prefab(path, data);
-        if (!serialize(result, path)) {
-            result.reset();
+        fs::path asset_path = path;
+        auto& _project = project::get();
+
+        if (!asset_path.empty() && asset_path.is_relative()) {
+            fs::path asset_dir = _project.get_asset_dir();
+            asset_path = asset_dir / asset_path;
+        }
+
+        ref<prefab> result = new prefab(asset_path, data);
+        if (!asset_path.empty()) {
+            auto& registry = _project.get_asset_manager().registry;
+            if (registry.contains(asset_path)) {
+                registry.remove_asset(asset_path);
+            }
+
+            registry.register_asset(result);
+            if (!serialize(result, asset_path)) {
+                result.reset();
+            }
         }
 
         return result;

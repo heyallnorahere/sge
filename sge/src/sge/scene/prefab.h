@@ -23,7 +23,7 @@
 namespace sge {
     class prefab : public asset {
     public:
-        static ref<prefab> from_entity(entity e, const fs::path& path);
+        static ref<prefab> from_entity(entity e, const fs::path& path = fs::path());
         static bool serialize(ref<prefab> _prefab, const fs::path& path);
 
         prefab(const fs::path& path) : m_path(path) { reload(); }

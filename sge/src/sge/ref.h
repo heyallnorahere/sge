@@ -50,7 +50,7 @@ namespace sge {
             m_object->m_ref_count--;
 
             if (m_object->m_ref_count == 0) {
-                throw std::runtime_error("something went wrong.");
+                delete m_object;
             }
         }
 

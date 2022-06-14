@@ -21,7 +21,9 @@
 #include "sge/scene/scene.h"
 #include "sge/scene/entity.h"
 #include "sge/scene/components.h"
+#include "sge/scene/prefab.h"
 #include "sge/core/input.h"
+
 namespace sge {
     struct component_callbacks_t {
         std::function<void*(entity)> add, get;
@@ -492,6 +494,22 @@ namespace sge {
 
         static void GetAssetType(asset* a, asset_type* type) { *type = a->get_asset_type(); }
         static guid GetAssetGUID(asset* a) { return a->id; }
+
+        static void CreatePrefab(void* entity_object, prefab** result) {
+            entity e = script_helpers::get_entity_from_object(entity_object);
+            auto _prefab = prefab::from_entity(e);
+
+            prefab* ptr = _prefab.raw();
+            ref_counter<prefab> counter(ptr);
+            counter.add();
+
+            *result = ptr;
+        }
+
+        static void* InstantiatePrefab(prefab* _prefab, scene* _scene) {
+            entity e = _prefab->instantiate(_scene);
+            return script_helpers::create_entity_object(e);
+        }
     } // namespace internal_script_calls
 
     template <typename T>
@@ -642,6 +660,11 @@ namespace sge {
         REGISTER_FUNC(GetAssetPath);
         REGISTER_FUNC(GetAssetType);
         REGISTER_FUNC(GetAssetGUID);
+
+        // prefab
+        REGISTER_REF_COUNTER(prefab);
+        REGISTER_FUNC(CreatePrefab);
+        REGISTER_FUNC(InstantiatePrefab);
 
 #undef REGISTER_CALL
 #undef REGISTER_FUNC

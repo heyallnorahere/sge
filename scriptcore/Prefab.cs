@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2022 Nora Beda and SGE contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,33 +18,26 @@ using System;
 
 namespace SGE
 {
-    public enum AssetType : int
+    public sealed class Prefab : Asset
     {
-        Shader = 0,
-        Texture2D,
-        Prefab
-    }
-
-    public abstract class Asset
-    {
-        public Asset(IntPtr address)
+        public static Prefab Create(Entity entity)
         {
-            mAddress = address;
+            InternalCalls.CreatePrefab(entity, out IntPtr address);
+            return new Prefab(address, false);
         }
 
-        public string Path => InternalCalls.GetAssetPath(mAddress);
-
-        public AssetType Type
+        internal Prefab(IntPtr address, bool addRef = true) : base(address)
         {
-            get
+            if (addRef)
             {
-                InternalCalls.GetAssetType(mAddress, out AssetType type);
-                return type;
+                InternalCalls.AddRef_prefab(address);
             }
         }
+        ~Prefab() => InternalCalls.RemoveRef_texture_2d(mAddress);
 
-        public GUID GUID => InternalCalls.GetAssetGUID(mAddress);
-
-        internal readonly IntPtr mAddress;
+        public Entity Instantiate(Scene scene)
+        {
+            return InternalCalls.InstantiatePrefab(mAddress, scene.mNativeAddress);
+        }
     }
 }
