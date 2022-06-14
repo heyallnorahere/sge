@@ -21,80 +21,10 @@
 #include <sge/renderer/renderer.h>
 #include <imgui_internal.h>
 namespace sgm {
-    static void edit_int(void* instance, void* property, const std::string& label) {
-        void* returned = script_engine::get_property_value(instance, property);
-        int32_t value = script_engine::unbox_object<int32_t>(returned);
-
-        if (ImGui::InputInt(label.c_str(), &value)) {
-            script_engine::set_property_value(instance, property, &value);
-        }
-    }
-
-    static void edit_float(void* instance, void* property, const std::string& label) {
-        void* returned = script_engine::get_property_value(instance, property);
-        float value = script_engine::unbox_object<float>(returned);
-
-        if (ImGui::InputFloat(label.c_str(), &value)) {
-            script_engine::set_property_value(instance, property, &value);
-        }
-    }
-
-    static void edit_bool(void* instance, void* property, const std::string& label) {
-        void* returned = script_engine::get_property_value(instance, property);
-        bool value = script_engine::unbox_object<bool>(returned);
-
-        if (ImGui::Checkbox(label.c_str(), &value)) {
-            script_engine::set_property_value(instance, property, &value);
-        }
-    }
-
-    static void edit_string(void* instance, void* property, const std::string& label) {
-        void* managed_string = script_engine::get_property_value(instance, property);
-        std::string string = script_engine::from_managed_string(managed_string);
-
-        if (ImGui::InputText(label.c_str(), &string)) {
-            managed_string = script_engine::to_managed_string(string);
-            script_engine::set_property_value(instance, property, managed_string);
-        }
-    }
-
-    static void edit_entity_field(void* instance, void* property, const std::string& label) {
-        void* entity_object = script_engine::get_property_value(instance, property);
-        std::string tag;
-
-        if (entity_object != nullptr) {
-            entity e = script_helpers::get_entity_from_object(entity_object);
-            tag = e.get_component<tag_component>().tag;
-        } else {
-            tag = "No entity set";
-        }
-
-        ImGui::InputText(label.c_str(), &tag, ImGuiInputTextFlags_ReadOnly);
-        if (ImGui::BeginDragDropTarget()) {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("entity")) {
-                guid id = *(guid*)payload->Data;
-
-                auto _scene = editor_scene::get_scene();
-                entity found_entity = _scene->find_guid(id);
-                if (!found_entity) {
-                    throw std::runtime_error("an invalid guid was given!");
-                }
-
-                void* entity_object = script_helpers::create_entity_object(found_entity);
-                script_engine::set_property_value(instance, property, entity_object);
-            }
-
-            ImGui::EndDragDropTarget();
-        }
-    }
-
     editor_panel::editor_panel(const std::function<void(const std::string&)>& popup_callback) {
         m_popup_callback = popup_callback;
-        populate_script_controls();
-
         m_callback_index = script_engine::add_on_reload_callback([this]() mutable {
             clear_section_header_cache();
-            populate_script_controls();
         });
     }
 
@@ -488,16 +418,6 @@ namespace sgm {
         m_popup_manager = &popup_manager_;
     }
 
-    void editor_panel::populate_script_controls() {
-        m_script_controls = {
-            { script_helpers::get_core_type("System.Int32"), edit_int },
-            { script_helpers::get_core_type("System.Single"), edit_float },
-            { script_helpers::get_core_type("System.Boolean"), edit_bool },
-            { script_helpers::get_core_type("System.String"), edit_string },
-            { script_helpers::get_core_type("SGE.Entity", true), edit_entity_field },
-        };
-    }
-
     void editor_panel::cache_script_class(void* _class) {
         if (m_section_header_cache.find(_class) != m_section_header_cache.end()) {
             return;
@@ -603,16 +523,10 @@ namespace sgm {
         }
 
         for (void* property : header.properties) {
-            void* property_type = script_engine::get_property_type(property);
-            if (m_script_controls.find(property_type) == m_script_controls.end()) {
-                continue;
-            }
-
             std::string property_name = script_engine::get_property_name(property);
             // todo: format label?
 
-            const auto& callback = m_script_controls[property_type];
-            callback(script_object, property, property_name);
+            script_helpers::show_property_control(script_object, property, property_name);
         }
 
         for (const auto& subheader : header.subheaders) {

@@ -16,7 +16,6 @@
 
 #include "sgepch.h"
 #include "sge/scene/scene_serializer.h"
-#include "sge/scene/entity.h"
 #include "sge/scene/components.h"
 #include "sge/script/script_engine.h"
 #include "sge/script/script_helpers.h"
@@ -24,13 +23,8 @@
 #include "sge/asset/json.h"
 #include "sge/asset/project.h"
 namespace sge {
-    struct serialization_data {
-        std::queue<std::function<void()>> post_deserialize;
-        ref<scene> _scene;
-        entity current_entity;
-    };
-
     static std::unique_ptr<serialization_data> current_serialization;
+    serialization_data* serialization_data::current() { return current_serialization.get(); }
 
     void to_json(json& data, const id_component& comp) { data = comp.id; }
     void from_json(const json& data, id_component& comp) { comp.id = data.get<guid>(); }
@@ -192,40 +186,7 @@ namespace sge {
         bc.size = data["size"].get<glm::vec2>();
     }
 
-    static json serialize_int(void* object) { return script_engine::unbox_object<int32_t>(object); }
-    static json serialize_float(void* object) { return script_engine::unbox_object<float>(object); }
-    static json serialize_bool(void* object) { return script_engine::unbox_object<bool>(object); }
-
-    static json serialize_string(void* object) {
-        return script_engine::from_managed_string(object);
-    }
-
-    static json serialize_entity(void* object) {
-        if (object != nullptr) {
-            entity e = script_helpers::get_entity_from_object(object);
-            return e.get_guid();
-        } else {
-            return nullptr;
-        }
-    }
-
     void to_json(json& data, const script_component& component) {
-        static std::unordered_map<void*, json (*)(void*)> serialization_callbacks;
-        if (serialization_callbacks.empty()) {
-            auto populate = [&]() {
-                serialization_callbacks = {
-                    { script_helpers::get_core_type("System.Int32"), serialize_int },
-                    { script_helpers::get_core_type("System.Single"), serialize_float },
-                    { script_helpers::get_core_type("System.Boolean"), serialize_bool },
-                    { script_helpers::get_core_type("System.String"), serialize_string },
-                    { script_helpers::get_core_type("SGE.Entity", true), serialize_entity }
-                };
-            };
-
-            populate();
-            script_engine::add_on_reload_callback(populate);
-        }
-
         if (component._class == nullptr) {
             data = nullptr;
             return;
@@ -248,17 +209,10 @@ namespace sge {
                         continue;
                     }
 
-                    void* property_type = script_engine::get_property_type(property);
-                    if (serialization_callbacks.find(property_type) ==
-                        serialization_callbacks.end()) {
-                        continue;
-                    }
-
                     std::string property_name = script_engine::get_property_name(property);
-                    void* property_value = script_engine::get_property_value(instance, property);
+                    json& result = property_data[property_name];
 
-                    auto callback = serialization_callbacks[property_type];
-                    property_data[property_name] = callback(property_value);
+                    script_helpers::serialize_property(instance, property, result);
                 }
 
                 data["properties"] = property_data;
@@ -266,64 +220,8 @@ namespace sge {
         }
     }
 
-    static void deserialize_int(void* instance, void* property, json data) {
-        int32_t value = data.get<int32_t>();
-        script_engine::set_property_value(instance, property, &value);
-    }
-
-    static void deserialize_float(void* instance, void* property, json data) {
-        float value = data.get<float>();
-        script_engine::set_property_value(instance, property, &value);
-    }
-
-    static void deserialize_bool(void* instance, void* property, json data) {
-        bool value = data.get<bool>();
-        script_engine::set_property_value(instance, property, &value);
-    }
-
-    static void deserialize_string(void* instance, void* property, json data) {
-        std::string value = data.get<std::string>();
-        void* managed_string = script_engine::to_managed_string(value);
-        script_engine::set_property_value(instance, property, managed_string);
-    }
-
-    static void deserialize_entity(void* instance, void* property, json data) {
-        if (!data.is_null()) {
-            guid id = data.get<guid>();
-
-            current_serialization->post_deserialize.push([instance, property, id]() mutable {
-                entity found_entity = current_serialization->_scene->find_guid(id);
-                if (!found_entity) {
-                    throw std::runtime_error("a nonexistent entity was specified");
-                }
-
-                void* entity_object = script_helpers::create_entity_object(found_entity);
-                script_engine::set_property_value(instance, property, entity_object);
-            });
-        } else {
-            script_engine::set_property_value(instance, property, (void*)nullptr);
-        }
-    }
-
     struct script_deserializer {
         void operator()(json property_data, script_component& component) {
-            static std::unordered_map<void*, void (*)(void*, void*, json)>
-                deserialization_callbacks;
-            if (deserialization_callbacks.empty()) {
-                auto populate = [&]() {
-                    deserialization_callbacks = {
-                        { script_helpers::get_core_type("System.Int32"), deserialize_int },
-                        { script_helpers::get_core_type("System.Single"), deserialize_float },
-                        { script_helpers::get_core_type("System.Boolean"), deserialize_bool },
-                        { script_helpers::get_core_type("System.String"), deserialize_string },
-                        { script_helpers::get_core_type("SGE.Entity", true), deserialize_entity },
-                    };
-                };
-
-                populate();
-                script_engine::add_on_reload_callback(populate);
-            }
-
             entity current_entity = current_serialization->current_entity;
             component.verify_script(current_entity);
             void* instance = garbage_collector::get_ref_data(component.gc_handle);
@@ -336,19 +234,13 @@ namespace sge {
                     continue;
                 }
 
-                void* property_type = script_engine::get_property_type(property);
-                if (deserialization_callbacks.find(property_type) ==
-                    deserialization_callbacks.end()) {
-                    continue;
-                }
-
                 std::string property_name = script_engine::get_property_name(property);
                 if (property_data.find(property_name) == property_data.end()) {
                     continue;
                 }
 
-                auto callback = deserialization_callbacks[property_type];
-                callback(instance, property, property_data[property_name]);
+                const json& data = property_data[property_name];
+                script_helpers::deserialize_property(instance, property, data);
             }
         }
     };

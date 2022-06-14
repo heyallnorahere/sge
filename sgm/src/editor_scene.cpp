@@ -50,9 +50,14 @@ namespace sgm {
 
             scene_data->_framebuffer = framebuffer::create(spec);
         }
+
+        script_helpers::set_editor_scene(scene_data->_scene);
     }
 
-    void editor_scene::destroy() { scene_data.reset(); }
+    void editor_scene::destroy() {
+        script_helpers::set_editor_scene(nullptr);
+        scene_data.reset();
+    }
 
     void editor_scene::on_update(timestep ts) {
         auto pass = scene_data->_framebuffer->get_render_pass();
@@ -121,6 +126,8 @@ namespace sgm {
 
         scene_data->runtime_scene = scene_data->_scene->copy();
         scene_data->runtime_scene->on_start();
+
+        script_helpers::set_editor_scene(scene_data->runtime_scene);
     }
 
     void editor_scene::stop() {
@@ -129,6 +136,7 @@ namespace sgm {
         }
 
         reset_selection();
+        script_helpers::set_editor_scene(scene_data->_scene);
 
         scene_data->runtime_scene->on_stop();
         scene_data->runtime_scene.reset();

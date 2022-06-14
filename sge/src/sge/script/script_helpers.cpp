@@ -20,7 +20,10 @@
 #include "sge/script/garbage_collector.h"
 namespace sge {
     static void* managed_helpers_class = nullptr;
-    void script_helpers::init() { managed_helpers_class = get_core_type("SGE.Helpers", true); }
+    void script_helpers::init() {
+        managed_helpers_class = get_core_type("SGE.Helpers", true);
+        register_property_handlers();
+    }
 
     void script_helpers::report_exception(void* exception) {
         void* method = script_engine::get_method(managed_helpers_class, "ReportException");

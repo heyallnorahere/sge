@@ -89,14 +89,11 @@ namespace sgm {
             std::vector<section_header_t> subheaders;
         };
 
-        void populate_script_controls();
-
         void cache_script_class(void* _class);
         void draw_property_controls();
         void render_header(void* script_object, const section_header_t& header);
 
         std::unordered_map<void*, std::vector<section_header_t>> m_section_header_cache;
-        std::unordered_map<void*, script_control_t> m_script_controls;
         size_t m_callback_index;
 
         std::function<void(const std::string&)> m_popup_callback;

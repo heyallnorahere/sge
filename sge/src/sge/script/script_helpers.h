@@ -17,6 +17,8 @@
 #pragma once
 #include "sge/scene/scene.h"
 #include "sge/scene/entity.h"
+#include "sge/asset/json.h"
+
 namespace sge {
     class script_helpers {
     public:
@@ -40,5 +42,14 @@ namespace sge {
         
         static void* create_event_object(event& e);
         static void* create_list_object(void* element_type);
+
+        static void set_editor_scene(ref<scene> _scene);
+        static void show_property_control(void* instance, void* property, const std::string& label);
+
+        static void serialize_property(void* instance, void* property, json& data);
+        static void deserialize_property(void* instance, void* property, const json& data);
+
+    private:
+        static void register_property_handlers();
     };
 } // namespace sge

@@ -16,8 +16,17 @@
 
 #pragma once
 #include "sge/scene/scene.h"
+#include "sge/scene/entity.h"
 #include "sge/asset/json.h"
 namespace sge {
+    struct serialization_data {
+        std::queue<std::function<void()>> post_deserialize;
+        ref<scene> _scene;
+        entity current_entity;
+
+        static serialization_data* current();
+    };
+
     class entity_serializer {
     public:
         entity_serializer(bool serialize_guid = true) : m_serialize_guid(serialize_guid) {}
