@@ -15,6 +15,8 @@
 */
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace SGE
 {
@@ -25,9 +27,64 @@ namespace SGE
         Prefab
     }
 
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    internal sealed class TypedAssetAttribute : Attribute
+    {
+        public TypedAssetAttribute(AssetType type)
+        {
+            Type = type;
+        }
+
+        public AssetType Type { get; }
+    }
+
     public abstract class Asset
     {
-        public Asset(IntPtr address)
+        static readonly IReadOnlyDictionary<AssetType, ConstructorInfo> sAssetConstructors;
+        static Asset()
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var types = assembly.GetTypes();
+
+            var constructors = new Dictionary<AssetType, ConstructorInfo>();
+            foreach (var type in types)
+            {
+                var attribute = type.GetCustomAttribute<TypedAssetAttribute>();
+                if (attribute != null)
+                {
+                    if (constructors.ContainsKey(attribute.Type))
+                    {
+                        Log.Error($"asset type already exists: {attribute.Type}");
+                        continue;
+                    }
+
+                    var constructor = type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(IntPtr) }, null);
+                    if (constructor == null)
+                    {
+                        Log.Error($"could not find a suitable constructor for {type.FullName}");
+                        continue;
+                    }
+
+                    constructors.Add(attribute.Type, constructor);
+                }
+            }
+
+            sAssetConstructors = constructors;
+        }
+
+        internal static Asset FromPointer(IntPtr address)
+        {
+            InternalCalls.GetAssetType(address, out AssetType type);
+            if (!sAssetConstructors.ContainsKey(type))
+            {
+                return null;
+            }
+
+            var constructor = sAssetConstructors[type];
+            return (Asset)constructor.Invoke(new object[] { address });
+        }
+
+        internal Asset(IntPtr address)
         {
             mAddress = address;
         }

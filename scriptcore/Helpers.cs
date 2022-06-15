@@ -44,7 +44,8 @@ namespace SGE
             }
         }
 
-        public static bool Extends(this Type derived, Type baseType)
+        public static bool Extends(this Type derived, Type baseType) => ExtendsImpl(derived, baseType);
+        internal static bool ExtendsImpl(Type derived, Type baseType)
         {
             Type currentBaseType = derived.BaseType;
             if (currentBaseType == baseType)
@@ -53,7 +54,7 @@ namespace SGE
             }
             else if (currentBaseType != null)
             {
-                return currentBaseType.Extends(baseType);
+                return ExtendsImpl(currentBaseType, baseType);
             }
             else
             {
@@ -73,7 +74,18 @@ namespace SGE
         }
 
         internal static string GetTypeNameSafe(Type type) => type.FullName ?? type.Name;
-        internal static int GetTypeSize(Type type) => Marshal.SizeOf(type);
+
+        internal static int GetTypeSize(Type type)
+        {
+            try
+            {
+                return Marshal.SizeOf(type);
+            }
+            catch (ArgumentException)
+            {
+                return Marshal.SizeOf<int>();
+            }
+        }
 
         internal static Event CreateEvent(IntPtr address, EventID id)
         {
@@ -100,6 +112,30 @@ namespace SGE
         {
             var listType = typeof(List<>).MakeGenericType(new Type[] { elementType });
             return listType.GetConstructor(new Type[] { }).Invoke(null);
+        }
+
+        internal static IReadOnlyList<string> GetEnumValueNames(Type enumType)
+        {
+            var names = new List<string>();
+
+            var values = Enum.GetValues(enumType);
+            foreach (var value in values) {
+                names.Add(value.ToString());
+            }
+
+            return names;
+        }
+
+        internal static object ParseEnum(Type type, string name, bool ignoreCase)
+        {
+            try
+            {
+                return Enum.Parse(type, name, ignoreCase);
+            }
+            catch (Exception)
+            {
+                return Enum.GetValues(type).GetValue(0);
+            }
         }
 
         private static void ReportInnerException(Exception exception, int tabs = 2)

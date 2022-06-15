@@ -57,6 +57,44 @@ namespace sge {
         return handle;
     }
 
+    void script_helpers::get_enum_value_names(void* _class, std::vector<std::string>& names) {
+        void* method = script_engine::get_method(managed_helpers_class, "GetEnumValueNames");
+
+        void* reflection_type = script_engine::to_reflection_type(_class);
+        void* list = script_engine::call_method(nullptr, method, reflection_type);
+
+        names.clear();
+        if (list != nullptr) {
+            void* list_type = script_engine::get_class_from_object(list);
+
+            void* count_property = script_engine::get_property(list_type, "Count");
+            void* result = script_engine::get_property_value(list, count_property);
+            int32_t count = script_engine::unbox_object<int32_t>(result);
+
+            void* item_property = script_engine::get_property(list_type, "Item");
+            for (int32_t i = 0; i < count; i++) {
+                result = script_engine::get_property_value(list, item_property, &i);
+                names.push_back(script_engine::from_managed_string(result));
+            }
+        }
+    }
+
+    int32_t script_helpers::parse_enum(const std::string& value, void* enum_type) {
+        void* reflection_type = script_engine::to_reflection_type(enum_type);
+        void* managed_string = script_engine::to_managed_string(value);
+        static bool ignore_case = true;
+
+        void* method = script_engine::get_method(managed_helpers_class, "ParseEnum");
+        void* returned = script_engine::call_method(nullptr, method, reflection_type,
+                                                    managed_string, &ignore_case);
+
+        if (returned != nullptr) {
+            return script_engine::unbox_object<int32_t>(returned);
+        } else {
+            return -1;
+        }
+    }
+
     bool script_helpers::is_property_serializable(void* property) {
         bool serializable = true;
 
@@ -66,8 +104,7 @@ namespace sge {
         serializable &= !property_has_attribute(property, unserialized_attribute);
 
         uint32_t accessors = script_engine::get_property_accessors(property);
-        serializable &= ((accessors & (property_accessor_get | property_accessor_set)) !=
-                         property_accessor_none);
+        serializable &= ((accessors & property_accessor_get) != property_accessor_none);
 
         uint32_t visibility = script_engine::get_property_visibility(property);
         serializable &=
@@ -76,7 +113,16 @@ namespace sge {
         return serializable;
     }
 
+    bool script_helpers::is_property_read_only(void* property) {
+        uint32_t accessors = script_engine::get_property_accessors(property);
+        return (accessors & property_accessor_set) == property_accessor_none;
+    }
+
     void* script_helpers::create_entity_object(entity e) {
+        if (!e) {
+            return nullptr;
+        }
+
         void* scriptcore = script_engine::get_assembly(0);
         void* scene_class = script_engine::get_class(scriptcore, "SGE.Scene");
         if (scene_class == nullptr) {
@@ -111,6 +157,10 @@ namespace sge {
     }
 
     entity script_helpers::get_entity_from_object(void* object) {
+        if (object == nullptr) {
+            return entity();
+        }
+
         void* scriptcore = script_engine::get_assembly(0);
         void* entity_class = script_engine::get_class(scriptcore, "SGE.Entity");
         if (entity_class == nullptr) {
@@ -131,9 +181,33 @@ namespace sge {
 
         field = script_engine::get_field(scene_class, "mNativeAddress");
         value = script_engine::get_field_value(scene_object, field);
-        void* scene_ptr = script_engine::unbox_object<void*>(value);
+        scene* _scene = script_engine::unbox_object<scene*>(value);
 
-        return entity((entt::entity)entity_id, (scene*)scene_ptr);
+        return entity((entt::entity)entity_id, _scene);
+    }
+
+    void* script_helpers::create_asset_object(ref<asset> _asset) {
+        if (!_asset) {
+            return nullptr;
+        }
+
+        void* asset_class = get_core_type("SGE.Asset", true);
+        void* method = script_engine::get_method(asset_class, "FromPointer");
+
+        asset* ptr = _asset.raw();
+        return script_engine::call_method(nullptr, method, &ptr);
+    }
+
+    ref<asset> script_helpers::get_asset_from_object(void* object) {
+        if (object == nullptr) {
+            return nullptr;
+        }
+
+        void* asset_class = get_core_type("SGE.Asset", true);
+        void* field = script_engine::get_field(asset_class, "mAddress");
+
+        void* value = script_engine::get_field_value(object, field);
+        return script_engine::unbox_object<asset*>(value);
     }
 
     void* script_helpers::get_core_type(const std::string& name, bool scriptcore) {
@@ -166,6 +240,27 @@ namespace sge {
         void* returned = script_engine::get_property_value(reflection_type, property);
 
         return script_engine::unbox_object<bool>(returned);
+    }
+
+    bool script_helpers::type_is_enum(void* _class) {
+        void* type_class = get_core_type("System.Type");
+        void* property = script_engine::get_property(type_class, "IsEnum");
+
+        void* reflection_type = script_engine::to_reflection_type(_class);
+        void* returned = script_engine::get_property_value(reflection_type, property);
+
+        return script_engine::unbox_object<bool>(returned);
+    }
+
+    bool script_helpers::type_extends(void* derived, void* base) {
+        void* reflection_derived = script_engine::to_reflection_type(derived);
+        void* reflection_base = script_engine::to_reflection_type(base);
+
+        void* method = script_engine::get_method(managed_helpers_class, "ExtendsImpl");
+        void* result =
+            script_engine::call_method(nullptr, method, reflection_derived, reflection_base);
+
+        return script_engine::unbox_object<bool>(result);
     }
 
     void* script_helpers::create_event_object(event& e) {

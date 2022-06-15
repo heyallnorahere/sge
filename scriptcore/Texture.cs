@@ -15,7 +15,7 @@
 */
 
 using System;
-
+using System.IO;
 
 namespace SGE
 {
@@ -31,30 +31,27 @@ namespace SGE
         Nearest
     }
 
+    [TypedAsset(AssetType.Texture2D)]
     public sealed class Texture2D : Asset
     {
-        internal Texture2D(IntPtr address, bool addRef = true) : base(address)
+        private static IntPtr Load(string path)
         {
-            if (addRef)
+            InternalCalls.LoadTexture2D(path, out IntPtr address);
+            if (address == IntPtr.Zero)
             {
-                InternalCalls.AddRef_texture_2d(mAddress);
+                throw new FileNotFoundException();
             }
+
+            return address;
         }
+
+        public Texture2D(string path) : base(Load(path)) { }
+        internal Texture2D(IntPtr address) : base(address)
+        {
+            InternalCalls.AddRef_texture_2d(mAddress);
+        }
+
         ~Texture2D() => InternalCalls.RemoveRef_texture_2d(mAddress);
-
-        static Texture2D Load(string path)
-        {
-            IntPtr address;
-            InternalCalls.LoadTexture2D(path, out address);
-
-            Texture2D texture = null;
-            if (address != IntPtr.Zero)
-            {
-                texture = new Texture2D(address, false);
-            }
-
-            return texture;
-        }
 
         public TextureWrap Wrap => InternalCalls.GetWrapTexture2D(mAddress);
         public TextureFilter Filter => InternalCalls.GetFilterTexture2D(mAddress);

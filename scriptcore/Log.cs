@@ -18,21 +18,28 @@ namespace SGE
 {
     public static class Log
     {
+        public static void Debug(object data) => Debug(data.ToString());
         public static void Debug(string message, params object[] args)
         {
             string formattedString = string.Format(message, args);
             InternalCalls.LogDebug(formattedString);
         }
+
+        public static void Info(object data) => Info(data.ToString());
         public static void Info(string message, params object[] args)
         {
             string formattedString = string.Format(message, args);
             InternalCalls.LogInfo(formattedString);
         }
+
+        public static void Warn(object data) => Warn(data.ToString());
         public static void Warn(string message, params object[] args)
         {
             string formattedString = string.Format(message, args);
             InternalCalls.LogWarn(formattedString);
         }
+
+        public static void Error(object data) => Error(data.ToString());
         public static void Error(string message, params object[] args)
         {
             string formattedString = string.Format(message, args);

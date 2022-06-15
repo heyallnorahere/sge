@@ -247,7 +247,7 @@ namespace sge {
         script_helpers::init();
     }
 
-    enum class script_property_type { value, entity_, array, list };
+    enum class script_property_type { value, _entity, array, list, _asset };
     struct script_property_data_t {
         value_wrapper data;
         std::vector<value_wrapper> array;
@@ -264,6 +264,7 @@ namespace sge {
             std::unordered_map<guid, std::unordered_map<std::string, script_property_data_t>>>
             old_property_values;
 
+        void* asset_class = script_helpers::get_core_type("SGE.Asset", true);
         for (ref<scene> _scene : current_scenes) {
             std::unordered_map<guid, std::unordered_map<std::string, script_property_data_t>>
                 entity_data;
@@ -337,11 +338,14 @@ namespace sge {
 
                             result.property_type = script_property_type::list;
                         } else if (result.type_name == "SGE.Entity") {
-                            entity e = script_helpers::get_entity_from_object(property_data);
-                            guid id = e.get_guid();
+                            if (property_data != nullptr) {
+                                entity e = script_helpers::get_entity_from_object(property_data);
+                                guid id = e.get_guid();
 
-                            result.data = value_wrapper(&id, sizeof(guid));
-                            result.property_type = script_property_type::entity_;
+                                result.data = value_wrapper(&id, sizeof(guid));
+                            }
+
+                            result.property_type = script_property_type::_entity;
                         } else if (script_helpers::type_is_array(type)) {
                             result.array_element_type = get_array_element_type(property_data);
                             if (!is_value_type(result.array_element_type)) {
@@ -360,6 +364,13 @@ namespace sge {
                             }
 
                             result.property_type = script_property_type::array;
+                        } else if (script_helpers::type_extends(type, asset_class)) {
+                            auto _asset = script_helpers::get_asset_from_object(property_data);
+                            if (_asset) {
+                                result.data = value_wrapper(&_asset->id, sizeof(guid));
+                            }
+
+                            result.property_type = script_property_type::_asset;
                         }
                     }
 
@@ -451,11 +462,15 @@ namespace sge {
 
                         set_property_value(script_object, property, mono_array);
                     } break;
-                    case script_property_type::entity_: {
-                        guid id = data.data.get<guid>();
-                        entity value = _scene->find_guid(id);
+                    case script_property_type::_entity: {
+                        void* entity_object = nullptr;
+                        if (data.data) {
+                            guid id = data.data.get<guid>();
+                            entity value = _scene->find_guid(id);
 
-                        void* entity_object = script_helpers::create_entity_object(value);
+                            entity_object = script_helpers::create_entity_object(value);
+                        }
+
                         set_property_value(script_object, property, entity_object);
                     } break;
                     case script_property_type::list: {
@@ -472,6 +487,19 @@ namespace sge {
                     case script_property_type::value:
                         set_property_value(script_object, property, (void*)data.data.ptr());
                         break;
+                    case script_property_type::_asset: {
+                        void* value = nullptr;
+                        if (data.data) {
+                            auto& manager = project::get().get_asset_manager();
+
+                            guid id = data.data.get<guid>();
+                            auto _asset = manager.get_asset(id);
+
+                            value = script_helpers::create_asset_object(_asset);
+                        }
+
+                        set_property_value(script_object, property, value);
+                    } break;
                     }
                 }
             }

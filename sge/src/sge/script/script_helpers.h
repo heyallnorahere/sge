@@ -18,6 +18,7 @@
 #include "sge/scene/scene.h"
 #include "sge/scene/entity.h"
 #include "sge/asset/json.h"
+#include "sge/asset/asset.h"
 
 namespace sge {
     class script_helpers {
@@ -29,16 +30,27 @@ namespace sge {
 
         static bool property_has_attribute(void* property, void* attribute_type);
         static uint32_t get_property_attribute(void* property, void* attribute_type);
+
+        static void get_enum_value_names(void* _class, std::vector<std::string>& names);
+        static int32_t parse_enum(const std::string& value, void* enum_type);
+
         static bool is_property_serializable(void* property);
+        static bool is_property_read_only(void* property);
 
         static void* create_entity_object(entity e);
         static entity get_entity_from_object(void* object);
+
+        static void* create_asset_object(ref<asset> _asset);
+        static ref<asset> get_asset_from_object(void* object);
 
         static void* get_core_type(const std::string& name, bool scriptcore = false);
 
         static std::string get_type_name_safe(void* _class);
         static size_t get_type_size(void* _class);
+
         static bool type_is_array(void* _class);
+        static bool type_is_enum(void* _class);
+        static bool type_extends(void* derived, void* base);
         
         static void* create_event_object(event& e);
         static void* create_list_object(void* element_type);

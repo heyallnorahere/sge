@@ -18,22 +18,22 @@ using System;
 
 namespace SGE
 {
+    [TypedAsset(AssetType.Prefab)]
     public sealed class Prefab : Asset
     {
-        public static Prefab Create(Entity entity)
+        private static IntPtr Create(Entity entity)
         {
             InternalCalls.CreatePrefab(entity, out IntPtr address);
-            return new Prefab(address, false);
+            return address;
         }
 
-        internal Prefab(IntPtr address, bool addRef = true) : base(address)
+        public Prefab(Entity entity) : base(Create(entity)) { }
+        internal Prefab(IntPtr address) : base(address)
         {
-            if (addRef)
-            {
-                InternalCalls.AddRef_prefab(address);
-            }
+            InternalCalls.AddRef_prefab(address);
         }
-        ~Prefab() => InternalCalls.RemoveRef_texture_2d(mAddress);
+
+        ~Prefab() => InternalCalls.RemoveRef_prefab(mAddress);
 
         public Entity Instantiate(Scene scene)
         {
