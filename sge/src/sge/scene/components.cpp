@@ -51,8 +51,8 @@ namespace sge {
             std::vector<void*> properties;
             script_engine::iterate_properties(csrc._class, properties);
 
-            void* scriptcore = script_engine::get_assembly(0);
-            void* entity_class = script_engine::get_class(scriptcore, "SGE.Entity");
+            void* entity_class = script_helpers::get_core_type("SGE.Entity", true);
+            void* asset_class = script_helpers::get_core_type("SGE.Asset", true);
 
             for (void* property : properties) {
                 if (!script_helpers::is_property_serializable(property)) {
@@ -67,19 +67,32 @@ namespace sge {
                     const void* data = script_engine::unbox_object(value);
                     script_engine::set_property_value(dst_instance, property, (void*)data);
                 } else {
-                    if (property_type != entity_class || value == nullptr) {
-                        void* new_value = script_engine::clone_object(value);
-                        script_engine::set_property_value(dst_instance, property, new_value);
-                    } else {
-                        entity native_entity = script_helpers::get_entity_from_object(value);
+                    if (value != nullptr) {
+                        if (property_type == entity_class) {
+                            entity native_entity = script_helpers::get_entity_from_object(value);
 
-                        entity found_entity = dst_scene->find_guid(native_entity.get_guid());
-                        if (!found_entity) {
-                            throw std::runtime_error("script_component did not clone correctly!");
+                            entity found_entity = dst_scene->find_guid(native_entity.get_guid());
+                            if (!found_entity) {
+                                throw std::runtime_error(
+                                    "script_component did not clone correctly!");
+                            }
+
+                            void* entity_object =
+                                script_helpers::create_entity_object(found_entity);
+                            script_engine::set_property_value(dst_instance, property,
+                                                              entity_object);
+                        } else if (property_type == asset_class) {
+                            ref<asset> _asset = script_helpers::get_asset_from_object(value);
+                            void* asset_object = script_helpers::create_asset_object(_asset);
+
+                            script_engine::set_property_value(dst_instance, property, asset_object);
+                        } else {
+                            void* new_value = script_engine::clone_object(value);
+                            script_engine::set_property_value(dst_instance, property, new_value);
                         }
-
-                        void* entity_object = script_helpers::create_entity_object(found_entity);
-                        script_engine::set_property_value(dst_instance, property, entity_object);
+                    } else {
+                        // don't know how else to clone it
+                        script_engine::set_property_value(dst_instance, property, (void*)nullptr);
                     }
                 }
             }
