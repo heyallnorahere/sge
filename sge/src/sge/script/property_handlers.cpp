@@ -372,6 +372,18 @@ namespace sge {
                 deserialize_asset(instance, property, data);
             }
         }; // namespace prefab_
+
+        namespace shader_ {
+            static void edit(void* instance, void* property, const std::string& label) {
+                edit_asset(instance, property, label, "shader");
+            }
+
+            static void serialize(void* object, json& data) { serialize_asset(object, data); }
+
+            static void deserialize(void* instance, void* property, const json& data) {
+                deserialize_asset(instance, property, data);
+            }
+        }; // namespace shader_
     }      // namespace handlers
 
     void script_helpers::set_editor_scene(ref<scene> _scene) {
@@ -467,6 +479,7 @@ namespace sge {
         REGISTER_HANDLER(entity, "SGE.Entity");
         REGISTER_HANDLER(texture_2d, "SGE.Texture2D");
         REGISTER_HANDLER(prefab, "SGE.Prefab");
+        REGISTER_HANDLER(shader, "SGE.Shader");
     }
 
 #undef REGISTER_HANDLER

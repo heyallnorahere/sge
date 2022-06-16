@@ -16,7 +16,6 @@
 
 #include "sgepch.h"
 #include "sge/core/window.h"
-#include "sge/renderer/renderer.h"
 #ifdef SGE_PLATFORM_DESKTOP
 #include "sge/platform/desktop/desktop_window.h"
 #endif

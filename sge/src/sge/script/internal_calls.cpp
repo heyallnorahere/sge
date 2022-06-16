@@ -23,6 +23,7 @@
 #include "sge/scene/components.h"
 #include "sge/scene/prefab.h"
 #include "sge/core/input.h"
+#include "sge/renderer/shader.h"
 
 namespace sge {
     struct component_callbacks_t {
@@ -495,6 +496,8 @@ namespace sge {
         static void GetAssetType(asset* a, asset_type* type) { *type = a->get_asset_type(); }
         static guid GetAssetGUID(asset* a) { return a->id; }
 
+        static bool ReloadAsset(asset* a) { return a->reload(); }
+
         static void CreatePrefab(void* entity_object, prefab** result) {
             entity e = script_helpers::get_entity_from_object(entity_object);
             auto _prefab = prefab::from_entity(e);
@@ -509,6 +512,32 @@ namespace sge {
         static void* InstantiatePrefab(prefab* _prefab, scene* _scene) {
             entity e = _prefab->instantiate(_scene);
             return script_helpers::create_entity_object(e);
+        }
+
+        static void LoadShaderAuto(void* path, shader** address) {
+            fs::path shader_path = script_engine::from_managed_string(path);
+            auto _shader = shader::create(shader_path);
+
+            shader* ptr = _shader.raw();
+            if (ptr != nullptr) {
+                ref_counter<shader> counter(ptr);
+                counter.add();
+            }
+
+            *address = ptr;
+        }
+
+        static void LoadShaderExplicit(void* path, shader_language language, shader** address) {
+            fs::path shader_path = script_engine::from_managed_string(path);
+            auto _shader = shader::create(shader_path, language);
+
+            shader* ptr = _shader.raw();
+            if (ptr != nullptr) {
+                ref_counter<shader> counter(ptr);
+                counter.add();
+            }
+
+            *address = ptr;
         }
     } // namespace internal_script_calls
 
@@ -660,11 +689,17 @@ namespace sge {
         REGISTER_FUNC(GetAssetPath);
         REGISTER_FUNC(GetAssetType);
         REGISTER_FUNC(GetAssetGUID);
+        REGISTER_FUNC(ReloadAsset);
 
         // prefab
         REGISTER_REF_COUNTER(prefab);
         REGISTER_FUNC(CreatePrefab);
         REGISTER_FUNC(InstantiatePrefab);
+
+        // shader
+        REGISTER_REF_COUNTER(shader);
+        REGISTER_FUNC(LoadShaderAuto);
+        REGISTER_FUNC(LoadShaderExplicit);
 
 #undef REGISTER_CALL
 #undef REGISTER_FUNC

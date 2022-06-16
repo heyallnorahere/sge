@@ -89,6 +89,8 @@ namespace SGE
             mAddress = address;
         }
 
+        public bool Reload() => InternalCalls.ReloadAsset(mAddress);
+
         public string Path => InternalCalls.GetAssetPath(mAddress);
 
         public AssetType Type

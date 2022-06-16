@@ -17,7 +17,7 @@
 #pragma once
 #include "sge/asset/asset.h"
 namespace sge {
-    enum class shader_language { glsl, hlsl };
+    enum class shader_language : int32_t { glsl = 0, hlsl };
     enum class shader_stage { vertex, fragment };
 
     class shader : public asset {
