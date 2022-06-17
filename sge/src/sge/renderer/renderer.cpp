@@ -67,6 +67,7 @@ namespace sge {
     struct grid_data_t {
         float view_size, aspect_ratio;
         glm::vec2 camera_position;
+        glm::uvec2 viewport_size;
     };
 
     struct used_pipeline_data_t {
@@ -382,6 +383,8 @@ namespace sge {
                 grid_data.view_size = batch->grid_camera->get_view_size();
                 grid_data.aspect_ratio = batch->grid_camera->get_aspect_ratio();
                 grid_data.camera_position = batch->grid_camera->get_position();
+                grid_data.viewport_size.x = batch->grid_camera->get_viewport_width();
+                grid_data.viewport_size.y = batch->grid_camera->get_viewport_height();
 
                 renderer_data.grid_buffer->set_data(grid_data);
                 _pipeline->set_uniform_buffer(renderer_data.grid_buffer, 0);

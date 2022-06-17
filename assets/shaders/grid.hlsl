@@ -31,7 +31,7 @@ struct vs_output {
 vs_output main(vs_input input) {
     vs_output output;
 
-    output.position = float4(input.position, 0.f, 1.f);
+    output.position = float4(input.position, 0.f, 1.0f);
     output.uv = input.uv;
 
     return output;
@@ -42,6 +42,7 @@ struct grid_data_t {
     float view_size;
     float aspect_ratio;
     float2 camera_position;
+    uint2 viewport_size;
 };
 ConstantBuffer<grid_data_t> grid_data : register(b0);
 
@@ -55,20 +56,20 @@ float2 get_coords(float2 uv) {
     return grid_data.camera_position + view_coords;
 }
 
+const float LINE_WIDTH = 1.25f;
+
 float4 main([[vk::location(0)]] float2 uv : TEXCOORD0) : SV_TARGET {
     float2 coords = get_coords(uv);
-    float line_width = grid_data.view_size * 0.005f;
+    float2 line_width = float2(LINE_WIDTH * grid_data.view_size) / float2(grid_data.viewport_size.x);
 
-    bool axis_aligned_x = abs(coords.y) < line_width;
-    bool axis_aligned_y = abs(coords.x) < line_width;
+    bool axis_aligned_x = abs(coords.y) < line_width.y;
+    bool axis_aligned_y = abs(coords.x) < line_width.x;
 
     if (axis_aligned_x || axis_aligned_y) {
         if (!axis_aligned_y) {
             return float4(1.f, 0.f, 0.f, 1.f);
         } else if (!axis_aligned_x) {
             return float4(0.f, 1.f, 0.f, 1.f);
-        } else {
-            return float4(1.f);
         }
     }
 

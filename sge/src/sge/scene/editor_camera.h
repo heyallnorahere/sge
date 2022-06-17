@@ -38,6 +38,9 @@ namespace sge {
         float get_view_size() const { return m_view_size; }
         float get_aspect_ratio() const { return m_aspect_ratio; }
 
+        uint32_t get_viewport_width() const { return m_viewport_width; }
+        uint32_t get_viewport_height() const { return m_viewport_height; }
+
     private:
         bool on_scroll(mouse_scrolled_event& e);
 
