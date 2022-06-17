@@ -36,12 +36,12 @@ def buildUnix():
         print("Failed to configure mono!")
         return False
 
-    if call(["make"], cwd=MONO_DIR) != 0:
+    if call(["make", "-j", "8"], cwd=MONO_DIR) != 0:
         print("Failed to build mono!")
         return False
 
     shouldInstall = None
-    while not shouldInstall is None:
+    while shouldInstall is None:
         answer = input(f"Install to {INSTALL_PREFIX}? [y/N] ").lower()
 
         if len(answer) == 0 or answer == "n":

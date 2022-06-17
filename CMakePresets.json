@@ -27,7 +27,8 @@
                 "BOX2D_BUILD_DOCS": "OFF",
                 "BOX2D_BUILD_UNIT_TESTS": "OFF",
                 "BOX2D_BUILD_TESTBED": "OFF",
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_OSX_ARCHITECTURES": "x86"
             },
             "warnings": {
                 "dev": false
