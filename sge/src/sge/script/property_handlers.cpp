@@ -20,6 +20,7 @@
 #include "sge/scene/components.h"
 #include "sge/scene/scene_serializer.h"
 #include "sge/asset/project.h"
+#include "sge/imgui/imgui_extensions.h"
 
 namespace sge {
     using edit_callback_t = void (*)(void*, void*, const std::string&);
@@ -57,41 +58,20 @@ namespace sge {
             void* value = script_engine::get_property_value(instance, property);
             auto _asset = script_helpers::get_asset_from_object(value);
 
-            std::string control_value;
-            if (_asset) {
-                fs::path asset_path = _asset->get_path();
-                if (asset_path.empty()) {
-                    control_value = "<no path>";
-                } else {
-                    control_value = asset_path.filename().string();
-                }
-            } else {
-                control_value = "No " + asset_type + " set";
-            }
+            std::string id;
+            if (!script_helpers::is_property_read_only(property)) {
+                id = drag_drop_id;
 
-            ImGui::InputText(label.c_str(), &control_value, ImGuiInputTextFlags_ReadOnly);
-            if (!script_helpers::is_property_read_only(property) && ImGui::BeginDragDropTarget()) {
-                std::string id = drag_drop_id;
                 if (id.empty()) {
                     id = asset_type;
                 }
+            } else {
+                id = ImGui::READ_ONLY_ASSET;
+            }
 
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(id.c_str())) {
-                    fs::path path = std::string((const char*)payload->Data,
-                                                payload->DataSize / sizeof(char) - 1);
-
-                    auto& manager = project::get().get_asset_manager();
-                    _asset = manager.get_asset(path);
-
-                    if (!_asset) {
-                        spdlog::error("failed to retrieve asset: {0}", path.string());
-                    }
-
-                    value = script_helpers::create_asset_object(_asset);
-                    script_engine::set_property_value(instance, property, value);
-                }
-
-                ImGui::EndDragDropTarget();
+            if (ImGui::InputAsset(label.c_str(), &_asset, asset_type, id)) {
+                value = script_helpers::create_asset_object(_asset);
+                script_engine::set_property_value(instance, property, value);
             }
         }
 

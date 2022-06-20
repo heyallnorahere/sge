@@ -34,12 +34,14 @@ namespace sge {
 
     void to_json(json& data, const transform_component& comp) {
         data["translation"] = comp.translation;
+        data["z_layer"] = comp.z_layer;
         data["rotation"] = comp.rotation;
         data["scale"] = comp.scale;
     }
 
     void from_json(const json& data, transform_component& comp) {
         comp.translation = data["translation"].get<glm::vec2>();
+        comp.z_layer = data["z_layer"].get<int32_t>();
         comp.rotation = data["rotation"].get<float>();
         comp.scale = data["scale"].get<glm::vec2>();
     }
@@ -71,11 +73,11 @@ namespace sge {
         float near_clip = data["near_clip"].get<float>();
         float far_clip = data["far_clip"].get<float>();
 
-        if (!data["view_size"].is_null()) {
+        if (data["vertical_fov"].is_null() && !data["view_size"].is_null()) {
             float view_size = data["view_size"].get<float>();
 
             camera.camera.set_orthographic(view_size, near_clip, far_clip);
-        } else if (!data["vertical_fov"].is_null()) {
+        } else if (data["view_size"].is_null() && !data["vertical_fov"].is_null()) {
             float fov = data["vertical_fov"].get<float>();
 
             camera.camera.set_perspective(fov, near_clip, far_clip);
@@ -84,42 +86,61 @@ namespace sge {
         }
     }
 
+    static json serialize_asset_path(ref<asset> _asset) {
+        if (_asset) {
+            return nullptr;
+        }
+
+        if (!project::loaded()) {
+            throw std::runtime_error("cannot serialize assets without a project loaded!");
+        }
+
+        fs::path path = _asset->get_path();
+        if (!path.empty()) {
+            if (path.is_absolute()) {
+                fs::path asset_dir = project::get().get_asset_dir();
+                path = path.lexically_relative(asset_dir);
+            }
+
+            return path;
+        }
+
+        return nullptr;
+    }
+
+    template <typename T>
+    static ref<T> deserialize_asset_path(const json& data) {
+        static_assert(std::is_base_of_v<asset, T>, "given type is not an asset");
+
+        if (data.is_null()) {
+            return nullptr;
+        }
+
+        if (!project::loaded()) {
+            throw std::runtime_error("cannot deserialize assets without a project loaded!");
+        }
+
+        fs::path path = data.get<fs::path>();
+        ref<asset> _asset = project::get().get_asset_manager().get_asset(path);
+
+        ref<T> result;
+        if (_asset) {
+            result = _asset.as<T>();
+        }
+
+        return result;
+    }
+
     void to_json(json& data, const sprite_renderer_component& comp) {
         data["color"] = comp.color;
-        data["texture"] = nullptr;
-
-        if (comp.texture) {
-            if (!project::loaded()) {
-                throw std::runtime_error("cannot serialize assets without a project loaded!");
-            }
-
-            fs::path path = comp.texture->get_path();
-            if (!path.empty()) {
-                if (path.is_absolute()) {
-                    fs::path asset_dir = project::get().get_asset_dir();
-                    path = path.lexically_relative(asset_dir);
-                }
-
-                data["texture"] = path;
-            }
-        }
+        data["texture"] = serialize_asset_path(comp.texture);
+        data["shader"] = serialize_asset_path(comp._shader);
     }
 
     void from_json(const json& data, sprite_renderer_component& comp) {
         comp.color = data["color"].get<glm::vec4>();
-
-        if (!data["texture"].is_null()) {
-            if (!project::loaded()) {
-                throw std::runtime_error("cannot deserialize assets without a project loaded!");
-            }
-
-            fs::path path = data["texture"].get<fs::path>();
-            auto _asset = project::get().get_asset_manager().get_asset(path);
-
-            if (_asset) {
-                comp.texture = _asset.as<texture_2d>();
-            }
-        }
+        comp.texture = deserialize_asset_path<texture_2d>(data["texture"]);
+        comp._shader = deserialize_asset_path<shader>(data["shader"]);
     }
 
     void to_json(json& data, const rigid_body_component& rb) {

@@ -48,7 +48,7 @@ namespace sge {
         template <typename T, typename... Args>
         T& ensure_component(Args&&... args) const {
             if (has_all<T>()) {
-                return m_scene->m_registry.get<T>(m_handle);
+                return get_component<T>();
             }
 
             T& component = m_scene->m_registry.emplace<T>(m_handle, std::forward<Args>(args)...);
@@ -58,16 +58,20 @@ namespace sge {
 
         template <typename T, typename... Args>
         T& add_or_replace_component(Args&&... args) const {
+            std::optional<T> original;
+            if (has_all<T>()) {
+                original = get_component<T>();
+            }
+
             T& component =
                 m_scene->m_registry.emplace_or_replace<T>(m_handle, std::forward<Args>(args)...);
-            m_scene->on_component_changed(*this, component);
-            return component;
-        }
 
-        template <typename T>
-        void signal_component_change() const {
-            auto& component = get_component<T>();
-            m_scene->on_component_changed(*this, component);
+            if (original.has_value()) {
+                m_scene->on_component_removed(*this, original.value());
+            }
+
+            m_scene->on_component_added(*this, component);
+            return component;
         }
 
         template <typename... T>
@@ -86,8 +90,9 @@ namespace sge {
                 throw std::runtime_error("entity does not have component!");
             }
 
-            m_scene->on_component_removed(*this, get_component<T>());
+            T component = get_component<T>();
             m_scene->m_registry.remove<T>(m_handle);
+            m_scene->on_component_removed(*this, component);
         }
 
         guid get_guid() const { return m_scene->get_guid(*this); }

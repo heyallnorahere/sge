@@ -15,8 +15,14 @@
 */
 
 #pragma once
+#include "sge/asset/asset.h"
+
 namespace ImGui {
     bool InputPath(const char* label, fs::path* path,
                    ImGuiInputTextFlags flags = ImGuiInputTextFlags_None,
                    ImGuiInputTextCallback callback = nullptr, void* user_data = nullptr);
+
+    extern const std::string READ_ONLY_ASSET;
+    bool InputAsset(const char* label, sge::ref<sge::asset>* current_value,
+                    const std::string& asset_type, const std::string& drag_drop_id);
 } // namespace ImGui

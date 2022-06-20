@@ -181,6 +181,16 @@ namespace sge {
             component->scale = scale;
         }
 
+        static int32_t GetZLayer(transform_component* component) { return component->z_layer; }
+
+        static void SetZLayer(transform_component* component, void* entity_object,
+                              int32_t z_layer) {
+            component->z_layer = z_layer;
+
+            entity _entity = script_helpers::get_entity_from_object(entity_object);
+            _entity.get_scene()->recalculate_render_order();
+        }
+
         static void GetColor(sprite_renderer_component* component, glm::vec4* color) {
             *color = component->color;
         }
@@ -195,6 +205,18 @@ namespace sge {
 
         static void SetTexture(sprite_renderer_component* component, texture_2d* texture) {
             component->texture = texture;
+        }
+
+        static void GetShader(sprite_renderer_component* component, shader** result) {
+            *result = component->_shader.raw();
+        }
+
+        static void SetShader(sprite_renderer_component* component, void* entity_object,
+                              shader* _shader) {
+            component->_shader = _shader;
+
+            entity _entity = script_helpers::get_entity_from_object(entity_object);
+            _entity.get_scene()->recalculate_render_order();
         }
 
         static bool GetPrimary(camera_component* component) { return component->primary; }
@@ -592,12 +614,16 @@ namespace sge {
         REGISTER_FUNC(SetRotation);
         REGISTER_FUNC(GetScale);
         REGISTER_FUNC(SetScale);
+        REGISTER_FUNC(GetZLayer);
+        REGISTER_FUNC(SetZLayer);
 
         // sprite renderer component
         REGISTER_FUNC(GetColor);
         REGISTER_FUNC(SetColor);
         REGISTER_FUNC(GetTexture);
         REGISTER_FUNC(SetTexture);
+        REGISTER_FUNC(GetShader);
+        REGISTER_FUNC(SetShader);
 
         // camera component
         REGISTER_FUNC(GetPrimary);

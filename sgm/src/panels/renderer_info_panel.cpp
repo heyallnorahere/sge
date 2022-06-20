@@ -34,7 +34,7 @@ namespace sgm {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Text("%f FPS", io.Framerate);
 
-        if (ImGui::Button("Reload shaders")) {
+        if (ImGui::Button("Reload library shaders")) {
             m_reload_shaders = true;
         }
 

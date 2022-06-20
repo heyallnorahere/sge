@@ -52,6 +52,8 @@ namespace sge {
         void verify_script(entity e);
 
         void update_physics_data(entity e);
+        void recalculate_render_order();
+
         bool add_force(entity e, glm::vec2 force, bool wake = true);
 
         std::optional<float> get_angular_velocity(entity e);
@@ -89,11 +91,6 @@ namespace sge {
         }
 
         template <typename T>
-        void on_component_changed(const entity& e, T& component) {
-            // no behavior
-        }
-
-        template <typename T>
         void on_component_removed(const entity& e, T& component) {
             // no behavior
         }
@@ -101,11 +98,13 @@ namespace sge {
         void view_iteration(entt::entity id, const std::function<void(entity)>& callback);
         void render();
 
-        void remove_script(entity e);
+        void remove_script(entity e, void* component = nullptr);
         guid get_guid(entity e);
 
         entt::registry m_registry;
+        std::vector<entity> m_render_order;
         uint32_t m_viewport_width, m_viewport_height;
+
         scene_physics_data* m_physics_data = nullptr;
         std::array<std::string, collision_category_count> m_collision_category_names;
 

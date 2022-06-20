@@ -17,6 +17,7 @@
 #pragma once
 
 #include "sge/renderer/texture.h"
+#include "sge/renderer/shader.h"
 #include "sge/scene/runtime_camera.h"
 #include "sge/scene/entity_script.h"
 #include "sge/scene/entity.h"
@@ -63,6 +64,7 @@ namespace sge {
 
     struct transform_component {
         glm::vec2 translation = glm::vec2(0.f, 0.f);
+        int32_t z_layer = 0;
         float rotation = 0.f; // In degrees
         glm::vec2 scale = glm::vec2(1.f, 1.f);
 
@@ -94,6 +96,7 @@ namespace sge {
 
         glm::vec4 color = glm::vec4(1.f);
         ref<texture_2d> texture;
+        ref<shader> _shader;
 
         static void meta_register() {
             using namespace entt::literals;
@@ -259,12 +262,44 @@ namespace sge {
 
     //=== scene::on_component_added/on_component_removed ====
     template <>
+    inline void scene::on_component_added<transform_component>(const entity& e,
+                                                               transform_component& component) {
+        if (e.has_all<sprite_renderer_component>()) {
+            recalculate_render_order();
+        }
+    }
+
+    template <>
+    inline void scene::on_component_added<sprite_renderer_component>(
+        const entity& e, sprite_renderer_component& component) {
+        if (e.has_all<transform_component>()) {
+            recalculate_render_order();
+        }
+    }
+
+    template <>
     inline void scene::on_component_added<camera_component>(const entity& e,
                                                             camera_component& component) {
         uint32_t width = m_viewport_width;
         uint32_t height = m_viewport_height;
 
         component.camera.set_render_target_size(width, height);
+    }
+
+    template <>
+    inline void scene::on_component_removed<transform_component>(const entity& e,
+        transform_component& component) {
+        if (e.has_all<sprite_renderer_component>()) {
+            recalculate_render_order();
+        }
+    }
+    
+    template <>
+    inline void scene::on_component_removed<sprite_renderer_component>(
+        const entity& e, sprite_renderer_component& component) {
+        if (e.has_all<transform_component>()) {
+            recalculate_render_order();
+        }
     }
 
     template <>
@@ -278,7 +313,7 @@ namespace sge {
     template <>
     inline void scene::on_component_removed<script_component>(const entity& e,
                                                               script_component& component) {
-        remove_script(e);
+        remove_script(e, &component);
     }
 
 } // namespace sge

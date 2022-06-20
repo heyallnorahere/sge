@@ -73,6 +73,10 @@ namespace SGE
         public static extern void GetScale(IntPtr component, out Vector2 scale);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetScale(IntPtr component, Vector2 scale);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetZLayer(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetZLayer(IntPtr component, Entity entity, int zLayer);
 
         // sprite renderer component
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -83,6 +87,10 @@ namespace SGE
         public static extern void GetTexture(IntPtr component, out IntPtr texture);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetTexture(IntPtr component, IntPtr texture);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetShader(IntPtr component, out IntPtr shader);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetShader(IntPtr component, Entity entity, IntPtr shader);
 
         // camera component
         [MethodImpl(MethodImplOptions.InternalCall)]

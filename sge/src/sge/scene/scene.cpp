@@ -384,6 +384,72 @@ namespace sge {
         }
     }
 
+    static guid get_shader_guid(ref<shader> _shader) {
+        if (!_shader) {
+            return 0;
+        }
+
+        return _shader->id;
+    }
+
+    void scene::recalculate_render_order() {
+        m_render_order.clear();
+
+        auto group = m_registry.group<transform_component>(entt::get<sprite_renderer_component>);
+        if (group.empty()) {
+            return;
+        }
+
+        std::map<int32_t, std::unordered_map<guid, size_t>> z_layers;
+        std::optional<int32_t> upper_z_bound;
+
+        std::vector<entity> entities;
+        for (auto _entity : group) {
+            const auto& [transform, sprite] =
+                group.get<transform_component, sprite_renderer_component>(_entity);
+
+            if (!upper_z_bound.has_value() || transform.z_layer > upper_z_bound.value()) {
+                upper_z_bound = transform.z_layer;
+            }
+
+            auto& shader_indices = z_layers[transform.z_layer];
+            guid id = get_shader_guid(sprite._shader);
+
+            if (shader_indices.find(id) == shader_indices.end()) {
+                shader_indices.insert(std::make_pair(id, 0));
+            }
+
+            entities.push_back(entity(_entity, this));
+        }
+
+        for (auto _entity : entities) {
+            const auto& transform = _entity.get_component<transform_component>();
+            const auto& sprite = _entity.get_component<sprite_renderer_component>();
+
+            guid id = get_shader_guid(sprite._shader);
+            size_t insert_index = z_layers[transform.z_layer][id];
+
+            {
+                auto it = m_render_order.begin();
+                std::advance(it, insert_index);
+                m_render_order.insert(it, _entity);
+            }
+
+            auto main_it = z_layers.find(transform.z_layer);
+            auto sub_map = &main_it->second;
+
+            for (auto sub_it = sub_map->find(id); sub_it != sub_map->end(); sub_it++) {
+                sub_it->second++;
+            }
+
+            for (main_it++; main_it != z_layers.end(); main_it++) {
+                for (auto& [shader_id, index] : main_it->second) {
+                    index++;
+                }
+            }
+        }
+    }
+
     bool scene::add_force(entity e, glm::vec2 force, bool wake) {
         if (!e.has_all<rigid_body_component>()) {
             return false;
@@ -780,11 +846,17 @@ namespace sge {
     }
 
     void scene::render() {
-        auto group = m_registry.group<transform_component>(entt::get<sprite_renderer_component>);
-        for (auto entity : group) {
-            auto [transform, sprite] =
-                group.get<transform_component, sprite_renderer_component>(entity);
+        for (auto _entity : m_render_order) {
+            const auto& transform = _entity.get_component<transform_component>();
+            const auto& sprite = _entity.get_component<sprite_renderer_component>();
 
+            auto _shader = sprite._shader;
+            if (!_shader) {
+                auto& library = renderer::get_shader_library();
+                _shader = library.get("default");
+            }
+
+            renderer::set_shader(_shader);
             if (sprite.texture) {
                 renderer::draw_rotated_quad(transform.translation, transform.rotation,
                                             transform.scale, sprite.color, sprite.texture);
@@ -795,9 +867,15 @@ namespace sge {
         }
     }
 
-    void scene::remove_script(entity e) {
-        auto& sc = e.get_component<script_component>();
-        sc.remove_script();
+    void scene::remove_script(entity e, void* component) {
+        script_component* sc;
+        if (component != nullptr) {
+            sc = (script_component*)component;
+        } else {
+            sc = &e.get_component<script_component>();
+        }
+
+        sc->remove_script();
     }
 
     guid scene::get_guid(entity e) {

@@ -30,7 +30,8 @@
                 "translation": [
                     0.0,
                     0.0
-                ]
+                ],
+                "z_layer": 0
             }
         },
         {
@@ -66,6 +67,7 @@
                     1.0,
                     1.0
                 ],
+                "shader": null,
                 "texture": "Textures/Tux.png"
             },
             "tag": "Tux",
@@ -78,7 +80,8 @@
                 "translation": [
                     0.0,
                     0.0
-                ]
+                ],
+                "z_layer": 0
             }
         },
         {
@@ -108,6 +111,7 @@
                     0.0,
                     1.0
                 ],
+                "shader": null,
                 "texture": null
             },
             "tag": "Ground",
@@ -120,7 +124,8 @@
                 "translation": [
                     0.0,
                     -1.0
-                ]
+                ],
+                "z_layer": 0
             }
         },
         {
@@ -148,6 +153,7 @@
                     0.0,
                     1.0
                 ],
+                "shader": null,
                 "texture": null
             },
             "tag": "Arm L",
@@ -160,7 +166,8 @@
                 "translation": [
                     -31.75,
                     5.25
-                ]
+                ],
+                "z_layer": 0
             }
         },
         {
@@ -188,6 +195,7 @@
                     0.0,
                     1.0
                 ],
+                "shader": null,
                 "texture": null
             },
             "tag": "Arm R",
@@ -200,7 +208,8 @@
                 "translation": [
                     31.75,
                     5.25
-                ]
+                ],
+                "z_layer": 0
             }
         }
     ]

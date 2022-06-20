@@ -38,8 +38,7 @@ namespace SGE.Components
         {
             get
             {
-                IntPtr address;
-                InternalCalls.GetTexture(mAddress, out address);
+                InternalCalls.GetTexture(mAddress, out IntPtr address);
 
                 Texture2D texture = null;
                 if (address != IntPtr.Zero)
@@ -49,7 +48,42 @@ namespace SGE.Components
 
                 return texture;
             }
-            set => InternalCalls.SetTexture(mAddress, value.mAddress);
+            set
+            {
+                IntPtr address = IntPtr.Zero;
+                if (value != null)
+                {
+                    address = value.mAddress;
+                }
+
+                InternalCalls.SetTexture(mAddress, address);
+            }
+        }
+
+        public Shader Shader
+        {
+            get
+            {
+                InternalCalls.GetShader(mAddress, out IntPtr address);
+
+                Shader shader = null;
+                if (address != IntPtr.Zero)
+                {
+                    shader = new Shader(address);
+                }
+
+                return shader;
+            }
+            set
+            {
+                IntPtr address = IntPtr.Zero;
+                if (value != null)
+                {
+                    address = value.mAddress;
+                }
+
+                InternalCalls.SetShader(mAddress, Parent, address);
+            }
         }
     }
 }

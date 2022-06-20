@@ -134,17 +134,21 @@ namespace sgm {
         ImGui::PopItemWidth();
 
         draw_component<transform_component>(
-            "Transform", selection, [](transform_component& transform) {
+            "Transform", selection, [selection](transform_component& transform) {
                 ImGui::DragFloat2("Translation", &transform.translation.x, 0.25f);
                 ImGui::DragFloat("Rotation", &transform.rotation);
                 ImGui::DragFloat2("Scale", &transform.scale.x, 0.5f);
+
+                if (ImGui::InputInt("Z layer", &transform.z_layer)) {
+                    selection.get_scene()->recalculate_render_order();
+                }
             });
 
         draw_component<camera_component>("Camera", selection, [](camera_component& camera) {
+            static const std::vector<const char*> type_names = { "Orthographic", "Perspective" };
             ImGui::Checkbox("Primary", &camera.primary);
 
-            static const std::vector<const char*> type_names = { "Orthographic", "Perspective" };
-            int32_t camera_type = (int32_t)camera.camera.get_projection_type();
+            int camera_type = (int)camera.camera.get_projection_type();
             if (ImGui::Combo("Camera type", &camera_type, type_names.data(), type_names.size())) {
                 camera.camera.set_projection_type((projection_type)camera_type);
             }
@@ -183,56 +187,21 @@ namespace sgm {
         });
 
         draw_component<sprite_renderer_component>(
-            "Sprite renderer", selection, [this](sprite_renderer_component& component) {
+            "Sprite renderer", selection, [this, selection](sprite_renderer_component& component) {
                 ImGui::ColorEdit4("Color", &component.color.x);
 
-                auto texture = component.texture;
-                bool can_reset = true;
+                static const std::string texture_name = "texture_2d";
+                static const std::string shader_name = "shader";
 
-                if (!texture) {
-                    texture = renderer::get_white_texture();
-                    can_reset = false;
+                ref<asset> _asset = component.texture;
+                if (ImGui::InputAsset("Texture", &_asset, texture_name, texture_name)) {
+                    component.texture = _asset.as<texture_2d>();
                 }
 
-                ImGuiID id = ImGui::GetID("sprite-texture");
-                ImGui::PushID(id);
-
-                static constexpr float image_size = 100.f;
-                texture_cache::add_texture(texture);
-                ImGui::Image(texture->get_imgui_id(), ImVec2(image_size, image_size));
-
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_2d")) {
-                        fs::path path = std::string((const char*)payload->Data,
-                                                    payload->DataSize / sizeof(char) - 1);
-
-                        auto _asset = project::get().get_asset_manager().get_asset(path);
-                        if (_asset) {
-                            component.texture = _asset.as<texture_2d>();
-                        }
-                    }
-
-                    ImGui::EndDragDropTarget();
-                }
-
-                ImGui::PopID();
-
-                if (can_reset) {
-                    auto& style = ImGui::GetStyle();
-
-                    static const char* button_text = "X";
-                    static float text_height = ImGui::CalcTextSize(button_text).y;
-
-                    ImVec2 padding = style.FramePadding;
-                    padding.y += (image_size - text_height) / 2.f;
-                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, padding);
-
-                    ImGui::SameLine();
-                    if (ImGui::Button("X", ImVec2(0.f, image_size))) {
-                        component.texture.reset();
-                    }
-
-                    ImGui::PopStyleVar();
+                _asset = component._shader;
+                if (ImGui::InputAsset("Shader", &_asset, shader_name, shader_name)) {
+                    component._shader = _asset.as<shader>();
+                    selection.get_scene()->recalculate_render_order();
                 }
             });
 

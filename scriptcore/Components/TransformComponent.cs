@@ -48,5 +48,11 @@ namespace SGE.Components
             }
             set => InternalCalls.SetScale(mAddress, value);
         }
+
+        public int ZLayer
+        {
+            get => InternalCalls.GetZLayer(mAddress);
+            set => InternalCalls.SetZLayer(mAddress, Parent, value);
+        }
     }
 }
