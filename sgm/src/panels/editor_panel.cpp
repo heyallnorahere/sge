@@ -46,7 +46,6 @@ namespace sgm {
             float line_height =
                 imgui_context->Font->FontSize + imgui_context->Style.FramePadding.y * 2.f;
 
-            ImGui::Separator();
             bool open = ImGui::TreeNodeEx(name.c_str(), tree_flags);
             ImGui::PopStyleVar();
 
@@ -190,14 +189,13 @@ namespace sgm {
             "Sprite renderer", selection, [this, selection](sprite_renderer_component& component) {
                 ImGui::ColorEdit4("Color", &component.color.x);
 
-                static const std::string texture_name = "texture_2d";
-                static const std::string shader_name = "shader";
 
                 ref<asset> _asset = component.texture;
-                if (ImGui::InputAsset("Texture", &_asset, texture_name, texture_name)) {
+                if (ImGui::InputAsset("Texture", &_asset, "texture", "texture_2d")) {
                     component.texture = _asset.as<texture_2d>();
                 }
 
+                static const std::string shader_name = "shader";
                 _asset = component._shader;
                 if (ImGui::InputAsset("Shader", &_asset, shader_name, shader_name)) {
                     component._shader = _asset.as<shader>();
