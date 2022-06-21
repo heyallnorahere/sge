@@ -68,7 +68,25 @@ namespace sge {
         mono_set_assemblies_path(assembly_path.c_str());
         mono_config_parse(nullptr);
 
+        std::vector<std::string> args = {
+            "--debugger-agent=transport=dt_socket,address=127.0.0.1:55555"
+        };
+
+        std::vector<char*> jit_args;
+        for (const auto& str : args) {
+            char* buffer = (char*)malloc((str.length() + 1) * sizeof(char));
+            strcpy(buffer, str.c_str());
+
+            jit_args.push_back(buffer);
+        }
+
         script_engine_data->root_domain = mono_jit_init("SGE");
+        mono_jit_parse_options((int)jit_args.size(), jit_args.data());
+
+        for (auto buffer : jit_args) {
+            free(buffer);
+        }
+
         script_engine_init_internal();
     }
 
