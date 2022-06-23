@@ -23,6 +23,7 @@
 #include "sge/script/value_wrapper.h"
 #include "sge/scene/components.h"
 #include "sge/core/environment.h"
+#include "sge/core/application.h"
 
 namespace sge {
     struct assembly_t {
@@ -35,6 +36,7 @@ namespace sge {
         MonoDomain* root_domain = nullptr;
         MonoDomain* script_domain = nullptr;
         std::vector<assembly_t> assemblies;
+        bool debug_enabled;
 
         bool reload_callbacks_locked = false;
         std::vector<std::optional<std::function<void()>>> reload_callbacks;
@@ -62,15 +64,22 @@ namespace sge {
         if (script_engine_data) {
             throw std::runtime_error("the script engine has already been initialized!");
         }
+
         script_engine_data = std::make_unique<script_engine_data_t>();
+        script_engine_data->debug_enabled = application::get().is_editor();
 
         std::string assembly_path = (fs::current_path() / "assets").string();
         mono_set_assemblies_path(assembly_path.c_str());
         mono_config_parse(nullptr);
 
-        std::vector<std::string> args = {
-            "--debugger-agent=transport=dt_socket,address=127.0.0.1:55555"
-        };
+        std::vector<std::string> args;
+        if (script_engine_data->debug_enabled) {
+            args.insert(
+                args.end(),
+                { "--breakonex", "--soft-breakpoints",
+                  "--debugger-agent=transport=dt_socket,server=y,suspend=n,embedding=1,"
+                  "address=127.0.0.1:62222,logfile=assets/logs/mono-debugger.log,loglevel=2" });
+        }
 
         std::vector<char*> jit_args;
         for (const auto& str : args) {
@@ -80,8 +89,13 @@ namespace sge {
             jit_args.push_back(buffer);
         }
 
-        script_engine_data->root_domain = mono_jit_init("SGE");
         mono_jit_parse_options((int)jit_args.size(), jit_args.data());
+        script_engine_data->root_domain = mono_jit_init("SGE");
+
+        if (script_engine_data->debug_enabled) {
+            mono_debug_init(MONO_DEBUG_FORMAT_MONO);
+            mono_debug_domain_create(script_engine_data->root_domain);
+        }
 
         for (auto buffer : jit_args) {
             free(buffer);
@@ -92,7 +106,6 @@ namespace sge {
 
     static void script_engine_shutdown_internal() {
         garbage_collector::shutdown();
-
         mono_domain_set(script_engine_data->root_domain, false);
         mono_domain_unload(script_engine_data->script_domain);
     }

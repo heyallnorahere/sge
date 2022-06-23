@@ -73,7 +73,7 @@ namespace SGE.Setup.Tasks
                 throw new Exception("Could not install the Vulkan SDK!");
             }
         }
-        private const string SDKVersion = "1.2.182.0";
+        private const string SDKVersion = "1.3.216.0";
         private static bool InstallWindows(bool setActionsEnvVariable)
         {
             string installerUrl = $"https://sdk.lunarg.com/sdk/download/{SDKVersion}/windows/VulkanSDK-{SDKVersion}-Installer.exe";

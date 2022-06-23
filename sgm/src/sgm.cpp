@@ -27,6 +27,8 @@ namespace sgm {
     public:
         sgm_app() : application("SGM") {}
 
+        virtual bool is_editor() override { return true; }
+
     protected:
         virtual void on_init() override {
             std::vector<std::string> args;
@@ -71,8 +73,6 @@ namespace sgm {
         virtual fs::path get_log_file_path() override {
             return fs::current_path() / "assets" / "logs" / "sgm.log";
         }
-
-        virtual bool is_editor() override { return true; }
 
         editor_layer* m_editor_layer;
     };

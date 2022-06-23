@@ -65,6 +65,7 @@ namespace sge {
         bool watch_directory(const fs::path& path);
         bool remove_watched_directory(const fs::path& path);
 
+        virtual bool is_editor() { return false; }
         bool is_subsystem_initialized(subsystem id) { return (m_initialized_subsystems & id) != 0; }
 
     protected:
@@ -74,7 +75,6 @@ namespace sge {
         virtual std::string get_window_title() { return m_title; }
         virtual fs::path get_imgui_config_path() { return fs::path(); }
         virtual fs::path get_log_file_path() { return fs::path(); }
-        virtual bool is_editor() { return false; }
 
         void disable_subsystem(subsystem id);
         void reenable_subsystem(subsystem id);
