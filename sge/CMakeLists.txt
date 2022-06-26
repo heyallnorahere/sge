@@ -27,6 +27,17 @@ else()
     set(SGE_CPU_ARCHITECTURE ARM64)
 endif()
 
+# msbuild shenanigans
+if(SGE_BUILD_SCRIPTCORE)
+    set(SGE_MSBUILD_ARGS "")
+    foreach(ARGUMENT ${MSBUILD_ARGS})
+        set(SGE_MSBUILD_ARGS "${SGE_MSBUILD_ARGS}\"${ARGUMENT}\", ")
+    endforeach()
+
+    set(SGE_MSBUILD_EXE ${MSBUILD_EXE})
+    set(SGE_MSBUILD_ARGS "{ ${SGE_MSBUILD_ARGS} }")
+endif()
+
 # configuration header
 set(SGE_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/sge_config.h")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/sge_config.h.in" ${SGE_CONFIG} @ONLY)
@@ -64,7 +75,7 @@ endif()
 
 # graphics api
 if(SGE_USE_VULKAN)
-    list(APPEND SGE_LIBS ${Vulkan_LIBRARY} VulkanMemoryAllocator Vulkan-Headers)
+    list(APPEND SGE_LIBS volk vma)
     list(APPEND SGE_DEFINES SGE_USE_VULKAN)
     list(APPEND ENABLED_PLATFORMS vulkan)
 endif()
@@ -100,18 +111,6 @@ add_custom_command(OUTPUT ${TYPE_FACE_DIRECTORY_FILE}
     "${CMAKE_SOURCE_DIR}/LICENSE${LICENSE_DESC_SEPARATOR}190"
     COMMENT "Generating embedded SGE type face directory"
     DEPENDS "${CMAKE_SOURCE_DIR}/assets/fonts/" embed_type_faces)
-
-if(SGE_BUILD_SCRIPTCORE)
-    set(SGE_MSBUILD_ARGS "")
-    foreach(ARGUMENT ${MSBUILD_ARGS})
-        set(SGE_MSBUILD_ARGS "${SGE_MSBUILD_ARGS}\"${ARGUMENT}\", ")
-    endforeach()
-    set(SGE_MSBUILD_ARGS "{ ${SGE_MSBUILD_ARGS} }")
-
-    list(APPEND SGE_DEFINES SGE_BUILD_SCRIPT_ASSEMBLY
-        SGE_MSBUILD_EXE="${MSBUILD_EXE}"
-        SGE_MSBUILD_ARGS=${SGE_MSBUILD_ARGS})
-endif()
 
 # add target
 set(SGE_MANIFEST ${SGE_SOURCE} ${SGE_SHADERS} ${TYPE_FACE_DIRECTORY_FILE} ${SGE_CONFIG})

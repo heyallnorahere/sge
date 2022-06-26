@@ -35,12 +35,10 @@ namespace sge {
         create_info.device = device.get();
         create_info.vulkanApiVersion = context.get_vulkan_version();
 
-#if VMA_DYNAMIC_VULKAN_FUNCTIONS
         auto functions = vk_init<VmaVulkanFunctions>();
         functions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
         functions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
         create_info.pVulkanFunctions = &functions;
-#endif
 
         VkResult result = vmaCreateAllocator(&create_info, &vk_allocator);
         check_vk_result(result);

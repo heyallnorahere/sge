@@ -26,6 +26,8 @@ namespace sge {
         virtual void render(command_list& cmdlist) override;
 
     private:
+        static PFN_vkVoidFunction load_imgui_function(const char* name, void* user_data);
+
         void init();
         void build_font_atlas();
 

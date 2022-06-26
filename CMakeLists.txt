@@ -26,16 +26,19 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
 endif()
 set(SGE_PLATFORM_DESKTOP ${SGE_PLATFORM_WINDOWS} OR ${SGE_PLATFORM_LINUX} OR ${SGE_PLATFORM_MACOSX})
 
-# find packages
-find_package(Vulkan)
-find_package(Aftermath)
-
-# options
-include(CMakeDependentOption)
-
+# independent options
 option(SGE_BUILD_SCRIPTCORE "Build SGE script core." ON)
+
+# find packages
+find_package(Aftermath)
+if(SGE_BUILD_SCRIPTCORE)
+    find_package(MSBuild REQUIRED)
+endif()
+
+# dependent options
+include(CMakeDependentOption)
 cmake_dependent_option(SGE_USE_AFTERMATH "Use the NVIDIA Nsight Aftermath SDK" OFF "Aftermath_FOUND" OFF)
-cmake_dependent_option(SGE_USE_VULKAN "Use the Vulkan graphics api." ON "SGE_PLATFORM_DESKTOP AND Vulkan_FOUND" OFF)
+cmake_dependent_option(SGE_USE_VULKAN "Use the Vulkan graphics api." ON "SGE_PLATFORM_DESKTOP" OFF)
 
 # dependencies
 add_subdirectory("vendor")
@@ -57,10 +60,6 @@ macro(copy_required_dlls TARGET_NAME)
         endforeach()
     endif()
 endmacro()
-
-if(SGE_BUILD_SCRIPTCORE)
-    find_package(MSBuild REQUIRED)
-endif()
 
 # sge targets
 add_subdirectory("sge")

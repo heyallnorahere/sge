@@ -31,14 +31,6 @@ jobs:
         shell: bash
         run: |
           brew install cmake
-      - name: install global dependencies
-        shell: bash
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-        run: |
-          dotnet restore "setup/Setup.sln"
-          dotnet build -c Release "setup/Setup.sln"
-          dotnet "setup/SGE.Setup/bin/Release/net6.0/SGE.Setup.dll" -t setup-ci
       - name: build
         shell: bash
         run: |

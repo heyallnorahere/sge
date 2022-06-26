@@ -24,6 +24,7 @@
 #include "sge/platform/vulkan/vulkan_command_list.h"
 #include "sge/renderer/renderer.h"
 #include <backends/imgui_impl_vulkan.h>
+
 namespace sge {
     vulkan_imgui_backend::vulkan_imgui_backend() {
         init();
@@ -38,13 +39,32 @@ namespace sge {
     }
 
     void vulkan_imgui_backend::begin() { ImGui_ImplVulkan_NewFrame(); }
-    
+
     void vulkan_imgui_backend::render(command_list& cmdlist) {
         auto vk_cmdlist = (vulkan_command_list*)&cmdlist;
         VkCommandBuffer cmdbuffer = vk_cmdlist->get();
 
         ImDrawData* draw_data = ImGui::GetDrawData();
         ImGui_ImplVulkan_RenderDrawData(draw_data, cmdbuffer);
+    }
+
+    PFN_vkVoidFunction vulkan_imgui_backend::load_imgui_function(const char* name,
+                                                                 void* user_data) {
+        static const std::unordered_set<std::string> instance_functions = {
+            "vkDestroySurfaceKHR",
+            "vkGetPhysicalDeviceMemoryProperties",
+            "vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
+            "vkGetPhysicalDeviceSurfaceFormatsKHR",
+            "vkGetPhysicalDeviceSurfacePresentModesKHR",
+            "vkGetPhysicalDeviceSurfaceSupportKHR"
+        };
+
+        auto& context = vulkan_context::get();
+        if (instance_functions.find(name) != instance_functions.end()) {
+            return vkGetInstanceProcAddr(context.get_instance(), name);
+        } else {
+            return vkGetDeviceProcAddr(context.get_device().get(), name);
+        }
     }
 
     void vulkan_imgui_backend::init() {
@@ -91,6 +111,8 @@ namespace sge {
         init_info.Queue = device.get_queue(init_info.QueueFamily);
         init_info.DescriptorPool = m_descriptor_pool;
         init_info.CheckVkResultFn = check_vk_result;
+
+        ImGui_ImplVulkan_LoadFunctions(load_imgui_function, nullptr);
         ImGui_ImplVulkan_Init(&init_info, pass->get());
     }
 

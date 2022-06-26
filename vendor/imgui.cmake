@@ -10,8 +10,8 @@ endif()
 
 if(SGE_USE_VULKAN)
     list(APPEND ENABLED_IMGUI_BACKENDS vulkan)
-    list(APPEND IMGUI_LINKS ${Vulkan_LIBRARY})
-    list(APPEND IMGUI_INCLUDES ${Vulkan_INCLUDE_DIR})
+    list(APPEND IMGUI_LINKS Vulkan::Headers)
+    list(APPEND IMGUI_DEFINES IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 endif()
 
 message(STATUS "Enabled Dear ImGui backends: ${ENABLED_IMGUI_BACKENDS}")
@@ -24,6 +24,11 @@ set(IMGUI_MANIFEST ${IMGUI_CORE} ${IMGUI_BACKEND_SOURCE})
 add_library(sge-imgui STATIC ${IMGUI_MANIFEST})
 set_target_properties(sge-imgui PROPERTIES CXX_STANDARD 17)
 target_include_directories(sge-imgui PUBLIC ${IMGUI_INCLUDES})
+
 if(DEFINED IMGUI_LINKS)
     target_link_libraries(sge-imgui PUBLIC ${IMGUI_LINKS})
+endif()
+
+if(DEFINED IMGUI_DEFINES)
+    target_compile_definitions(sge-imgui PUBLIC ${IMGUI_DEFINES})
 endif()

@@ -124,10 +124,10 @@ namespace sge {
         mono_add_internal_call(name.c_str(), callback);
     }
 
-    static bool load_assembly_raw(const fs::path& path, assembly_t& assembly);
     bool script_engine::compile_app_assembly() {
-#ifdef SGE_BUILD_SCRIPT_ASSEMBLY
+#ifdef SGE_BUILD_SCRIPTCORE
         auto& _project = project::get();
+
         fs::path project_path = _project.get_script_project_path();
         if (!fs::exists(project_path)) {
             return false;
@@ -148,6 +148,7 @@ namespace sge {
 
         environment::run_command(p_info);
 #endif
+
         return true;
     }
 

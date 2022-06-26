@@ -176,7 +176,8 @@ namespace sge {
                 void* returned = script_engine::get_property_value(instance, property);
                 int32_t value = script_engine::unbox_object<int32_t>(returned);
 
-                if (ImGui::InputInt(label.c_str(), &value, get_input_text_flags(property))) {
+                if (ImGui::InputInt(label.c_str(), &value, 1, 100,
+                                    get_input_text_flags(property))) {
                     script_engine::set_property_value(instance, property, &value);
                 }
             }
@@ -196,7 +197,8 @@ namespace sge {
                 void* returned = script_engine::get_property_value(instance, property);
                 float value = script_engine::unbox_object<float>(returned);
 
-                if (ImGui::InputFloat(label.c_str(), &value, get_input_text_flags(property))) {
+                if (ImGui::InputFloat(label.c_str(), &value, 0.f, 0.f, "%.3f",
+                                      get_input_text_flags(property))) {
                     script_engine::set_property_value(instance, property, &value);
                 }
             }
@@ -217,7 +219,8 @@ namespace sge {
                 bool value = script_engine::unbox_object<bool>(returned);
 
                 if (ImGui::Checkbox(label.c_str(), &value) &&
-                    !script_helpers::is_property_read_only(property)) {
+                    !script_helpers::is_property_read_only(
+                        property)) { // hacky, but you can't make a checkbox readonly
                     script_engine::set_property_value(instance, property, &value);
                 }
             }

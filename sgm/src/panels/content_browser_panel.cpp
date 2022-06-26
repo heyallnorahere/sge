@@ -215,6 +215,7 @@ namespace sgm {
         }
 
         if (tree_changed) {
+            m_subdirectories.clear();
             build_directory_data(m_root, m_root_data);
         }
 

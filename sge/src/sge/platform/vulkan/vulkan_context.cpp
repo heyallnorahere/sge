@@ -207,7 +207,9 @@ namespace sge {
 
         VkResult result = fpCreateDebugUtilsMessengerEXT(data->instance, &create_info, nullptr,
                                                          &data->debug_messenger);
+
         check_vk_result(result);
+        volkLoadInstance(data->instance);
     }
 
     static vulkan_physical_device choose_physical_device() {
@@ -234,6 +236,10 @@ namespace sge {
     }
 
     void vulkan_context::init(uint32_t version) {
+        if (volkInitialize() != VK_SUCCESS) {
+            throw std::runtime_error("failed to initialize the meta loader!");
+        }
+
         m_data = new vk_data;
         m_data->vulkan_version = version;
 
@@ -266,6 +272,7 @@ namespace sge {
                          properties.deviceName, major, minor, patch, extension_count, layer_count);
 
             m_data->device = std::make_unique<vulkan_device>(physical_device);
+            volkLoadDevice(m_data->device->get());
         }
 
         vulkan_allocator::init();
