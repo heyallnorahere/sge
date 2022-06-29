@@ -13,7 +13,7 @@ if(SGE_BUILD_SCRIPTCORE)
     set(SGE_DEBUGGER_PATH "${CMAKE_SOURCE_DIR}/debugger/SGE.Debugger.csproj")
     add_custom_command(TARGET sgm PRE_BUILD
         COMMAND dotnet restore ${SGE_DEBUGGER_PATH}
-        COMMAND ${SGE_MSBUILD_ARGS} -noLogo -v:m -p:Configuration=$<CONFIG> ${SGE_DEBUGGER_PATH}
+        COMMAND ${MSBUILD_ARGS} -noLogo -v:m -p:Configuration=$<CONFIG> ${SGE_DEBUGGER_PATH}
         COMMENT "Building SGE.Debugger.exe")
 endif()
 
