@@ -6,13 +6,14 @@ endif()
 
 # todo: from git tag
 set(SGE_VERSION 0.0.1)
-
 set(SGE_LANGUAGES C CXX)
+
 if(APPLE AND ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
     list(APPEND SGE_LANGUAGES OBJC OBJCXX)
 endif()
 
 project(sge VERSION ${SGE_VERSION} LANGUAGES ${SGE_LANGUAGES})
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -28,6 +29,8 @@ set(SGE_PLATFORM_DESKTOP ${SGE_PLATFORM_WINDOWS} OR ${SGE_PLATFORM_LINUX} OR ${S
 
 # independent options
 option(SGE_BUILD_SCRIPTCORE "Build SGE script core." ON)
+set(SGE_DEBUGGER_AGENT_ADDRESS "127.0.0.1" CACHE STRING "The address of the debugger agent to connect to.")
+set(SGE_DEBUGGER_AGENT_PORT "62222" CACHE STRING "The port of the debugger agent to connect to.")
 
 # find packages
 find_package(Aftermath)
@@ -72,20 +75,48 @@ set_target_properties(sgm launcher PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 
 # managed code
 if(SGE_BUILD_SCRIPTCORE)
-    if(MSVC)
-        include_external_msproject(scriptcore "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj")
-        set_target_properties(scriptcore PROPERTIES FOLDER "core")
-    else()
-        add_custom_target(scriptcore ALL
-            COMMAND ${MSBUILD_ARGS}
-            -noLogo -v:m -p:Configuration=$<CONFIG>
-            "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj"
-            COMMENT "Building SGE.Scriptcore.dll")
-    endif()
+    set(MANAGED_PROJECTS
+        "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj~core")
 
-    if(TARGET scriptcore)
-        add_dependencies(sge scriptcore)
-    endif()
+    foreach(PROJECT_DESC ${MANAGED_PROJECTS})
+        string(FIND ${PROJECT_DESC} "~" SEPARATOR_POS REVERSE)
+        string(LENGTH ${PROJECT_DESC} DESC_LENGTH)
+
+        if(${SEPARATOR_POS} LESS 0)
+            message(FATAL_ERROR "Malformed project description!")
+        endif()
+
+        string(SUBSTRING ${PROJECT_DESC} 0 ${SEPARATOR_POS} PROJECT_PATH)
+        cmake_path(GET PROJECT_PATH FILENAME PROJECT_FILENAME)
+
+        math(EXPR FOLDER_START "${SEPARATOR_POS} + 1")
+        math(EXPR FOLDER_LENGTH "${DESC_LENGTH} - ${FOLDER_START}")
+        string(SUBSTRING ${PROJECT_DESC} ${FOLDER_START} ${FOLDER_LENGTH} PROJECT_FOLDER)
+
+        string(FIND ${PROJECT_FILENAME} "." SEPARATOR_POS REVERSE)
+        if(${SEPARATOR_POS} LESS 0)
+            message(FATAL_ERROR "Malformed project path!")
+        endif()
+
+        string(SUBSTRING ${PROJECT_FILENAME} 0 ${SEPARATOR_POS} MANAGED_PROJECT_NAME)
+        if(MSVC)
+            include_external_msproject(${MANAGED_PROJECT_NAME} ${PROJECT_PATH}
+                PLATFORM ${CMAKE_VS_PLATFORM_NAME})
+
+            set_target_properties(${MANAGED_PROJECT_NAME} PROPERTIES FOLDER ${PROJECT_FOLDER})
+        else()
+            string(FIND ${PROJECT_PATH} "vendor" POS)
+
+            if(${POS} LESS 0)
+                add_custom_target(${MANAGED_PROJECT_NAME} ALL
+                    COMMAND ${MSBUILD_ARGS}
+                    -noLogo -v:m -p:Configuration=$<CONFIG> ${PROJECT_PATH}
+                    COMMENT "Building managed project: ${MANAGED_PROJECT_NAME}")
+            endif()
+        endif()
+    endforeach()
+
+    add_dependencies(sge scriptcore)
 endif()
 
 if(MSVC)

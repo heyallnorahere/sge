@@ -58,15 +58,14 @@ namespace sge {
 
     std::string application::get_engine_version() { return SGE_VERSION; }
 
-    static std::unique_ptr<application> app_instance;
-
+    static std::unique_ptr<application> s_app_instance;
     void application::create() {
-        app_instance = std::unique_ptr<application>(::create_app_instance());
+        s_app_instance = std::unique_ptr<application>(::create_app_instance());
     }
 
-    void application::destroy() { app_instance.reset(); }
+    void application::destroy() { s_app_instance.reset(); }
 
-    application& application::get() { return *app_instance; }
+    application& application::get() { return *s_app_instance; }
 
     application::application(const std::string& title) {
         m_title = title;
@@ -140,6 +139,7 @@ namespace sge {
         spdlog::info("using SGE v{0}", get_engine_version());
         spdlog::info("initializing application: {0}...", m_title);
 
+        pre_init();
         if ((m_disabled_subsystems & subsystem_input) == 0) {
             input::init();
             m_initialized_subsystems |= subsystem_input;

@@ -16,12 +16,19 @@
 
 #include "sgmpch.h"
 #include <sge/core/main.h>
+
 #include "editor_layer.h"
 #include "editor_scene.h"
 #include "icon_directory.h"
 #include "texture_cache.h"
+
 namespace sgm {
     static const std::string sgm_title = "Simple Game Maker v" + application::get_engine_version();
+
+    static std::unique_ptr<std::thread> s_debugger_thread;
+    static bool s_exit_debugger = false;
+
+    static void start_debugger() {}
 
     class sgm_app : public application {
     public:
@@ -30,7 +37,7 @@ namespace sgm {
         virtual bool is_editor() override { return true; }
 
     protected:
-        virtual void on_init() override {
+        virtual void pre_init() override {
             std::vector<std::string> args;
             get_application_args(args);
 
@@ -40,10 +47,44 @@ namespace sgm {
                 throw std::runtime_error("cannot run SGM without a project!");
             }
 
-            fs::path project_path = args[1];
-            spdlog::info("loading project: {0}", project_path.string());
+            if (args.size() >= 3 && args[2] == "--launched") {
+#ifdef SGE_BUILD_SCRIPTCORE
+                process_info p_info;
+                p_info.detach = true;
 
-            if (!project::load(fs::absolute(project_path))) {
+                std::string debugger_configuration;
+#ifdef SGE_DEBUG
+                debugger_configuration = "Debug";
+#else
+                debugger_configuration = "Release";
+#endif
+
+                fs::path debugger_path = fs::current_path() / "assets/assemblies" /
+                                         debugger_configuration / "SGE.Debugger.exe";
+
+#ifdef SGE_PLATFORM_WINDOWS
+                p_info.executable = debugger_path;
+                p_info.cmdline = debugger_path.filename().string();
+#else
+                p_info.executable = SGE_MSBUILD_EXE;
+                p_info.cmdline = "mono \"" + debugger_path.string() + "\"";
+#endif
+
+                p_info.cmdline += " --address=" + std::string(SGE_DEBUGGER_AGENT_ADDRESS);
+                p_info.cmdline += " --port=" + std::string(SGE_DEBUGGER_AGENT_PORT);
+
+                environment::run_command(p_info);
+#else
+                spdlog::error("could not launch debugger!");
+#endif
+            }
+
+            m_project_path = args[1];
+        }
+
+        virtual void on_init() override {
+            spdlog::info("loading project: {0}", m_project_path.string());
+            if (!project::load(fs::absolute(m_project_path))) {
                 throw std::runtime_error("could not load project!");
             }
 
@@ -59,6 +100,15 @@ namespace sgm {
         }
 
         virtual void on_shutdown() override {
+            if (s_debugger_thread) {
+                s_exit_debugger = true;
+                if (s_debugger_thread->joinable()) {
+                    s_debugger_thread->join();
+                }
+
+                s_debugger_thread.reset();
+            }
+
             pop_layer(m_editor_layer);
             delete m_editor_layer;
 
@@ -75,6 +125,7 @@ namespace sgm {
         }
 
         editor_layer* m_editor_layer;
+        fs::path m_project_path;
     };
 } // namespace sgm
 

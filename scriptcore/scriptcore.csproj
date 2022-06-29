@@ -20,7 +20,6 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>SGE_DEBUG</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
@@ -44,9 +43,6 @@
     <Compile Remove="obj\**\*.cs" />
   </ItemGroup>
 
-  <Target Name="CopyBinary" AfterTargets="Build">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildThisFileDirectory)..\assets\assemblies" />
-  </Target>
-
+  <Import Project="$(MSBuildThisFileDirectory)..\assets\assemblies\SGE.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -284,4 +284,12 @@ namespace sge {
         return get("HOME");
 #endif
     }
+
+    uint64_t environment::get_process_id() {
+#ifdef SGE_PLATFORM_WINDOWS
+        return windows_get_process_id();
+#else
+        return (uint64_t)getpid();
+#endif
+    }
 } // namespace sge

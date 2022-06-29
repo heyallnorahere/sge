@@ -1,0 +1,19 @@
+<Project>
+
+  <PropertyGroup>
+    <OutputPath>$(MSBuildThisFileDirectory)</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DefineConstants>SGE_DEBUG</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <OutputPath>$(OutputPath)\Release</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFrameworkVersion)' == '' ">
+    <OutDir>$(MSBuildThisFileDirectory)\$(Configuration)</OutDir>
+  </PropertyGroup>
+
+</Project>

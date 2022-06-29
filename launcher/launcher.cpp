@@ -177,7 +177,8 @@ namespace sgm::launcher {
             }
 
             std::stringstream command;
-            command << std::quoted(sgm_path.string()) << " " << std::quoted(project_path.string());
+            command << std::quoted(sgm_path.string()) << " \"" << project_path.string()
+                    << "\" --launched";
 
             process_info info;
             info.executable = sgm_path;

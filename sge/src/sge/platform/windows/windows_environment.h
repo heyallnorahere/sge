@@ -16,6 +16,7 @@
 
 #pragma once
 #include "sge/core/environment.h"
+
 namespace sge {
     int32_t windows_run_command(const process_info& info);
 
@@ -24,4 +25,5 @@ namespace sge {
     bool windows_hasenv(const std::string& key);
 
     fs::path windows_get_home_directory();
+    uint64_t windows_get_process_id();
 }

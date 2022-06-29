@@ -60,6 +60,33 @@ namespace sge {
         }
     }
 
+    class debugger_agent {
+    public:
+        void set(const std::string& key, const std::string& value) { m_data[key] = value; }
+        void set(const std::string& key, const char* value) { m_data[key] = value; }
+        void set(const std::string& key, bool value) { m_data[key] = value ? "y" : "n"; }
+
+        void set(const std::string& key, const std::string& address, const std::string& port) {
+            m_data[key] = address + ":" + port;
+        }
+
+        operator std::string() const {
+            std::string data;
+            for (const auto& [key, value] : m_data) {
+                if (!data.empty()) {
+                    data += ",";
+                }
+
+                data += key + "=" + value;
+            }
+
+            return "--debugger-agent=" + data;
+        }
+
+    private:
+        std::unordered_map<std::string, std::string> m_data;
+    };
+
     void script_engine::init() {
         if (script_engine_data) {
             throw std::runtime_error("the script engine has already been initialized!");
@@ -74,11 +101,15 @@ namespace sge {
 
         std::vector<std::string> args;
         if (script_engine_data->debug_enabled) {
-            args.insert(
-                args.end(),
-                { "--breakonex", "--soft-breakpoints",
-                  "--debugger-agent=transport=dt_socket,server=y,suspend=n,embedding=1,"
-                  "address=127.0.0.1:62222,logfile=assets/logs/mono-debugger.log,loglevel=2" });
+            debugger_agent agent;
+
+            agent.set("transport", "dt_socket");
+            agent.set("server", true);
+            agent.set("address", SGE_DEBUGGER_AGENT_ADDRESS, SGE_DEBUGGER_AGENT_PORT);
+            agent.set("logfile", "assets/logs/mono-debugger.log");
+            agent.set("loglevel", "10");
+
+            args.insert(args.end(), { "--breakonex", "--soft-breakpoints", agent });
         }
 
         std::vector<char*> jit_args;

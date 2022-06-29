@@ -69,6 +69,7 @@ namespace sge {
         bool is_subsystem_initialized(subsystem id) { return (m_initialized_subsystems & id) != 0; }
 
     protected:
+        virtual void pre_init() {}
         virtual void on_init() {}
         virtual void on_shutdown() {}
 

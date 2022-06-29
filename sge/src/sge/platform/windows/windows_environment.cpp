@@ -25,7 +25,7 @@ namespace sge {
     int32_t windows_run_command(const process_info& info) {
         size_t buffer_size = (info.cmdline.length() + 1) * sizeof(char);
         char* buffer = (char*)malloc(buffer_size);
-        strcpy(buffer, info.cmdline.c_str());
+        memcpy(buffer, info.cmdline.c_str(), buffer_size);
 
         STARTUPINFOA startup_info;
         memset(&startup_info, 0, sizeof(STARTUPINFOA));
@@ -33,14 +33,16 @@ namespace sge {
         startup_info.dwFlags |= STARTF_USESTDHANDLES;
 
         HANDLE output_file = nullptr;
+        std::unique_ptr<SECURITY_ATTRIBUTES> security_attributes;
         if (!info.output_file.empty()) {
-            SECURITY_ATTRIBUTES sa;
-            sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-            sa.lpSecurityDescriptor = nullptr;
-            sa.bInheritHandle = true;
+            security_attributes = std::make_unique<SECURITY_ATTRIBUTES>();
+            security_attributes->nLength = sizeof(SECURITY_ATTRIBUTES);
+            security_attributes->lpSecurityDescriptor = nullptr;
+            security_attributes->bInheritHandle = true;
 
             output_file = ::CreateFileW(info.output_file.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE,
-                                        &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+                                        security_attributes.get(), CREATE_ALWAYS,
+                                        FILE_ATTRIBUTE_NORMAL, nullptr);
 
             startup_info.hStdOutput = output_file;
             startup_info.hStdError = output_file;
@@ -77,8 +79,9 @@ namespace sge {
         std::string exe_string = info.executable.string();
 
         PROCESS_INFORMATION win32_process_info;
-        if (::CreateProcessA(exe_string.c_str(), buffer, nullptr, nullptr, true, 0, nullptr,
-                             workdir_string.c_str(), &startup_info, &win32_process_info)) {
+        if (::CreateProcessA(exe_string.c_str(), buffer, security_attributes.get(), nullptr, true,
+                             0, nullptr, workdir_string.c_str(), &startup_info,
+                             &win32_process_info)) {
             if (!info.detach) {
                 ::WaitForSingleObject(win32_process_info.hProcess,
                                       std::numeric_limits<DWORD>::max());
@@ -94,7 +97,7 @@ namespace sge {
             ::CloseHandle(win32_process_info.hProcess);
             ::CloseHandle(win32_process_info.hThread);
         }
-        
+
         if (exit_code < 0) {
             exit_code = (int32_t)::GetLastError();
         }
@@ -108,7 +111,7 @@ namespace sge {
     }
 
     struct hkey_data {
-        HKEY key;
+        HKEY key = (HKEY)INVALID_HANDLE_VALUE;
         std::string path;
     };
 
@@ -198,4 +201,6 @@ namespace sge {
 
         return result;
     }
+
+    uint64_t windows_get_process_id() { return (uint64_t)::GetCurrentProcessId(); }
 } // namespace sge

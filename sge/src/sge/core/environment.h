@@ -35,5 +35,6 @@ namespace sge {
         static bool has(const std::string& key);
 
         static fs::path get_home_directory();
+        static uint64_t get_process_id();
     };
 } // namespace sge

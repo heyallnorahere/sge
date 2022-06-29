@@ -6,10 +6,24 @@ add_subdirectory("entt")
 add_subdirectory("box2d")
 add_subdirectory("json")
 
+if(NOT GIT_SUBMODULES_SYNCED)
+    find_package(Git REQUIRED)
+
+    message(STATUS "Syncing Git submodules...")
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+    message(STATUS "Synced Git submodules!")
+    set(GIT_SUBMODULES_SYNCED ON CACHE BOOL "Have SGE's Git submodules been synced?" FORCE)
+endif()
+
 if(NOT SHADERC_DEPENDENCIES_SYNCED)
     find_package(Python3 REQUIRED)
+
     message(STATUS "Syncing shaderc dependencies...")
     execute_process(COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/shaderc/utils/git-sync-deps")
+
     message(STATUS "Synced shaderc dependencies!")
     set(SHADERC_DEPENDENCIES_SYNCED ON CACHE BOOL "Have the shaderc dependencies been synced?" FORCE)
 endif()

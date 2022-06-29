@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "SGE.Debugger": {
+      "commandName": "Project",
+      "commandLineArgs": "--address=127.0.0.1 --port=62222",
+      "workingDirectory": "$(ProjectDir).."
+    }
+  }
+}
