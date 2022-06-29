@@ -2,8 +2,12 @@
 
 if(WIN32)
     set(VISUAL_STUDIO_TYPES Community Professional Enterprise)
-    foreach(TYPE ${VISUAL_STUDIO_TYPES})
-        list(APPEND VISUAL_STUDIO_PATHS "C:\\Program Files\\Microsoft Visual Studio\\2022\\${TYPE}")
+    set(VISUAL_STUDIO_VERSIONS 2022 2019)
+
+    foreach(VS_TYPE ${VISUAL_STUDIO_TYPES})
+        foreach(VS_VERSION ${VISUAL_STUDIO_VERSIONS})
+            list(APPEND VISUAL_STUDIO_PATHS "C:\\Program Files\\Microsoft Visual Studio\\${VS_VERSION}\\${VS_TYPE}")
+        endforeach()
     endforeach()
 
     find_program(MSBUILD_EXE "MSBuild"
