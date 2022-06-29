@@ -37,9 +37,10 @@
 [submodule "vendor/volk"]
 	path = vendor/volk
 	url = https://github.com/zeux/volk.git
-[submodule "vendor/mono/submodules/nrefactory"]
-	path = vendor/mono/submodules/nrefactory
-	url = https://github.com/icsharpcode/nrefactory.git
 [submodule "vendor/mono/submodules/debugger-libs"]
 	path = vendor/mono/submodules/debugger-libs
 	url = https://github.com/mono/debugger-libs.git
+[submodule "vendor/mono/submodules/nrefactory"]
+	path = vendor/mono/submodules/nrefactory
+	url = https://github.com/yodasoda1219/nrefactory.git
+	branch = net472
