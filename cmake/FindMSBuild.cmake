@@ -3,10 +3,13 @@
 if(WIN32)
     set(VISUAL_STUDIO_TYPES Community Professional Enterprise)
     set(VISUAL_STUDIO_VERSIONS 2022 2019)
+    set(PROGRAM_FILES_DIRECTORIES "Program Files" "Program Files (x86)")
 
     foreach(VS_TYPE ${VISUAL_STUDIO_TYPES})
         foreach(VS_VERSION ${VISUAL_STUDIO_VERSIONS})
-            list(APPEND VISUAL_STUDIO_PATHS "C:\\Program Files\\Microsoft Visual Studio\\${VS_VERSION}\\${VS_TYPE}")
+            foreach(PF_DIR ${PROGRAM_FILES_DIRECTORIES})
+                list(APPEND VISUAL_STUDIO_PATHS "C:\\${PF_DIR}\\Microsoft Visual Studio\\${VS_VERSION}\\${VS_TYPE}")
+            endforeach()
         endforeach()
     endforeach()
 
