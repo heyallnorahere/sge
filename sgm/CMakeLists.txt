@@ -9,9 +9,13 @@ target_link_libraries(sgm PRIVATE sge)
 set_target_properties(sgm PROPERTIES CXX_STANDARD 17 FOLDER "tools")
 
 copy_required_dlls(sgm)
-add_custom_command(TARGET sgm PRE_BUILD
-    COMMAND dotnet build --nologo -v q -c $<CONFIG> "${CMAKE_SOURCE_DIR}/debugger/SGE.Debugger.csproj"
-    COMMENT "Building SGE.Debugger.exe")
+if(SGE_BUILD_SCRIPTCORE)
+    set(SGE_DEBUGGER_PATH "${CMAKE_SOURCE_DIR}/debugger/SGE.Debugger.csproj")
+    add_custom_command(TARGET sgm PRE_BUILD
+        COMMAND dotnet restore ${SGE_DEBUGGER_PATH}
+        COMMAND ${SGE_MSBUILD_ARGS} -noLogo -v:m -p:Configuration=$<CONFIG> ${SGE_DEBUGGER_PATH}
+        COMMENT "Building SGE.Debugger.exe")
+endif()
 
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
     target_precompile_headers(sgm PRIVATE "${SGM_DIR}/sgmpch.h")

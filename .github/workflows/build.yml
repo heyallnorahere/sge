@@ -31,30 +31,6 @@ jobs:
         shell: bash
         run: |
           brew install cmake
-      - name: install reference assemblies
-        if: ${{ matrix.os-name == 'windows-latest' }}
-        shell: powershell
-        run: |
-          # https://github.com/actions/virtual-environments/issues/5055
-          Set-Location "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-          $InstallPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise"
-          $componentsToAdd = @(
-            "Microsoft.Net.Component.4.7.2.SDK"
-          )
-
-          [string]$workloadArgs = $componentsToAdd | ForEach-Object {" --add " +  $_}
-          $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"",$workloadArgs, '--quiet', '--norestart', '--nocache')
-
-          $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
-          if ($process.ExitCode -eq 0)
-          {
-              Write-Host "successfully installed reference assemblies"
-          }
-          else
-          {
-              Write-Host "failed to install reference assemblies"
-              exit 1
-          }
       - name: build
         shell: bash
         run: |
