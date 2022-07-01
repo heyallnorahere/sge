@@ -22,7 +22,7 @@ namespace SGE.Debugger
 {
     internal static class Utilities
     {
-        public static IPAddress? ResolveIP(string ip)
+        public static IPAddress ResolveIP(string ip)
         {
             try
             {

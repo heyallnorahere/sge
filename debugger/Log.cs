@@ -89,7 +89,7 @@ namespace SGE.Debugger
             sWriter.Flush();
         }
 
-        private static void Print(string message, object?[] data)
+        private static void Print(string message, object[] data)
         {
             var frame = new StackFrame(1);
             string name = frame.GetMethod().Name;
@@ -100,8 +100,8 @@ namespace SGE.Debugger
             Print(finalMessage, severity);
         }
 
-        public static void Info(string message, params object?[] data) => Print(message, data);
-        public static void Warn(string message, params object?[] data) => Print(message, data);
-        public static void Error(string message, params object?[] data) => Print(message, data);
+        public static void Info(string message, params object[] data) => Print(message, data);
+        public static void Warn(string message, params object[] data) => Print(message, data);
+        public static void Error(string message, params object[] data) => Print(message, data);
     }
 }

@@ -18,7 +18,6 @@ using Mono.Debugging.Client;
 using Mono.Debugging.Soft;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -39,69 +38,125 @@ namespace SGE.Debugger
             public DebuggerEventHandler(Session session)
             {
                 mSession = session;
+                mLock = new object();
+            }
+
+            private void HandleEvent(Action callback)
+            {
+                lock (mLock)
+                {
+                    mSession.mEventHandling = true;
+
+                    try
+                    {
+                        callback();
+                    }
+                    catch (Exception exc)
+                    {
+                        var stackframe = new System.Diagnostics.StackFrame(1);
+                        var methodName = stackframe.GetMethod().Name;
+
+                        string excName = exc.GetType().FullName;
+                        Log.Error($"{excName} caught handling event {methodName}: {exc.Message}");
+                    }
+
+                    mSession.mEventHandling = false;
+                }
             }
 
             [DebuggerEvent]
             private void TargetStopped(object sender, TargetEventArgs args)
             {
-                Log.Info("Target stopped");
+                HandleEvent(() =>
+                {
+                    Log.Info("Target stopped");
+                });
             }
 
             [DebuggerEvent]
             private void TargetHitBreakpoint(object sender, TargetEventArgs args)
             {
-                Log.Info("Target hit a breakpoint");
+                HandleEvent(() =>
+                {
+                    Log.Info("Target hit a breakpoint");
+                });
             }
 
             [DebuggerEvent]
             private void TargetExceptionThrown(object sender, TargetEventArgs args)
             {
-                Log.Info("An exception was thrown");
+                HandleEvent(() =>
+                {
+                    Log.Info("An exception was thrown");
+                });
             }
 
             [DebuggerEvent]
             private void TargetUnhandledException(object sender, TargetEventArgs args)
             {
-                Log.Info("An unhandled exception was thrown");
+                HandleEvent(() =>
+                {
+                    Log.Info("An unhandled exception was thrown");
+                });
             }
 
             [DebuggerEvent]
             private void TargetStarted(object sender, EventArgs args)
             {
-                Log.Info("Target started");
+                HandleEvent(() =>
+                {
+                    Log.Info("Target started");
+                });
             }
 
             [DebuggerEvent]
             private void TargetReady(object sender, TargetEventArgs args)
             {
-                Log.Info("Target ready");
+                HandleEvent(() =>
+                {
+                    Log.Info("Target ready");
+                    throw new Exception();
+                });
             }
 
             [DebuggerEvent]
             private void TargetExited(object sender, TargetEventArgs args)
             {
-                Log.Info("Target exited");
+                HandleEvent(() =>
+                {
+                    Log.Info("Target exited");
+                });
             }
 
             [DebuggerEvent]
             private void TargetInterrupted(object sender, TargetEventArgs args)
             {
-                Log.Info("Target interrupted");
+                HandleEvent(() =>
+                {
+                    Log.Info("Target interrupted");
+                });
             }
 
             [DebuggerEvent]
             private void TargetThreadStarted(object sender, TargetEventArgs args)
             {
-                Log.Info("Target started a thread");
+                HandleEvent(() =>
+                {
+                    Log.Info("Target started a thread");
+                });
             }
 
             [DebuggerEvent]
             private void TargetThreadStopped(object sender, TargetEventArgs args)
             {
-                Log.Info("Target stopped a thread");
+                HandleEvent(() =>
+                {
+                    Log.Info("Target stopped a thread");
+                });
             }
 
             private readonly Session mSession;
+            private readonly object mLock;
         }
 
         private sealed class CustomLogger : ICustomLogger
@@ -118,7 +173,7 @@ namespace SGE.Debugger
             public void LogAndShowException(string message, Exception exc) => LogError(message, exc);
             public void LogMessage(string format, params object[] args) => Log.Info(format, args);
 
-            public string? GetNewDebuggerLogFilename() => null;
+            public string GetNewDebuggerLogFilename() => null;
         }
 
         private const int MaxConnectionAttempts = 20;
@@ -158,6 +213,7 @@ namespace SGE.Debugger
             Address = address;
             Port = port;
 
+            mEventHandling = false;
             mSession = new SoftDebuggerSession
             {
                 Breakpoints = new BreakpointStore(),
@@ -194,16 +250,17 @@ namespace SGE.Debugger
         private int Run()
         {
             DebuggerLoggingService.CustomLogger = new CustomLogger();
-
             if (!Connect())
             {
                 return 1;
             }
 
-            // todo: listen for commands from socket
+            var frontend = new DebuggerFrontend(Port + 1); // lol
+            frontend.Run();
+
             while (mSession.IsRunning)
             {
-                // todo: something, maybe listen to connected sockets
+                // todo: something
             }
 
             return 0;
@@ -243,5 +300,7 @@ namespace SGE.Debugger
         public int Port { get; }
 
         private readonly SoftDebuggerSession mSession;
+        private readonly DebuggerFrontend mFrontend;
+        private bool mEventHandling;
     }
 }
