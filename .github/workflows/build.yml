@@ -34,5 +34,6 @@ jobs:
       - name: build
         shell: bash
         run: |
+          dotnet restore scriptcore/scriptcore.csproj
           cmake --preset default -DCMAKE_BUILD_TYPE=Release
           cmake --build --preset default

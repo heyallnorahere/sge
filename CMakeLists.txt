@@ -118,12 +118,8 @@ if(SGE_BUILD_SCRIPTCORE)
 
         string(SUBSTRING ${PROJECT_FILENAME} 0 ${SEPARATOR_POS} MANAGED_PROJECT_NAME)
         if(MSVC)
-            include_external_msproject(${MANAGED_PROJECT_NAME} ${PROJECT_PATH}
-                PLATFORM ${CMAKE_VS_PLATFORM_NAME})
-
+            include_external_msproject(${MANAGED_PROJECT_NAME} ${PROJECT_PATH})
             set_target_properties(${MANAGED_PROJECT_NAME} PROPERTIES FOLDER ${PROJECT_FOLDER})
-            add_custom_command(TARGET ${MANAGED_PROJECT_NAME} PRE_BUILD
-                COMMAND ${DOTNET_EXE} restore ${PROJECT_PATH})
         else()
             string(FIND ${PROJECT_PATH} "vendor" POS)
 
