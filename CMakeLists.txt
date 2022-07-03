@@ -122,12 +122,13 @@ if(SGE_BUILD_SCRIPTCORE)
                 PLATFORM ${CMAKE_VS_PLATFORM_NAME})
 
             set_target_properties(${MANAGED_PROJECT_NAME} PROPERTIES FOLDER ${PROJECT_FOLDER})
+            add_custom_command(TARGET ${MANAGED_PROJECT_NAME} PRE_BUILD
+                COMMAND ${DOTNET_EXE} restore ${PROJECT_PATH})
         else()
             string(FIND ${PROJECT_PATH} "vendor" POS)
 
             if(${POS} LESS 0)
                 add_custom_target(${MANAGED_PROJECT_NAME} ALL
-                    COMMAND ${DOTNET_EXE} restore ${PROJECT_PATH}
                     COMMAND ${DOTNET_EXE} build --nologo -v m -c $<CONFIG> -a ${SGE_CPU_ARCHITECTURE} ${PROJECT_PATH}
                     COMMENT "Building managed project: ${MANAGED_PROJECT_NAME}")
             endif()
