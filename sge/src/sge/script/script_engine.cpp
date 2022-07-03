@@ -53,7 +53,8 @@ namespace sge {
 
         if (script_engine_data->assemblies.empty()) {
             script_engine::load_assembly(fs::current_path() / "assets" / "assemblies" /
-                                         "SGE.Scriptcore.dll");
+                                         project::get_config(application::get().is_editor()) /
+                                         "SGE.Scriptcore" / "SGE.Scriptcore.dll");
 
             script_engine::register_internal_script_calls();
             script_helpers::init();
@@ -164,17 +165,14 @@ namespace sge {
             return false;
         }
 
-        static const std::vector<std::string> msbuild_args = SGE_MSBUILD_ARGS;
         std::stringstream args;
-        for (const auto& argument : msbuild_args) {
-            args << std::quoted(argument) << " ";
-        }
-
-        args << "-r -nologo -p:Configuration=" << project::get_config() << " "
-             << std::quoted(project_path.string());
+        args << SGE_DOTNET_EXE << " build --nologo";
+        args << " -c " << project::get_config();
+        args << " -a " << project::get_cpu_architecture();
+        args << " " << std::quoted(project_path.string());
 
         process_info p_info;
-        p_info.executable = SGE_MSBUILD_EXE;
+        p_info.executable = SGE_DOTNET_EXE;
         p_info.cmdline = args.str();
 
         environment::run_command(p_info);
@@ -320,7 +318,7 @@ namespace sge {
         script_property_type property_type;
     };
 
-    // based on Hazel::ScriptEngine::ReloadAssembly, Hazel-dev branch dotnet6
+    // based on Hazel::ScriptEngine::ReloadAssembly
     void script_engine::reload_assemblies(const std::vector<ref<scene>>& current_scenes,
                                           const std::optional<std::function<bool()>>& pre_reload) {
         std::vector<

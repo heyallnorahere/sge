@@ -47,8 +47,11 @@ namespace sgm {
                 throw std::runtime_error("cannot run SGM without a project!");
             }
 
+            // if --launched is passed, SGM will start the proxy debugger, SGE.Debugger.exe. to
+            // debug the proxy debugger, as ironic as that sounds, do not pass this flag and debug
+            // the proxy debugger manually.
             if (args.size() >= 3 && args[2] == "--launched") {
-#ifdef SGE_BUILD_SCRIPTCORE
+#ifdef SGE_BUILD_DEBUGGER
                 process_info p_info;
                 p_info.detach = true;
 
@@ -60,14 +63,15 @@ namespace sgm {
 #endif
 
                 fs::path debugger_path = fs::current_path() / "assets/assemblies" /
-                                         debugger_configuration / "SGE.Debugger.exe";
+                                         debugger_configuration / "SGE.Debugger" /
+                                         "SGE.Debugger.exe";
 
 #ifdef SGE_PLATFORM_WINDOWS
                 p_info.executable = debugger_path;
                 p_info.cmdline = debugger_path.filename().string();
 #else
                 p_info.executable = SGE_MSBUILD_EXE;
-                p_info.cmdline = "mono \"" + debugger_path.string() + "\"";
+                p_info.cmdline = p_info.executable.string() + " \"" + debugger_path.string() + "\"";
 #endif
 
                 p_info.cmdline += " --address=" + std::string(SGE_DEBUGGER_AGENT_ADDRESS);

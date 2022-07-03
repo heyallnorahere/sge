@@ -20,6 +20,9 @@
 #cmakedefine SGE_VERSION "@SGE_VERSION@"
 
 #cmakedefine SGE_BUILD_SCRIPTCORE
+#cmakedefine SGE_DOTNET_EXE "@SGE_DOTNET_EXE@"
+
+#cmakedefine SGE_BUILD_DEBUGGER
 #cmakedefine SGE_MSBUILD_EXE "@SGE_MSBUILD_EXE@"
 #cmakedefine SGE_MSBUILD_ARGS @SGE_MSBUILD_ARGS@
 

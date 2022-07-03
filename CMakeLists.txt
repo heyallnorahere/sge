@@ -14,6 +14,18 @@ endif()
 
 project(sge VERSION ${SGE_VERSION} LANGUAGES ${SGE_LANGUAGES})
 
+if(SGE_PLATFORM_MACOSX)
+    set(SGE_TARGET_ARCHITECTURE ${CMAKE_OSX_ARCHITECTURES})
+else()
+    set(SGE_TARGET_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
+endif()
+
+if(${SGE_TARGET_ARCHITECTURE} STREQUAL "x86_64" OR ${SGE_TARGET_ARCHITECTURE} STREQUAL "AMD64")
+    set(SGE_CPU_ARCHITECTURE x64)
+else()
+    set(SGE_CPU_ARCHITECTURE ARM64)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -28,20 +40,26 @@ endif()
 set(SGE_PLATFORM_DESKTOP ${SGE_PLATFORM_WINDOWS} OR ${SGE_PLATFORM_LINUX} OR ${SGE_PLATFORM_MACOSX})
 
 # independent options
-option(SGE_BUILD_SCRIPTCORE "Build SGE script core." ON)
-set(SGE_DEBUGGER_AGENT_ADDRESS "127.0.0.1" CACHE STRING "The address of the debugger agent to connect to.")
-set(SGE_DEBUGGER_AGENT_PORT "62222" CACHE STRING "The port of the debugger agent to connect to.")
+option(SGE_BUILD_SCRIPTCORE "Build the SGE scriptcore." ON)
+option(SGE_BUILD_DEBUGGER "Build SGE.Debugger.exe" ON)
+set(SGE_DEBUGGER_AGENT_ADDRESS "127.0.0.1" CACHE STRING "The address to host the mono debugger agent at.")
+set(SGE_DEBUGGER_AGENT_PORT "62222" CACHE STRING "The port to host the mono debugger agent on.")
 
 # find packages
 find_package(Aftermath)
 if(SGE_BUILD_SCRIPTCORE)
-    find_package(MSBuild REQUIRED)
+    find_package(DotnetCore REQUIRED)
 endif()
 
 # dependent options
 include(CMakeDependentOption)
+cmake_dependent_option(SGE_BUILD_DEBUGGER "Build SGE.Debugger.exe" ON "SGE_BUILD_SCRIPTCORE" OFF)
 cmake_dependent_option(SGE_USE_AFTERMATH "Use the NVIDIA Nsight Aftermath SDK" OFF "Aftermath_FOUND" OFF)
 cmake_dependent_option(SGE_USE_VULKAN "Use the Vulkan graphics api." ON "SGE_PLATFORM_DESKTOP" OFF)
+
+if(SGE_BUILD_DEBUGGER)
+    find_package(MSBuild REQUIRED)
+endif()
 
 # dependencies
 add_subdirectory("vendor")
@@ -109,8 +127,7 @@ if(SGE_BUILD_SCRIPTCORE)
 
             if(${POS} LESS 0)
                 add_custom_target(${MANAGED_PROJECT_NAME} ALL
-                    COMMAND ${MSBUILD_ARGS}
-                    -noLogo -v:m -p:Configuration=$<CONFIG> ${PROJECT_PATH}
+                    COMMAND ${DOTNET_EXE} build --nologo -v m -c $<CONFIG> -a ${SGE_CPU_ARCHITECTURE} ${PROJECT_PATH}
                     COMMENT "Building managed project: ${MANAGED_PROJECT_NAME}")
             endif()
         endif()

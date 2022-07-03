@@ -23,7 +23,7 @@ namespace sge {
         static void init(bool editor);
         static void shutdown();
 
-        static std::string get_config();
+        static std::string get_config(std::optional<bool> editor = {});
         static std::string get_cpu_architecture();
 
         static bool loaded();

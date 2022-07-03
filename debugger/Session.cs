@@ -245,8 +245,17 @@ namespace SGE.Debugger
         private static void WriteOutput(string text, bool isStdErr, string source)
         {
             string message = $"{source}: {text}";
-            var severity = isStdErr ? Log.Severity.Error : Log.Severity.Info;
+            for (int i = message.Length - 1; i >= 0; i--)
+            {
+                char character = message[i];
+                if (character != '\r' && character != '\n')
+                {
+                    message = message.Substring(0, i + 1);
+                    break;
+                }
+            }
 
+            var severity = isStdErr ? Log.Severity.Error : Log.Severity.Info;
             Log.Print(message, severity);
         }
 

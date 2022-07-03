@@ -48,12 +48,19 @@ namespace sge {
         project_data.reset();
     }
 
-    std::string project::get_config() {
-#ifdef SGE_DEBUG
-        return "Debug";
-#else
-        return "Release";
-#endif
+    std::string project::get_config(std::optional<bool> editor) {
+        bool is_editor;
+        if (editor.has_value()) {
+            is_editor = editor.value();
+        } else {
+            is_editor = project_data->editor;
+        }
+
+        if (is_editor) {
+            return "Debug";
+        } else {
+            return "Release";
+        }
     }
 
     std::string project::get_cpu_architecture() { return SGE_CPU_ARCHITECTURE; }
