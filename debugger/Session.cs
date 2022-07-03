@@ -16,10 +16,13 @@
 
 using Mono.Debugging.Client;
 using Mono.Debugging.Soft;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading;
 
 namespace SGE.Debugger
 {
@@ -31,6 +34,8 @@ namespace SGE.Debugger
 
     public abstract class EventHandler
     {
+        public const dynamic Null = null;
+
         public EventHandler()
         {
             mLock = new object();
@@ -93,6 +98,21 @@ namespace SGE.Debugger
         private readonly object mLock;
     }
 
+    internal sealed class DebuggerThread
+    {
+        public DebuggerThread(long id, string name)
+        {
+            ID = id;
+            Name = name;
+        }
+
+        [JsonProperty(PropertyName = "id")]
+        public long ID { get; }
+
+        [JsonProperty(PropertyName = "name")]
+        public string Name { get; }
+    }
+
     public sealed class Session : IDisposable
     {
         private sealed class DebuggerEventHandler : EventHandler
@@ -114,36 +134,74 @@ namespace SGE.Debugger
             [DebuggerEvent]
             private void TargetStopped(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
+                mSession.OnStopped();
+                mSession.mFrontend.SendEvent(SocketEventType.DebuggerStep, new
+                {
+                    thread = args.Thread.Id,
+                    message = Null
+                });
+
+                mSession.mResumeEvent.Set();
                 Log.Info("Target stopped");
             });
 
             [DebuggerEvent]
             private void TargetHitBreakpoint(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
+                mSession.OnStopped();
+                mSession.mFrontend.SendEvent(SocketEventType.BreakpointHit, new
+                {
+                    thread = args.Thread.Id,
+                    message = Null
+                });
+
+                mSession.mResumeEvent.Set();
                 Log.Info("Target hit a breakpoint");
             });
+
+            private void OnExceptionThrown(TargetEventArgs args, SocketEventType eventType)
+            {
+                mSession.OnStopped();
+
+                var exception = mSession.ActiveException;
+                if (exception != null)
+                {
+                    mSession.mCurrentException = exception.Instance;
+                    mSession.mFrontend.SendEvent(eventType, new
+                    {
+                        thread = args.Thread.Id,
+                        message = exception.Message
+                    });
+                }
+
+                mSession.mResumeEvent.Set();
+            }
 
             [DebuggerEvent]
             private void TargetExceptionThrown(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                Log.Info("An exception was thrown");
+                OnExceptionThrown(args, SocketEventType.HandledExceptionThrown);
+                Log.Info("An handled exception was thrown");
             });
 
             [DebuggerEvent]
             private void TargetUnhandledException(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
+                OnExceptionThrown(args, SocketEventType.UnhandledExceptionThrown);
                 Log.Info("An unhandled exception was thrown");
             });
 
             [DebuggerEvent]
             private void TargetStarted(object sender, EventArgs args) => HandleEvent(() =>
             {
+                mSession.mActiveFrame = null;
                 Log.Info("Target started");
             });
 
             [DebuggerEvent]
             private void TargetReady(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
+                mSession.mActiveProcess = mSession.mSession.GetProcesses().SingleOrDefault();
                 Log.Info("Target ready");
             });
 
@@ -151,32 +209,47 @@ namespace SGE.Debugger
             private void TargetExited(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
                 Log.Info("Target exited");
+                mSession.mResumeEvent.Set();
                 mSession.mFrontend.Stop();
             });
 
             [DebuggerEvent]
             private void TargetInterrupted(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
+                mSession.mResumeEvent.Set();
                 Log.Info("Target interrupted");
             });
 
             [DebuggerEvent]
-            private void TargetThreadStarted(object sender, TargetEventArgs args)
+            private void TargetThreadStarted(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
+                long threadId = args.Thread.Id;
+                string threadName = args.Thread.Name;
+
+                lock (mSession.mSeenThreads)
                 {
-                    Log.Info("Target started a thread");
-                });
-            }
+                    var thread = new DebuggerThread(threadId, threadName);
+                    mSession.mSeenThreads.Add(threadId, thread);
+                }
+
+                mSession.mFrontend.SendEvent(SocketEventType.ThreadStarted, threadId);
+                Log.Info($"Target started a thread: {threadName}");
+            });
 
             [DebuggerEvent]
-            private void TargetThreadStopped(object sender, TargetEventArgs args)
+            private void TargetThreadStopped(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
+                long threadId = args.Thread.Id;
+                string threadName = mSession.mSeenThreads[threadId].Name;
+
+                lock (mSession.mSeenThreads)
                 {
-                    Log.Info("Target stopped a thread");
-                });
-            }
+                    mSession.mSeenThreads.Remove(threadId);
+                }
+
+                mSession.mFrontend.SendEvent(SocketEventType.ThreadExited, threadId);
+                Log.Info($"Target stopped a thread: {threadName}");
+            });
 
             private readonly Session mSession;
         }
@@ -205,6 +278,78 @@ namespace SGE.Debugger
                 passedArgs = args
             });
 
+            [Command("next")]
+            private dynamic Next(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("continue")]
+            private dynamic Continue(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("stepIn")]
+            private dynamic StepIn(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("stepOut")]
+            private dynamic StepOut(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("pause")]
+            private dynamic Pause(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("stackTrace")]
+            private dynamic StackTrace(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("scopes")]
+            private dynamic Scopes(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("threads")]
+            private dynamic Threads(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("setBreakpoints")]
+            private dynamic SetBreakpoints(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("setFunctionBreakpoints")]
+            private dynamic SetFunctionBreakpoints(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("setExceptionBreakpoints")]
+            private dynamic SetExceptionBreakpoints(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
+            [Command("evaluate")]
+            private dynamic Evaluate(dynamic args) => HandleEvent(() =>
+            {
+                return Null;
+            });
+
             private readonly Session mSession;
         }
 
@@ -216,8 +361,8 @@ namespace SGE.Debugger
             public string GetNewDebuggerLogFilename() => null;
         }
 
-        private const int MaxConnectionAttempts = 20;
-        private const int ConnectionInterval = 5000;
+        private const int MaxConnectionAttempts = 50;
+        private const int ConnectionInterval = 500;
 
         public static int Start(ArgumentParser.Result args)
         {
@@ -270,10 +415,20 @@ namespace SGE.Debugger
             Address = address;
             Port = port;
 
+            mVariableHandles = new ObjectRegistry<ObjectValue[]>();
+            mFrameHandles = new ObjectRegistry<StackFrame>();
+            mCurrentException = null;
+            mSeenThreads = new Dictionary<long, DebuggerThread>();
+
+            mDisposed = false;
+            mLock = new object();
+
+            mResumeEvent = new AutoResetEvent(false);
+            mDebuggeeRunning = false;
+
             mFrontend = new DebuggerFrontend(Port + 1); // lol
             mFrontend.SetHandler(new ClientCommandHandler(this));
 
-            mDisposed = false;
             mSession = new SoftDebuggerSession
             {
                 Breakpoints = new BreakpointStore(),
@@ -324,38 +479,95 @@ namespace SGE.Debugger
 
         private bool Connect()
         {
-            Log.Info($"Attempting to connect to {Address}:{Port}...");
-
-            var args = new SoftDebuggerConnectArgs(string.Empty, Address, Port)
+            lock (mLock)
             {
-                MaxConnectionAttempts = MaxConnectionAttempts,
-                TimeBetweenConnectionAttempts = ConnectionInterval
-            };
+                Log.Info($"Attempting to connect to {Address}:{Port}...");
 
-            var sessionOptions = new DebuggerSessionOptions
-            {
-                EvaluationOptions = EvaluationOptions.DefaultOptions
-            };
+                var args = new SoftDebuggerConnectArgs(string.Empty, Address, Port)
+                {
+                    MaxConnectionAttempts = MaxConnectionAttempts,
+                    TimeBetweenConnectionAttempts = ConnectionInterval
+                };
 
-            var startInfo = new SoftDebuggerStartInfo(args);
-            mSession.Run(startInfo, sessionOptions);
+                var sessionOptions = new DebuggerSessionOptions
+                {
+                    EvaluationOptions = EvaluationOptions.DefaultOptions
+                };
 
-            if (mSession.IsRunning)
-            {
-                Log.Info($"Successfully connected to {Address}:{Port}!");
-                return true;
-            }
-            else
-            {
-                Log.Error($"Failed to connect to {Address}:{Port}!");
+                var startInfo = new SoftDebuggerStartInfo(args);
+                mSession.Run(startInfo, sessionOptions);
+
+                for (int i = 0; i < MaxConnectionAttempts; i++)
+                {
+                    Thread.Sleep(ConnectionInterval);
+                    if (mActiveProcess != null)
+                    {
+                        Log.Info($"Successfully connected to {Address}:{Port}!");
+                        mDebuggeeRunning = true;
+                        return true;
+                    }
+
+                    if (!mSession.IsRunning)
+                    {
+                        break;
+                    }
+                }
+
+                Log.Error($"Could not connect to {Address}:{Port} - exiting");
                 return false;
+            }
+        }
+
+        private ExceptionInfo ActiveException => ActiveBacktrace?.GetFrame(0)?.GetException();
+        private Backtrace ActiveBacktrace => ActiveThread?.Backtrace;
+
+        private ThreadInfo ActiveThread
+        {
+            get
+            {
+                lock (mLock)
+                {
+                    return mSession?.ActiveThread;
+                }
+            }
+        }
+
+        private void OnStopped()
+        {
+            mVariableHandles.Clear();
+            mFrameHandles.Clear();
+            mCurrentException = null;
+        }
+
+        private void WaitForSuspend()
+        {
+            if (mDebuggeeRunning)
+            {
+                mResumeEvent.WaitOne();
+                mDebuggeeRunning = false;
             }
         }
 
         public IPAddress Address { get; }
         public int Port { get; }
 
+        private readonly ObjectRegistry<ObjectValue[]> mVariableHandles;
+        private readonly ObjectRegistry<StackFrame> mFrameHandles;
+        private ObjectValue mCurrentException;
+        private readonly Dictionary<long, DebuggerThread> mSeenThreads;
+
         private bool mDisposed;
+        private readonly object mLock;
+
+        private readonly AutoResetEvent mResumeEvent;
+        private bool mDebuggeeRunning;
+
+        private ProcessInfo mActiveProcess;
+        private StackFrame mActiveFrame;
+        private long mNextBreakpointId;
+        private readonly SortedDictionary<long, BreakEvent> mBreakpoints;
+        private readonly List<Catchpoint> mCatchpoint;
+
         private readonly SoftDebuggerSession mSession;
         private readonly DebuggerFrontend mFrontend;
     }

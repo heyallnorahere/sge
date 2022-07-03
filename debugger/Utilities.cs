@@ -73,7 +73,7 @@ namespace SGE.Debugger
         public static string GetFullName(this MethodInfo method)
         {
             var methodType = method.DeclaringType;
-            return $"{methodType.FullName}.{method.Name}";
+            return $"{methodType.FullName.Replace('+', '.')}.{method.Name}";
         }
     }
 

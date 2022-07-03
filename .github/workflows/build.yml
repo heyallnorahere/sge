@@ -14,11 +14,11 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9.x
+          python-version: 3.x.x
       - name: setup dotnet
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 6.x.x
       - name: install dependencies (ubuntu)
         if: ${{ matrix.os-name == 'ubuntu-latest' }}
         shell: bash
@@ -35,5 +35,5 @@ jobs:
         shell: bash
         run: |
           dotnet restore scriptcore/scriptcore.csproj
-          cmake --preset default -DCMAKE_BUILD_TYPE=Release
+          cmake --preset default
           cmake --build --preset default

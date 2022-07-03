@@ -19,8 +19,10 @@ using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -41,6 +43,7 @@ namespace SGE.Debugger
     {
         Request,
         Response,
+        Event,
     }
 
     public sealed class SocketMessage
@@ -74,6 +77,56 @@ namespace SGE.Debugger
 
         [JsonProperty(PropertyName = "args")]
         public dynamic Args { get; private set; }
+    }
+
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
+    internal sealed class EventCategoryAttribute : Attribute
+    {
+        public EventCategoryAttribute(SocketEventCategory category)
+        {
+            Category = category;
+        }
+
+        public SocketEventCategory Category { get; }
+    }
+
+    public enum SocketEventType
+    {
+        [EventCategory(SocketEventCategory.Stopped)]
+        DebuggerStep,
+
+        [EventCategory(SocketEventCategory.Stopped)]
+        BreakpointHit,
+
+        [EventCategory(SocketEventCategory.Stopped)]
+        HandledExceptionThrown,
+
+        [EventCategory(SocketEventCategory.Stopped)]
+        UnhandledExceptionThrown,
+
+        [EventCategory(SocketEventCategory.Thread)]
+        ThreadStarted,
+
+        [EventCategory(SocketEventCategory.Thread)]
+        ThreadExited
+    }
+
+    public enum SocketEventCategory
+    {
+        Stopped,
+        Thread
+    }
+
+    public sealed class SocketEvent
+    {
+        [JsonProperty(PropertyName = "type")]
+        public SocketEventType EventType { get; set; }
+
+        [JsonProperty(PropertyName = "category")]
+        public SocketEventCategory EventCategory { get; set; }
+
+        [JsonProperty(PropertyName = "context")]
+        public dynamic Context { get; set; }
     }
 
     internal sealed class Connection : IDisposable
@@ -150,7 +203,7 @@ namespace SGE.Debugger
         {
             if (!mCallbacks.ContainsKey(name))
             {
-                Log.Info($"Command {name} doesn't exist - returning null response body");
+                Log.Info($"Command {name} doesn't exist - response will not be sent");
                 return null;
             }
 
@@ -256,9 +309,9 @@ namespace SGE.Debugger
 
         public bool Stop()
         {
-            if (!mServerRunning)
+            while (!mServerRunning)
             {
-                return false;
+                Thread.Sleep(1);
             }
 
             mServerRunning = false;
@@ -322,14 +375,13 @@ namespace SGE.Debugger
                 buffer.Remove(0, dataLength - 1);
                 var message = JsonConvert.DeserializeObject<SocketMessage>(data);
 
-                switch (message.MessageType)
+                if (message.MessageType == SocketMessageType.Request)
                 {
-                    case SocketMessageType.Request:
-                        DispatchRequest(message.Data);
-                        break;
-                    case SocketMessageType.Response:
-                        // todo: dispatch
-                        break;
+                    DispatchRequest(message.Data);
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid message type: {message.MessageType}!");
                 }
             }
             catch (Exception exc)
@@ -360,7 +412,10 @@ namespace SGE.Debugger
                 };
             }
 
-            SendResponse(response);
+            if (response != null)
+            {
+                SendResponse(response);
+            }
         }
 
         private void SendResponse(dynamic data)
@@ -371,9 +426,55 @@ namespace SGE.Debugger
                 Data = data
             };
 
-            var json = JsonConvert.SerializeObject(response, sJsonSettings);
+            SendMessage(response);
+        }
+
+        public bool SendEvent(SocketEventType type, dynamic context)
+        {
+            if (mCurrentConnection == null)
+            {
+                return false;
+            }
+
+            var enumType = typeof(SocketEventType);
+            var members = enumType.GetMember(type.ToString());
+
+            if (members.Length == 0)
+            {
+                return false;
+            }
+
+            var member = members.FirstOrDefault(m => m.DeclaringType == enumType);
+            var attribute = member.GetCustomAttribute<EventCategoryAttribute>();
+
+            if (attribute == null)
+            {
+                return false;
+            }
+
+            var eventMessage = new SocketMessage
+            {
+                MessageType = SocketMessageType.Event,
+                Data = new SocketEvent
+                {
+                    EventType = type,
+                    EventCategory = attribute.Category,
+                    Context = context
+                }
+            };
+
+            SendMessage(eventMessage);
+            return true;
+        }
+
+        private void SendMessage(SocketMessage message)
+        {
+            var json = JsonConvert.SerializeObject(message, sJsonSettings);
             var bytes = Encoding.ASCII.GetBytes(json);
-            mCurrentConnection.Stream.Write(bytes, 0, bytes.Length);
+
+            var stream = mCurrentConnection.Stream;
+            stream.Write(bytes, 0, bytes.Length);
+            stream.Flush();
         }
 
         public void SetHandler(EventHandler handler)
