@@ -99,12 +99,7 @@ namespace SGE.Debugger
         }
 
         public static void Info(string message) => Print(message);
-        public static void Info(string message, params object[] data) => Info(string.Format(message, data));
-
         public static void Warn(string message) => Print(message);
-        public static void Warn(string message, params object[] data) => Warn(string.Format(message, data));
-
         public static void Error(string message) => Print(message);
-        public static void Error(string message, params object[] data) => Error(string.Format(message, data));
     }
 }

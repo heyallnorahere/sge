@@ -37,45 +37,9 @@ namespace SGE.Debugger
         public string Name { get; }
     }
 
-    internal delegate dynamic HandlerCallback(dynamic args);
-    internal sealed class HandlerCallbacks
-    {
-        public HandlerCallbacks()
-        {
-            mCallbacks = new Dictionary<string, HandlerCallback>();
-        }
-
-        public void Set(string name, HandlerCallback callback)
-        {
-            if (mCallbacks.ContainsKey(name))
-            {
-                mCallbacks[name] = callback;
-            }
-            else
-            {
-                mCallbacks.Add(name, callback);
-            }
-        }
-
-        public dynamic Call(string name, dynamic args)
-        {
-            if (!mCallbacks.ContainsKey(name))
-            {
-                return null;
-            }
-
-            return mCallbacks[name].Invoke(args);
-        }
-
-        private readonly Dictionary<string, HandlerCallback> mCallbacks;
-    }
-
     public enum SocketMessageType
     {
-        [JsonProperty(PropertyName = "request")]
         Request,
-
-        [JsonProperty(PropertyName = "response")]
         Response,
     }
 
@@ -105,98 +69,100 @@ namespace SGE.Debugger
             Args = null;
         }
 
+        [JsonProperty(PropertyName = "command")]
         public string Command { get; private set; }
+
+        [JsonProperty(PropertyName = "args")]
         public dynamic Args { get; private set; }
     }
 
-    internal sealed class ByteBuffer
+    internal sealed class Connection : IDisposable
     {
-        public ByteBuffer()
+        public static implicit operator Connection(TcpClient client)
         {
-            mData = new List<byte>();
+            if (client == null)
+            {
+                return null;
+            }
+
+            return new Connection(client);
         }
 
-        public void Append(byte data) => mData.Add(data);
-        public void Append(IEnumerable<byte> data) => mData.AddRange(data);
-
-        public void Append(byte[] data, int count)
+        private Connection(TcpClient client)
         {
-            for (int i = 0; i < count; i++)
-            {
-                mData.Add(data[i]);
-            }
+            mClient = client;
+            mStream = mClient.GetStream();
+
+            mDisposed = false;
         }
 
-        public Action Clear => mData.Clear;
-        public void Remove(int start, int end)
+        public void Dispose()
         {
-            if (start < 0 || start >= end || end > mData.Count)
+            if (mDisposed)
             {
-                throw new IndexOutOfRangeException();
+                return;
             }
 
-            var data = mData.ToArray();
-            mData.Clear();
+            mStream.Close();
+            mClient.Close();
 
-            for (int i = 0; i < start; i++)
-            {
-                mData.Add(data[i]);
-            }
-
-            for (int i = end; i < mData.Count; i++)
-            {
-                mData.Add(data[i]);
-            }
+            GC.SuppressFinalize(this);
+            mDisposed = true;
         }
 
-        public string GetData(Encoding encoding) => encoding.GetString(mData.ToArray());
-        private List<byte> mData;
+        public Stream Stream => mStream;
+
+        private readonly TcpClient mClient;
+        private readonly NetworkStream mStream;
+
+        private bool mDisposed;
+    }
+
+    internal sealed class CommandCallbacks
+    {
+        public delegate dynamic Callback(dynamic args);
+        public CommandCallbacks()
+        {
+            mCallbacks = new Dictionary<string, Callback>();
+        }
+
+        public void Set(string name, Callback callback)
+        {
+            var callbackMethod = callback.Method;
+            var logMessage = $"Command {name} = {callbackMethod.GetFullName()}";
+
+            if (mCallbacks.ContainsKey(name))
+            {
+                callbackMethod = mCallbacks[name].Method;
+                logMessage += $" (overrides {callbackMethod.GetFullName()})";
+
+                mCallbacks[name] = callback;
+            }
+            else
+            {
+                mCallbacks.Add(name, callback);
+            }
+
+            Log.Info(logMessage);
+        }
+
+        public dynamic Call(string name, dynamic args)
+        {
+            if (!mCallbacks.ContainsKey(name))
+            {
+                Log.Info($"Command {name} doesn't exist - returning null response body");
+                return null;
+            }
+
+            Log.Info($"Calling command: {name}");
+            return mCallbacks[name].Invoke(args);
+        }
+
+        private readonly Dictionary<string, Callback> mCallbacks;
     }
 
     public sealed class DebuggerFrontend
     {
-        private sealed class Connection : IDisposable
-        {
-            public static implicit operator Connection(TcpClient client)
-            {
-                if (client == null)
-                {
-                    return null;
-                }
-
-                return new Connection(client);
-            }
-
-            private Connection(TcpClient client)
-            {
-                mClient = client;
-                mStream = mClient.GetStream();
-
-                mDisposed = false;
-            }
-
-            public void Dispose()
-            {
-                if (mDisposed)
-                {
-                    return;
-                }
-
-                mStream.Close();
-                mClient.Close();
-
-                GC.SuppressFinalize(this);
-                mDisposed = true;
-            }
-
-            public Stream Stream => mStream;
-
-            private readonly TcpClient mClient;
-            private readonly NetworkStream mStream;
-
-            private bool mDisposed;
-        }
-
         private static readonly IReadOnlyDictionary<char, char> sScopeDeclarators;
         private static readonly JsonSerializerSettings sJsonSettings;
 
@@ -216,12 +182,12 @@ namespace SGE.Debugger
                 NullValueHandling = NullValueHandling.Include
             };
 
-            AddJsonConverter<StringEnumConverter>();
+            sJsonSettings.Converters.Add(new StringEnumConverter(new CamelCase(), false));
         }
 
         public DebuggerFrontend(int port)
         {
-            mHandlers = new HandlerCallbacks();
+            mHandlers = new CommandCallbacks();
 
             const string ipAddress = "127.0.0.1";
             mAddress = $"{ipAddress}:{port}";
@@ -376,7 +342,7 @@ namespace SGE.Debugger
         private void DispatchRequest(dynamic data)
         {
             SocketRequest request = SocketRequest.Parse(data);
-            
+
             dynamic response;
             try
             {
@@ -423,8 +389,8 @@ namespace SGE.Debugger
                 {
                     try
                     {
-                        var delegateType = typeof(HandlerCallback);
-                        var delegateObject = (HandlerCallback)Delegate.CreateDelegate(delegateType, handler, method);
+                        var delegateType = typeof(CommandCallbacks.Callback);
+                        var delegateObject = (CommandCallbacks.Callback)Delegate.CreateDelegate(delegateType, handler, method);
 
                         mHandlers.Set(attribute.Name, delegateObject);
                     }
@@ -436,7 +402,7 @@ namespace SGE.Debugger
             }
         }
 
-        private readonly HandlerCallbacks mHandlers;
+        private readonly CommandCallbacks mHandlers;
         private bool mServerRunning;
         private Connection mCurrentConnection;
         private readonly TcpListener mServer;

@@ -14,10 +14,13 @@
    limitations under the License.
 */
 
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Text;
 
 namespace SGE.Debugger
 {
@@ -66,5 +69,97 @@ namespace SGE.Debugger
 
             return false;
         }
+
+        public static string GetFullName(this MethodInfo method)
+        {
+            var methodType = method.DeclaringType;
+            return $"{methodType.FullName}.{method.Name}";
+        }
+    }
+
+    public sealed class CamelCase : NamingStrategy
+    {
+        public CamelCase()
+        {
+            ProcessDictionaryKeys = true;
+            ProcessExtensionDataNames = true;
+        }
+
+        protected override string ResolvePropertyName(string name)
+        {
+            if (name.Length == 0)
+            {
+                return name;
+            }
+
+            return char.ToUpper(name[0]) + name.Substring(1);
+        }
+
+        public override string GetPropertyName(string name, bool hasSpecifiedName)
+        {
+            if (hasSpecifiedName)
+            {
+                return name;
+            }
+
+            return ToCamelCase(name);
+        }
+
+        public override string GetDictionaryKey(string key) => ToCamelCase(key);
+        public override string GetExtensionDataName(string name) => ToCamelCase(name);
+
+        private static string ToCamelCase(string name)
+        {
+            if (name.Length == 0)
+            {
+                return name;
+            }
+
+            return char.ToLower(name[0]) + name.Substring(1);
+        }
+    }
+
+    internal sealed class ByteBuffer
+    {
+        public ByteBuffer()
+        {
+            mData = new List<byte>();
+        }
+
+        public void Append(byte data) => mData.Add(data);
+        public void Append(IEnumerable<byte> data) => mData.AddRange(data);
+
+        public void Append(byte[] data, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                mData.Add(data[i]);
+            }
+        }
+
+        public Action Clear => mData.Clear;
+        public void Remove(int start, int end)
+        {
+            if (start < 0 || start >= end || end > mData.Count)
+            {
+                throw new IndexOutOfRangeException();
+            }
+
+            var data = mData.ToArray();
+            mData.Clear();
+
+            for (int i = 0; i < start; i++)
+            {
+                mData.Add(data[i]);
+            }
+
+            for (int i = end; i < mData.Count; i++)
+            {
+                mData.Add(data[i]);
+            }
+        }
+
+        public string GetData(Encoding encoding) => encoding.GetString(mData.ToArray());
+        private List<byte> mData;
     }
 }

@@ -210,18 +210,9 @@ namespace SGE.Debugger
 
         private sealed class CustomLogger : ICustomLogger
         {
-            public void LogError(string message, Exception exc)
-            {
-                Log.Error(message);
-                if (exc != null)
-                {
-                    Log.Error(exc.ToString());
-                }
-            }
-
-            public void LogAndShowException(string message, Exception exc) => LogError(message, exc);
-            public void LogMessage(string format, params object[] args) => Log.Info(format, args);
-
+            public void LogError(string message, Exception exc) => throw new NotImplementedException();
+            public void LogAndShowException(string message, Exception exc) => throw new NotImplementedException();
+            public void LogMessage(string format, params object[] args) => throw new NotImplementedException();
             public string GetNewDebuggerLogFilename() => null;
         }
 
@@ -251,6 +242,14 @@ namespace SGE.Debugger
             return session.Run();
         }
 
+        private static void WriteOutput(string text, bool isStdErr, string source)
+        {
+            string message = $"{source}: {text}";
+            var severity = isStdErr ? Log.Severity.Error : Log.Severity.Info;
+
+            Log.Print(message, severity);
+        }
+
         private Session(string ip, int port)
         {
             var address = Utilities.ResolveIP(ip);
@@ -270,8 +269,8 @@ namespace SGE.Debugger
             {
                 Breakpoints = new BreakpointStore(),
                 ExceptionHandler = exc => true,
-                LogWriter = (isStdErr, text) => { },
-                OutputWriter = (isStdErr, text) => Log.Print(text, isStdErr ? Log.Severity.Error : Log.Severity.Info)
+                LogWriter = (isStdErr, text) => WriteOutput(text, isStdErr, "Debugger"),
+                OutputWriter = (isStdErr, text) => WriteOutput(text, isStdErr, "Debuggee")
             };
 
             var sessionType = mSession.GetType();
