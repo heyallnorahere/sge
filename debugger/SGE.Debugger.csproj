@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\vendor\mono\submodules\debugger-libs\Mono.Debugging.Soft\Mono.Debugging.Soft.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\vendor\mono\submodules\debugger-libs\Mono.Debugging.Soft\Mono.Debugging.Soft.csproj" />
   </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)..\assets\assemblies\SGE.targets" />

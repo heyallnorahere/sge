@@ -15,14 +15,12 @@
 */
 
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace SGE.Debugger
 {
@@ -107,6 +105,36 @@ namespace SGE.Debugger
 
         public string Command { get; private set; }
         public dynamic Args { get; private set; }
+    }
+
+    internal sealed class StringBuffer
+    {
+        public StringBuffer()
+        {
+            mData = string.Empty;
+        }
+
+        public void Append(IEnumerable<char> data)
+        {
+            foreach (char character in data)
+            {
+                mData += character;
+            }
+        }
+
+        public void Clear() => mData = string.Empty;
+        public void Remove(int start, int end)
+        {
+            if (start < 0 || start >= end || end >= mData.Length)
+            {
+                throw new IndexOutOfRangeException();
+            }
+
+            mData = mData.Substring(0, start) + mData.Substring(end);
+        }
+
+        public string Data => mData;
+        private string mData;
     }
 
     public sealed class DebuggerFrontend
@@ -217,7 +245,9 @@ namespace SGE.Debugger
                     continue;
                 }
 
+                Log.Info("Client connected! Listening for commands...");
                 ListenForCommands();
+
                 mCurrentConnection.Dispose();
                 mCurrentConnection = null;
             }
@@ -227,6 +257,33 @@ namespace SGE.Debugger
 
         private async void ListenForCommands()
         {
+            const int bufferLength = 512;
+            var tempBuffer = new char[bufferLength];
+
+            var dataBuffer = new StringBuffer();
+            while (true)
+            {
+                int lengthRead = await mCurrentConnection.Reader.ReadAsync(tempBuffer, 0, bufferLength);
+                if (lengthRead == 0)
+                {
+                    break;
+                }
+
+                if (lengthRead < 0)
+                {
+                    continue;
+                }
+
+                var data = new string(tempBuffer, 0, lengthRead);
+                dataBuffer.Append(data);
+
+                ProcessData(dataBuffer);
+            }
+        }
+
+        private void ProcessData(StringBuffer dataBuffer)
+        {
+            // todo: get buffer data
         }
 
         public void SetHandler<T>(T handler)

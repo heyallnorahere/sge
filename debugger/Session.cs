@@ -19,9 +19,7 @@ using Mono.Debugging.Soft;
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Sockets;
 using System.Reflection;
-using System.Threading;
 
 namespace SGE.Debugger
 {
@@ -115,7 +113,6 @@ namespace SGE.Debugger
                 HandleEvent(() =>
                 {
                     Log.Info("Target ready");
-                    throw new Exception();
                 });
             }
 
@@ -263,6 +260,7 @@ namespace SGE.Debugger
                 // todo: something
             }
 
+            frontend.Stop();
             return 0;
         }
 

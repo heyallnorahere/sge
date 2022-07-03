@@ -160,6 +160,8 @@ namespace sge {
 
         VkResult result = vkCreateInstance(&create_info, nullptr, &data->instance);
         check_vk_result(result);
+
+        volkLoadInstance(data->instance);
     }
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_validation_callback(
