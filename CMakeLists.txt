@@ -127,6 +127,7 @@ if(SGE_BUILD_SCRIPTCORE)
 
             if(${POS} LESS 0)
                 add_custom_target(${MANAGED_PROJECT_NAME} ALL
+                    COMMAND ${DOTNET_EXE} restore ${PROJECT_PATH}
                     COMMAND ${DOTNET_EXE} build --nologo -v m -c $<CONFIG> -a ${SGE_CPU_ARCHITECTURE} ${PROJECT_PATH}
                     COMMENT "Building managed project: ${MANAGED_PROJECT_NAME}")
             endif()
