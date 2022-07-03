@@ -15,6 +15,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
@@ -51,6 +52,19 @@ namespace SGE.Debugger
             }
 
             return null;
+        }
+
+        public static bool ContainsValue<K, V>(this IReadOnlyDictionary<K, V> dict, V value)
+        {
+            foreach (V entry in dict.Values)
+            {
+                if (entry.Equals(value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

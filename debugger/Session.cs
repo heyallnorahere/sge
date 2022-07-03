@@ -29,110 +29,136 @@ namespace SGE.Debugger
         // nothing here - just a flag
     }
 
-    public sealed class Session
+    public abstract class EventHandler
     {
-        private sealed class DebuggerEventHandler
+        public EventHandler()
+        {
+            mLock = new object();
+        }
+
+        protected abstract void HandleEventException(Exception exc);
+        protected void HandleEvent(Action callback)
+        {
+            lock (mLock)
+            {
+                try
+                {
+                    callback();
+                }
+                catch (Exception exc)
+                {
+                    HandleEventException(exc);
+                }
+            }
+        }
+
+
+        protected T HandleEvent<T>(Func<T> callback)
+        {
+            lock (mLock)
+            {
+                try
+                {
+                    return callback();
+                }
+                catch (Exception exc)
+                {
+                    HandleEventException(exc);
+                    return default;
+                }
+            }
+        }
+
+        internal void EnumerateEventMethods<T>(Action<MethodInfo, T> callback) where T : Attribute
+        {
+            const BindingFlags flags = BindingFlags.Instance |
+                                       BindingFlags.NonPublic |
+                                       BindingFlags.Public;
+
+            var handlerType = GetType();
+            var methods = handlerType.GetMethods(flags);
+
+            foreach (var method in methods)
+            {
+                var attribute = method.GetCustomAttribute<T>();
+                if (attribute == null)
+                {
+                    continue;
+                }
+
+                callback(method, attribute);
+            }
+        }
+
+        private readonly object mLock;
+    }
+
+    public sealed class Session : IDisposable
+    {
+        private sealed class DebuggerEventHandler : EventHandler
         {
             public DebuggerEventHandler(Session session)
             {
                 mSession = session;
-                mLock = new object();
             }
 
-            private void HandleEvent(Action callback)
+            protected override void HandleEventException(Exception exc)
             {
-                lock (mLock)
-                {
-                    mSession.mEventHandling = true;
+                var stackframe = new System.Diagnostics.StackFrame(1);
+                var methodName = stackframe.GetMethod().Name;
 
-                    try
-                    {
-                        callback();
-                    }
-                    catch (Exception exc)
-                    {
-                        var stackframe = new System.Diagnostics.StackFrame(1);
-                        var methodName = stackframe.GetMethod().Name;
-
-                        string excName = exc.GetType().FullName;
-                        Log.Error($"{excName} caught handling event {methodName}: {exc.Message}");
-                    }
-
-                    mSession.mEventHandling = false;
-                }
+                string excName = exc.GetType().FullName;
+                Log.Error($"{excName} caught handling event {methodName}: {exc.Message}");
             }
 
             [DebuggerEvent]
-            private void TargetStopped(object sender, TargetEventArgs args)
+            private void TargetStopped(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
-                {
-                    Log.Info("Target stopped");
-                });
-            }
+                Log.Info("Target stopped");
+            });
 
             [DebuggerEvent]
-            private void TargetHitBreakpoint(object sender, TargetEventArgs args)
+            private void TargetHitBreakpoint(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
-                {
-                    Log.Info("Target hit a breakpoint");
-                });
-            }
+                Log.Info("Target hit a breakpoint");
+            });
 
             [DebuggerEvent]
-            private void TargetExceptionThrown(object sender, TargetEventArgs args)
+            private void TargetExceptionThrown(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
-                {
-                    Log.Info("An exception was thrown");
-                });
-            }
+                Log.Info("An exception was thrown");
+            });
 
             [DebuggerEvent]
-            private void TargetUnhandledException(object sender, TargetEventArgs args)
+            private void TargetUnhandledException(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
-                {
-                    Log.Info("An unhandled exception was thrown");
-                });
-            }
+                Log.Info("An unhandled exception was thrown");
+            });
 
             [DebuggerEvent]
-            private void TargetStarted(object sender, EventArgs args)
+            private void TargetStarted(object sender, EventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
-                {
-                    Log.Info("Target started");
-                });
-            }
+                Log.Info("Target started");
+            });
 
             [DebuggerEvent]
-            private void TargetReady(object sender, TargetEventArgs args)
+            private void TargetReady(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
-                {
-                    Log.Info("Target ready");
-                });
-            }
+                Log.Info("Target ready");
+            });
 
             [DebuggerEvent]
-            private void TargetExited(object sender, TargetEventArgs args)
+            private void TargetExited(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
-                {
-                    Log.Info("Target exited");
-                });
-            }
+                Log.Info("Target exited");
+                mSession.mFrontend.Stop();
+            });
 
             [DebuggerEvent]
-            private void TargetInterrupted(object sender, TargetEventArgs args)
+            private void TargetInterrupted(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
-                HandleEvent(() =>
-                {
-                    Log.Info("Target interrupted");
-                });
-            }
+                Log.Info("Target interrupted");
+            });
 
             [DebuggerEvent]
             private void TargetThreadStarted(object sender, TargetEventArgs args)
@@ -153,7 +179,33 @@ namespace SGE.Debugger
             }
 
             private readonly Session mSession;
-            private readonly object mLock;
+        }
+
+        private sealed class ClientCommandHandler : EventHandler
+        {
+            public ClientCommandHandler(Session session)
+            {
+                mSession = session;
+            }
+
+            protected override void HandleEventException(Exception exc)
+            {
+                var stackframe = new System.Diagnostics.StackFrame(1);
+                var method = stackframe.GetMethod();
+                var attribute = method.GetCustomAttribute<CommandAttribute>();
+
+                string excName = exc.GetType().FullName;
+                Log.Error($"{excName} caught handling command {attribute.Name}: {exc.Message}");
+            }
+
+            [Command("testCommand")]
+            private dynamic TestCommand(dynamic args) => HandleEvent(() => new
+            {
+                result = "this works!",
+                passedArgs = args
+            });
+
+            private readonly Session mSession;
         }
 
         private sealed class CustomLogger : ICustomLogger
@@ -195,7 +247,7 @@ namespace SGE.Debugger
             string ip = args.Get("address");
             int port = int.Parse(args.Get("port"));
 
-            var session = new Session(ip, port);
+            using var session = new Session(ip, port);
             return session.Run();
         }
 
@@ -210,7 +262,10 @@ namespace SGE.Debugger
             Address = address;
             Port = port;
 
-            mEventHandling = false;
+            mFrontend = new DebuggerFrontend(Port + 1); // lol
+            mFrontend.SetHandler(new ClientCommandHandler(this));
+
+            mDisposed = false;
             mSession = new SoftDebuggerSession
             {
                 Breakpoints = new BreakpointStore(),
@@ -219,29 +274,32 @@ namespace SGE.Debugger
                 OutputWriter = (isStdErr, text) => Log.Print(text, isStdErr ? Log.Severity.Error : Log.Severity.Info)
             };
 
-            var handler = new DebuggerEventHandler(this);
-            var handlerType = handler.GetType();
-            var methods = handlerType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic);
-
             var sessionType = mSession.GetType();
-            foreach (var method in methods)
+            var handler = new DebuggerEventHandler(this);
+            handler.EnumerateEventMethods<DebuggerEventAttribute>((method, attribute) =>
             {
-                if (method.GetCustomAttribute<DebuggerEventAttribute>() == null)
-                {
-                    continue;
-                }
-
                 var eventInfo = sessionType.GetEvent(method.Name);
                 if (eventInfo == null)
                 {
-                    continue;
+                    return;
                 }
 
                 var delegateType = eventInfo.EventHandlerType;
                 var delegateObject = Delegate.CreateDelegate(delegateType, handler, method);
 
                 eventInfo.AddEventHandler(mSession, delegateObject);
+            });
+        }
+
+        public void Dispose()
+        {
+            if (mDisposed)
+            {
+                return;
             }
+
+            mSession.Dispose();
+            mDisposed = true;
         }
 
         private int Run()
@@ -252,15 +310,7 @@ namespace SGE.Debugger
                 return 1;
             }
 
-            var frontend = new DebuggerFrontend(Port + 1); // lol
-            frontend.Run();
-
-            while (mSession.IsRunning)
-            {
-                // todo: something
-            }
-
-            frontend.Stop();
+            mFrontend.Run();
             return 0;
         }
 
@@ -297,8 +347,8 @@ namespace SGE.Debugger
         public IPAddress Address { get; }
         public int Port { get; }
 
+        private bool mDisposed;
         private readonly SoftDebuggerSession mSession;
         private readonly DebuggerFrontend mFrontend;
-        private bool mEventHandling;
     }
 }

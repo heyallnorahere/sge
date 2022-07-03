@@ -68,11 +68,11 @@ namespace SGE.Debugger
 
         public static void Print(string message, Severity severity)
         {
-            string date = DateTime.Now.ToString("d MMM yyyy HH:mm:ss");
+            string date = DateTime.Now.ToString("MM-dd-yyyy HH:mm:ss");
             bool stderr = severity != Severity.Info;
 
             Console.ResetColor();
-            PrintText($"[{date}] [", stderr: stderr);
+            PrintText($"[{date}] [SGE Debugger] [", stderr: stderr);
 
             Console.ForegroundColor = severity switch
             {
@@ -82,26 +82,29 @@ namespace SGE.Debugger
                 _ => throw new ArgumentException("Invalid severity!")
             };
 
-            PrintText(severity.ToString(), stderr: stderr);
+            PrintText(severity.ToString().ToLower(), stderr: stderr);
             Console.ResetColor();
 
             PrintText($"] {message}", newline: true, stderr: stderr);
             sWriter.Flush();
         }
 
-        private static void Print(string message, object[] data)
+        private static void Print(string message)
         {
             var frame = new StackFrame(1);
             string name = frame.GetMethod().Name;
 
             var severity = (Severity)Enum.Parse(typeof(Severity), name);
-            string finalMessage = string.Format(message, data);
-
-            Print(finalMessage, severity);
+            Print(message, severity);
         }
 
-        public static void Info(string message, params object[] data) => Print(message, data);
-        public static void Warn(string message, params object[] data) => Print(message, data);
-        public static void Error(string message, params object[] data) => Print(message, data);
+        public static void Info(string message) => Print(message);
+        public static void Info(string message, params object[] data) => Info(string.Format(message, data));
+
+        public static void Warn(string message) => Print(message);
+        public static void Warn(string message, params object[] data) => Warn(string.Format(message, data));
+
+        public static void Error(string message) => Print(message);
+        public static void Error(string message, params object[] data) => Error(string.Format(message, data));
     }
 }

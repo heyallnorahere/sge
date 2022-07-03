@@ -15,12 +15,14 @@
 */
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
+using System.Text;
+using System.Threading;
 
 namespace SGE.Debugger
 {
@@ -55,14 +57,14 @@ namespace SGE.Debugger
             }
         }
 
-        public void Call(string name, dynamic args)
+        public dynamic Call(string name, dynamic args)
         {
             if (!mCallbacks.ContainsKey(name))
             {
-                return;
+                return null;
             }
 
-            mCallbacks[name].Invoke(args);
+            return mCallbacks[name].Invoke(args);
         }
 
         private readonly Dictionary<string, HandlerCallback> mCallbacks;
@@ -80,20 +82,20 @@ namespace SGE.Debugger
     public sealed class SocketMessage
     {
         [JsonProperty(PropertyName = "type")]
-        public SocketMessageType Type { get; }
+        public SocketMessageType MessageType { get; set; }
 
         [JsonProperty(PropertyName = "body")]
-        public dynamic Body { get; }
+        public dynamic Data { get; set; }
     }
 
     public sealed class SocketRequest
     {
-        public static SocketRequest Parse(dynamic body)
+        public static SocketRequest Parse(dynamic data)
         {
             return new SocketRequest
             {
-                Command = (string)body.command,
-                Args = body.args
+                Command = (string)data.command,
+                Args = data.args
             };
         }
 
@@ -107,57 +109,68 @@ namespace SGE.Debugger
         public dynamic Args { get; private set; }
     }
 
-    internal sealed class StringBuffer
+    internal sealed class ByteBuffer
     {
-        public StringBuffer()
+        public ByteBuffer()
         {
-            mData = string.Empty;
+            mData = new List<byte>();
         }
 
-        public void Append(IEnumerable<char> data)
+        public void Append(byte data) => mData.Add(data);
+        public void Append(IEnumerable<byte> data) => mData.AddRange(data);
+
+        public void Append(byte[] data, int count)
         {
-            foreach (char character in data)
+            for (int i = 0; i < count; i++)
             {
-                mData += character;
+                mData.Add(data[i]);
             }
         }
 
-        public void Clear() => mData = string.Empty;
+        public Action Clear => mData.Clear;
         public void Remove(int start, int end)
         {
-            if (start < 0 || start >= end || end >= mData.Length)
+            if (start < 0 || start >= end || end > mData.Count)
             {
                 throw new IndexOutOfRangeException();
             }
 
-            mData = mData.Substring(0, start) + mData.Substring(end);
+            var data = mData.ToArray();
+            mData.Clear();
+
+            for (int i = 0; i < start; i++)
+            {
+                mData.Add(data[i]);
+            }
+
+            for (int i = end; i < mData.Count; i++)
+            {
+                mData.Add(data[i]);
+            }
         }
 
-        public string Data => mData;
-        private string mData;
+        public string GetData(Encoding encoding) => encoding.GetString(mData.ToArray());
+        private List<byte> mData;
     }
 
     public sealed class DebuggerFrontend
     {
         private sealed class Connection : IDisposable
         {
-            public static implicit operator Connection(Socket socket)
+            public static implicit operator Connection(TcpClient client)
             {
-                if (socket == null)
+                if (client == null)
                 {
                     return null;
                 }
 
-                return new Connection(socket);
+                return new Connection(client);
             }
 
-            private Connection(Socket socket)
+            private Connection(TcpClient client)
             {
-                mSocket = socket;
-                mStream = new NetworkStream(mSocket);
-
-                mReader = new StreamReader(mStream);
-                mWriter = new StreamWriter(mStream);
+                mClient = client;
+                mStream = mClient.GetStream();
 
                 mDisposed = false;
             }
@@ -169,25 +182,41 @@ namespace SGE.Debugger
                     return;
                 }
 
-                mWriter.Dispose();
-                mReader.Dispose();
-                mStream.Dispose();
-                mSocket.Close();
+                mStream.Close();
+                mClient.Close();
 
                 GC.SuppressFinalize(this);
                 mDisposed = true;
             }
 
-            public TextReader Reader => mReader;
-            public TextWriter Writer => mWriter;
+            public Stream Stream => mStream;
 
-            private readonly Socket mSocket;
-            private readonly Stream mStream;
-
-            private readonly StreamReader mReader;
-            private readonly StreamWriter mWriter;
+            private readonly TcpClient mClient;
+            private readonly NetworkStream mStream;
 
             private bool mDisposed;
+        }
+
+        private static readonly IReadOnlyDictionary<char, char> sScopeDeclarators;
+        private static readonly JsonSerializerSettings sJsonSettings;
+
+        private static void AddJsonConverter<T>() where T : JsonConverter, new() => sJsonSettings.Converters.Add(new T());
+        static DebuggerFrontend()
+        {
+            sScopeDeclarators = new Dictionary<char, char>
+            {
+                ['{'] = '}',
+                ['['] = ']',
+                ['<'] = '>', // afaik won't be used, but better safe than sorry
+            };
+
+            sJsonSettings = new JsonSerializerSettings
+            {
+                MissingMemberHandling = MissingMemberHandling.Error,
+                NullValueHandling = NullValueHandling.Include
+            };
+
+            AddJsonConverter<StringEnumConverter>();
         }
 
         public DebuggerFrontend(int port)
@@ -203,15 +232,60 @@ namespace SGE.Debugger
             mServer = new TcpListener(IPAddress.Parse(ipAddress), port);
         }
 
-        public bool Run()
+        public void Run()
         {
             if (mServerRunning)
             {
-                return false;
+                return;
             }
 
-            ListenForConnection();
-            return true;
+            mServerRunning = true;
+            Log.Info($"Listening on {mAddress} for a client connection...");
+
+            mServer.Start();
+            while (mServerRunning)
+            {
+                if (!mServer.Pending())
+                {
+                    Thread.Sleep(1);
+                    continue;
+                }
+
+                mCurrentConnection = mServer.AcceptTcpClient();
+                if (mCurrentConnection == null)
+                {
+                    continue;
+                }
+
+                const int bufferLength = 512;
+                var tempBuffer = new byte[bufferLength];
+
+                Log.Info("Client connected - listening for commands...");
+                var dataBuffer = new ByteBuffer();
+                while (true)
+                {
+                    int lengthRead = mCurrentConnection.Stream.Read(tempBuffer, 0, bufferLength);
+                    if (lengthRead == 0)
+                    {
+                        break;
+                    }
+
+                    if (lengthRead < 0)
+                    {
+                        continue;
+                    }
+
+                    dataBuffer.Append(tempBuffer, lengthRead);
+                    ProcessData(dataBuffer);
+                }
+
+                mCurrentConnection.Dispose();
+                mCurrentConnection = null;
+                Log.Info("Client disconnected");
+            }
+
+            Log.Info("Stopped listening for connections");
+            mServer.Stop();
         }
 
         public bool Stop()
@@ -231,103 +305,138 @@ namespace SGE.Debugger
             return true;
         }
 
-        private async void ListenForConnection()
+        private int GetDataLength(string data)
         {
-            mServerRunning = true;
-            Log.Info($"Listening on {mAddress} for a client connection...");
-
-            mServer.Start();
-            while (mServerRunning)
+            var scopes = new Stack<char>();
+            for (int i = 0; i < data.Length; i++)
             {
-                mCurrentConnection = await mServer.AcceptSocketAsync();
-                if (mCurrentConnection == null)
+                char character = data[i];
+                if (sScopeDeclarators.ContainsKey(character))
                 {
-                    continue;
+                    scopes.Push(character);
+                }
+                else if (sScopeDeclarators.ContainsValue(character))
+                {
+                    if (scopes.Count == 0 || sScopeDeclarators[scopes.Peek()] != character)
+                    {
+                        throw new ArgumentException("Malformed JSON!");
+                    }
+
+                    scopes.Pop();
                 }
 
-                Log.Info("Client connected! Listening for commands...");
-                ListenForCommands();
-
-                mCurrentConnection.Dispose();
-                mCurrentConnection = null;
+                if (scopes.Count == 0)
+                {
+                    if (i > 0)
+                    {
+                        return i + 1;
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Malformed JSON!");
+                    }
+                }
             }
 
-            mServer.Stop();
+            return -1;
         }
 
-        private async void ListenForCommands()
+        private void ProcessData(ByteBuffer buffer)
         {
-            const int bufferLength = 512;
-            var tempBuffer = new char[bufferLength];
-
-            var dataBuffer = new StringBuffer();
-            while (true)
+            try
             {
-                int lengthRead = await mCurrentConnection.Reader.ReadAsync(tempBuffer, 0, bufferLength);
-                if (lengthRead == 0)
+                string data = buffer.GetData(Encoding.ASCII);
+                int dataLength = GetDataLength(data);
+
+                if (dataLength < 0)
                 {
-                    break;
+                    return;
                 }
 
-                if (lengthRead < 0)
+                buffer.Remove(0, dataLength - 1);
+                var message = JsonConvert.DeserializeObject<SocketMessage>(data);
+
+                switch (message.MessageType)
                 {
-                    continue;
+                    case SocketMessageType.Request:
+                        DispatchRequest(message.Data);
+                        break;
+                    case SocketMessageType.Response:
+                        // todo: dispatch
+                        break;
                 }
-
-                var data = new string(tempBuffer, 0, lengthRead);
-                dataBuffer.Append(data);
-
-                ProcessData(dataBuffer);
+            }
+            catch (Exception exc)
+            {
+                Log.Warn($"Could not parse received data: {exc.Message}");
+                buffer.Clear();
             }
         }
 
-        private void ProcessData(StringBuffer dataBuffer)
+        private void DispatchRequest(dynamic data)
         {
-            // todo: get buffer data
+            SocketRequest request = SocketRequest.Parse(data);
+            
+            dynamic response;
+            try
+            {
+                lock (mLock)
+                {
+                    response = mHandlers.Call(request.Command, request.Args);
+                }
+            }
+            catch (Exception exc)
+            {
+                response = new
+                {
+                    exception = exc.GetType().FullName,
+                    message = exc.Message
+                };
+            }
+
+            SendResponse(response);
         }
 
-        public void SetHandler<T>(T handler)
+        private void SendResponse(dynamic data)
+        {
+            var response = new SocketMessage
+            {
+                MessageType = SocketMessageType.Response,
+                Data = data
+            };
+
+            var json = JsonConvert.SerializeObject(response, sJsonSettings);
+            var bytes = Encoding.ASCII.GetBytes(json);
+            mCurrentConnection.Stream.Write(bytes, 0, bytes.Length);
+        }
+
+        public void SetHandler(EventHandler handler)
         {
             if (handler == null)
             {
                 return;
             }
 
-            var handlerType = handler.GetType();
-            SetHandler(handlerType, BindingFlags.Instance, (type, method) => Delegate.CreateDelegate(type, handler, method));
-        }
-
-        public void SetHandler<T>() => SetHandler(typeof(T), BindingFlags.Static, Delegate.CreateDelegate);
-        private void SetHandler(Type type, BindingFlags methodType, Func<Type, MethodInfo, Delegate> createDelegate)
-        {
             lock (mLock)
             {
-                var methods = type.GetMethods(methodType);
-                foreach (var method in methods)
+                handler.EnumerateEventMethods<CommandAttribute>((method, attribute) =>
                 {
-                    var attribute = method.GetCustomAttribute<CommandAttribute>();
-                    if (attribute == null)
-                    {
-                        continue;
-                    }
-
                     try
                     {
                         var delegateType = typeof(HandlerCallback);
-                        var delegateObject = (HandlerCallback)createDelegate(delegateType, method);
+                        var delegateObject = (HandlerCallback)Delegate.CreateDelegate(delegateType, handler, method);
 
                         mHandlers.Set(attribute.Name, delegateObject);
                     }
                     catch (Exception)
                     {
-                        continue;
+                        // fall through
                     }
-                }
+                });
             }
         }
 
         private readonly HandlerCallbacks mHandlers;
-
         private bool mServerRunning;
         private Connection mCurrentConnection;
         private readonly TcpListener mServer;
