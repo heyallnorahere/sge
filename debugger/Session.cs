@@ -197,7 +197,6 @@ namespace SGE.Debugger
             [DebuggerEvent]
             private void TargetStarted(object sender, EventArgs args) => HandleEvent(() =>
             {
-                mSession.mActiveFrame = null;
                 Log.Info("Target started");
             });
 
@@ -257,6 +256,34 @@ namespace SGE.Debugger
 
         private sealed class ClientCommandHandler : EventHandler
         {
+            private static readonly HashSet<string> sMonoExtensions;
+            static ClientCommandHandler()
+            {
+                sMonoExtensions = new HashSet<string>
+                {
+                    "cs", "csx", // C#
+                    "cake", "hx", // i have no idea
+                    "fs", "fsi", "ml", "mli", "fsx", "fsscript", // F#
+                    "vb", // Visual Basic .NET
+                };
+            }
+
+            private static bool HasMonoExtension(string path)
+            {
+                if (string.IsNullOrEmpty(path))
+                {
+                    return false;
+                }
+
+                int lastSeparatorIndex = path.LastIndexOf('.');
+                if (lastSeparatorIndex < 0)
+                {
+                    return false;
+                }
+
+                string extension = path.Substring(lastSeparatorIndex + 1);
+                return sMonoExtensions.Contains(extension);
+            }
 
             public ClientCommandHandler(Session session)
             {
@@ -315,7 +342,7 @@ namespace SGE.Debugger
                 }
                 else
                 {
-                    return Utilities.GetRelativePath(path);
+                    return path;
                 }
             }
 
@@ -611,7 +638,74 @@ namespace SGE.Debugger
             [Command("setBreakpoints")]
             private dynamic SetBreakpoints(dynamic args) => HandleEvent(() =>
             {
-                return Null;
+                string path = null;
+                if (args.source != null)
+                {
+                    string sourcePath = (string)args.source.path;
+                    if (sourcePath != null)
+                    {
+                        path = ClientPathToDebugger(sourcePath.Trim());
+                    }
+                }
+
+                var breakpointsSet = Array.Empty<DebuggerBreakpoint>();
+                if (HasMonoExtension(path))
+                {
+                    int[] clientLines = args.lines.ToObject<int[]>();
+                    int[] debuggerLines = Array.ConvertAll(clientLines, ClientLineToDebugger);
+
+                    var receievedBreakpoints = new HashSet<int>(debuggerLines);
+                    var existingBreakpoints = new List<Tuple<long, int>>();
+
+                    foreach (long id in mSession.mBreakpoints.Keys)
+                    {
+                        var breakpoint = mSession.mBreakpoints[id] as Breakpoint;
+                        if (breakpoint != null && breakpoint.FileName == path)
+                        {
+                            existingBreakpoints.Add(new Tuple<long, int>(id, breakpoint.Line));
+                        }
+                    }
+
+                    var keptBreakpoints = new HashSet<int>();
+                    foreach (var breakpoint in existingBreakpoints)
+                    {
+                        if (receievedBreakpoints.Contains(breakpoint.Item2))
+                        {
+                            keptBreakpoints.Add(breakpoint.Item2);
+                        }
+                        else
+                        {
+                            if (mSession.mBreakpoints.TryGetValue(breakpoint.Item1, out BreakEvent breakEvent))
+                            {
+                                mSession.mBreakpoints.Remove(breakpoint.Item1);
+                                mSession.mSession.Breakpoints.Remove(breakEvent);
+                            }
+
+                            Log.Info($"Removed breakpoint {breakpoint.Item1} at {path}:{breakpoint.Item2}");
+                        }
+                    }
+
+                    var breakpoints = new List<DebuggerBreakpoint>();
+                    foreach (var line in receievedBreakpoints)
+                    {
+                        if (!keptBreakpoints.Contains(line))
+                        {
+                            var breakEvent = mSession.mSession.Breakpoints.Add(path, line);
+
+                            long id = mSession.mNextBreakpointId++;
+                            mSession.mBreakpoints.Add(id, breakEvent);
+
+                            Log.Info($"Added breakpoint {id} at {path}:{line}");
+                        }
+
+                        var breakpoint = new DebuggerBreakpoint(true, DebuggerLineToClient(line));
+                        breakpoints.Add(breakpoint);
+                    }
+
+                    breakpointsSet = breakpoints.ToArray();
+                }
+
+                return breakpointsSet;
             });
 
             [Command("setFunctionBreakpoints")]
@@ -713,7 +807,6 @@ namespace SGE.Debugger
             mDebuggeeRunning = false;
 
             mActiveProcess = null;
-            mActiveFrame = null;
             mNextBreakpointId = 0;
             mBreakpoints = new SortedDictionary<long, BreakEvent>();
             mCatchpoints = new List<Catchpoint>();
@@ -877,7 +970,6 @@ namespace SGE.Debugger
         private bool mDebuggeeRunning;
 
         private ProcessInfo mActiveProcess;
-        private StackFrame mActiveFrame;
         private long mNextBreakpointId;
         private readonly SortedDictionary<long, BreakEvent> mBreakpoints;
         private readonly List<Catchpoint> mCatchpoints;

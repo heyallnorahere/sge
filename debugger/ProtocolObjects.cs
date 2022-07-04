@@ -158,4 +158,19 @@ namespace SGE.Debugger
         [JsonProperty(PropertyName = "expensive")]
         public bool Expensive { get; }
     }
+
+    internal sealed class DebuggerBreakpoint
+    {
+        public DebuggerBreakpoint(bool verified, int line)
+        {
+            Verified = verified;
+            Line = line;
+        }
+
+        [JsonProperty(PropertyName = "verified")]
+        public bool Verified { get; }
+
+        [JsonProperty(PropertyName = "line")]
+        public int Line { get; }
+    }
 }

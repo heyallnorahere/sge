@@ -209,4 +209,45 @@ namespace SGE.Debugger
         public string GetData(Encoding encoding) => encoding.GetString(mData.ToArray());
         private List<byte> mData;
     }
+
+    internal sealed class ObjectRegistry<T>
+    {
+        public const int FirstHandle = 1;
+        public ObjectRegistry()
+        {
+            mCurrentHandle = FirstHandle;
+            mRegistry = new Dictionary<int, T>();
+        }
+
+        public void Clear()
+        {
+            mCurrentHandle = FirstHandle;
+            mRegistry.Clear();
+        }
+
+        public int Insert(T value)
+        {
+            int handle = mCurrentHandle++;
+            mRegistry.Add(handle, value);
+            return handle;
+        }
+
+        public bool TryGet(int handle, out T value) => mRegistry.TryGetValue(handle, out value);
+
+        public T Get(int handle) => Get(handle, default);
+        public T Get(int handle, T defaultValue)
+        {
+            if (TryGet(handle, out T retrievedValue))
+            {
+                return retrievedValue;
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+
+        private int mCurrentHandle;
+        private Dictionary<int, T> mRegistry;
+    }
 }

@@ -220,6 +220,7 @@ namespace SGE.Debugger
             catch (Exception exc)
             {
                 Log.Error($"{exc.GetType().FullName} thrown: {exc.Message}");
+                Log.Error(exc.StackTrace);
                 return 1;
             }
         }
