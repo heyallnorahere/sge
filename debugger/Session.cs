@@ -119,6 +119,67 @@ namespace SGE.Debugger
         public int LineStart { get; set; }
     }
 
+    internal enum EvaluationErrorType
+    {
+        NoExpressionProvided,
+        InvalidExpression,
+        NotAvailable,
+        NoActiveStackFrame
+    }
+
+    internal interface IEvaluationError
+    {
+        public string EvaluationError { get; }
+    }
+
+    internal sealed class StringEvaluationError : IEvaluationError
+    {
+        public StringEvaluationError(string error)
+        {
+            EvaluationError = error;
+        }
+
+        public string EvaluationError { get; }
+    }
+
+    internal sealed class EnumEvaluationError : IEvaluationError
+    {
+        public EnumEvaluationError(EvaluationErrorType type)
+        {
+            mType = type;
+        }
+
+        public string EvaluationError
+        {
+            get
+            {
+                string result = string.Empty;
+                string typeName = mType.ToString();
+
+                foreach (char character in typeName)
+                {
+                    if (char.IsUpper(character))
+                    {
+                        if (result.Length > 0)
+                        {
+                            result += ' ';
+                        }
+
+                        result += char.ToLower(character);
+                    }
+                    else
+                    {
+                        result += character;
+                    }
+                }
+
+                return result;
+            }
+        }
+
+        private readonly EvaluationErrorType mType;
+    }
+
     public sealed class Session : IDisposable
     {
         private sealed class DebuggerEventHandler : EventHandler
@@ -184,7 +245,7 @@ namespace SGE.Debugger
             private void TargetExceptionThrown(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
                 OnExceptionThrown(args, SocketEventType.HandledExceptionThrown);
-                Log.Info("An handled exception was thrown");
+                Log.Info("A handled exception was thrown");
             });
 
             [DebuggerEvent]
@@ -708,22 +769,87 @@ namespace SGE.Debugger
                 return breakpointsSet;
             });
 
-            [Command("setFunctionBreakpoints")]
-            private dynamic SetFunctionBreakpoints(dynamic args) => HandleEvent(() =>
+            [Command("evaluate")] // why does HandleEvent<dynamic> need to be specified?????
+            private dynamic Evaluate(dynamic args) => HandleEvent<dynamic>(() =>
             {
-                return Null;
-            });
+                // stupid, i know
+                IEvaluationError error = null;
 
-            [Command("setExceptionBreakpoints")]
-            private dynamic SetExceptionBreakpoints(dynamic args) => HandleEvent(() =>
-            {
-                return Null;
-            });
+                string expression = Utilities.GetValue<string>(args, "expression", null);
+                if (expression == null)
+                {
+                    error = new EnumEvaluationError(EvaluationErrorType.NoExpressionProvided);
+                }
+                else
+                {
+                    int frameId = Utilities.GetValue<int>(args, "frameId", 0);
+                    var frame = mSession.mFrameHandles.Get(frameId);
 
-            [Command("evaluate")]
-            private dynamic Evaluate(dynamic args) => HandleEvent(() =>
-            {
-                return Null;
+                    if (frame == null)
+                    {
+                        error = new EnumEvaluationError(EvaluationErrorType.NoActiveStackFrame);
+                    }
+                    else
+                    {
+                        if (!frame.ValidateExpression(expression))
+                        {
+                            error = new EnumEvaluationError(EvaluationErrorType.InvalidExpression);
+                        }
+                        else
+                        {
+                            var options = EvaluationOptions.DefaultOptions;
+                            ObjectValue value = frame.GetExpressionValue(expression, options);
+
+                            value.WaitHandle.WaitOne();
+                            var flags = value.Flags;
+
+                            if (flags.HasFlags(ObjectValueFlags.Error) ||
+                                flags.HasFlags(ObjectValueFlags.NotSupported))
+                            {
+                                string displayValue = value.DisplayValue;
+                                if (displayValue.IndexOf("reference not available in the current evaluation context") > 0)
+                                {
+                                    error = new EnumEvaluationError(EvaluationErrorType.InvalidExpression);
+                                }
+                                else
+                                {
+                                    error = new StringEvaluationError(displayValue);
+                                }
+                            }
+                            else if (flags.HasFlags(ObjectValueFlags.Unknown))
+                            {
+                                error = new EnumEvaluationError(EvaluationErrorType.InvalidExpression);
+                            }
+                            else if (flags.HasFlags(ObjectValueFlags.Object | ObjectValueFlags.Namespace))
+                            {
+                                error = new EnumEvaluationError(EvaluationErrorType.NotAvailable);
+                            }
+                            else
+                            {
+                                int handle = 0;
+                                if (value.HasChildren)
+                                {
+                                    var children = value.GetAllChildren();
+                                    handle = mSession.mVariableHandles.Insert(children);
+                                }
+
+                                return new
+                                {
+                                    error = (object)null,
+                                    value = value.DisplayValue,
+                                    childrenSetId = handle
+                                };
+                            }
+                        }
+                    }
+                }
+
+                return new
+                {
+                    error = error.EvaluationError,
+                    value = (object)null,
+                    childrenSetId = 0
+                };
             });
 
             private readonly Session mSession;

@@ -122,6 +122,20 @@ namespace SGE.Debugger
 
             return relativePath;
         }
+
+        public static bool HasFlags<T>(this T actualValue, T expectedValues) where T : struct
+        {
+            var enumType = typeof(T);
+            if (!enumType.IsEnum || enumType.GetCustomAttribute<FlagsAttribute>() == null)
+            {
+                throw new ArgumentException("Invalid flag type!");
+            }
+
+            int actual = Convert.ToInt32(actualValue);
+            int expected = Convert.ToInt32(expectedValues);
+
+            return (actual & expected) == expected;
+        }
     }
 
     public sealed class CamelCase : NamingStrategy
