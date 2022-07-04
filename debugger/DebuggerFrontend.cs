@@ -276,26 +276,33 @@ namespace SGE.Debugger
                     continue;
                 }
 
-                const int bufferLength = 512;
-                var tempBuffer = new byte[bufferLength];
-
-                Log.Info("Client connected - listening for commands...");
-                var dataBuffer = new ByteBuffer();
-                while (true)
+                try
                 {
-                    int lengthRead = mCurrentConnection.Stream.Read(tempBuffer, 0, bufferLength);
-                    if (lengthRead == 0)
-                    {
-                        break;
-                    }
+                    const int bufferLength = 512;
+                    var tempBuffer = new byte[bufferLength];
 
-                    if (lengthRead < 0)
+                    Log.Info("Client connected - listening for commands...");
+                    var dataBuffer = new ByteBuffer();
+                    while (true)
                     {
-                        continue;
-                    }
+                        int lengthRead = mCurrentConnection.Stream.Read(tempBuffer, 0, bufferLength);
+                        if (lengthRead == 0)
+                        {
+                            break;
+                        }
 
-                    dataBuffer.Append(tempBuffer, lengthRead);
-                    ProcessData(dataBuffer);
+                        if (lengthRead < 0)
+                        {
+                            continue;
+                        }
+
+                        dataBuffer.Append(tempBuffer, lengthRead);
+                        ProcessData(dataBuffer);
+                    }
+                }
+                catch (IOException)
+                {
+                    // error occurred or server shut down, let's just silently close
                 }
 
                 mCurrentConnection.Dispose();

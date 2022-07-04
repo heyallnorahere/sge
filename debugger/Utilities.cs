@@ -17,6 +17,7 @@
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -74,6 +75,52 @@ namespace SGE.Debugger
         {
             var methodType = method.DeclaringType;
             return $"{methodType.FullName.Replace('+', '.')}.{method.Name}";
+        }
+
+        public static T GetValue<T>(dynamic container, string propertyName, T defaultValue)
+        {
+            try
+            {
+                return (T)container[propertyName];
+            }
+            catch (Exception)
+            {
+                return defaultValue;
+            }
+        }
+
+        // shamelessly stolen from
+        // https://stackoverflow.com/questions/275689/how-to-get-relative-path-from-absolute-path
+        public static string GetRelativePath(string absolutePath, string baseDirectory = null)
+        {
+            if (string.IsNullOrEmpty(absolutePath) || !Path.IsPathRooted(absolutePath))
+            {
+                return absolutePath;
+            }
+
+            string baseDir = baseDirectory;
+            if (baseDir == null)
+            {
+                baseDir = Directory.GetCurrentDirectory();
+            }
+
+            var directoryUri = new Uri(baseDir);
+            var fileUri = new Uri(absolutePath);
+
+            if (directoryUri.Scheme != fileUri.Scheme)
+            {
+                return absolutePath;
+            }
+
+            var relativeUri = directoryUri.MakeRelativeUri(fileUri);
+            string relativePath = Uri.UnescapeDataString(relativeUri.ToString());
+
+            if (directoryUri.Scheme.Equals("file", StringComparison.InvariantCultureIgnoreCase))
+            {
+                relativePath = relativePath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            }
+
+            return relativePath;
         }
     }
 

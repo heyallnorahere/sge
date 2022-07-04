@@ -19,6 +19,7 @@ using Mono.Debugging.Soft;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -41,7 +42,13 @@ namespace SGE.Debugger
             mLock = new object();
         }
 
-        protected abstract void HandleEventException(Exception exc);
+        protected abstract void HandleEventException(Exception exc, MethodBase method);
+        private MethodBase GetEventMethod()
+        {
+            var stackFrame = new System.Diagnostics.StackFrame(2);
+            return stackFrame.GetMethod();
+        }
+
         protected void HandleEvent(Action callback)
         {
             lock (mLock)
@@ -52,7 +59,8 @@ namespace SGE.Debugger
                 }
                 catch (Exception exc)
                 {
-                    HandleEventException(exc);
+                    var method = GetEventMethod();
+                    HandleEventException(exc, method);
                 }
             }
         }
@@ -68,7 +76,9 @@ namespace SGE.Debugger
                 }
                 catch (Exception exc)
                 {
-                    HandleEventException(exc);
+                    var method = GetEventMethod();
+                    HandleEventException(exc, method);
+
                     return default;
                 }
             }
@@ -98,19 +108,155 @@ namespace SGE.Debugger
         private readonly object mLock;
     }
 
-    internal sealed class DebuggerThread
+    internal sealed class DebuggerSource
     {
-        public DebuggerThread(long id, string name)
+        public DebuggerSource(string name, string path, int sourceReference, string hint)
         {
-            ID = id;
             Name = name;
+            Path = path;
+            SourceReference = sourceReference;
+            PresentationHint = hint;
         }
-
-        [JsonProperty(PropertyName = "id")]
-        public long ID { get; }
 
         [JsonProperty(PropertyName = "name")]
         public string Name { get; }
+
+        [JsonProperty(PropertyName = "path")]
+        public string Path { get; }
+
+        [JsonProperty(PropertyName = "sourceReference")]
+        public int SourceReference { get; }
+
+        [JsonProperty(PropertyName = "presentationHint")]
+        public string PresentationHint { get; }
+    }
+
+    internal sealed class DebuggerStackFrame
+    {
+        public DebuggerStackFrame(int id, string name, DebuggerSource source, int line, int column, string hint)
+        {
+            ID = id;
+            Name = name;
+            Source = source;
+            Line = line;
+            Column = column;
+            Hint = hint;
+        }
+
+        [JsonProperty(PropertyName = "id")]
+        public int ID { get; }
+
+        [JsonProperty(PropertyName = "name")]
+        public string Name { get; }
+
+        [JsonProperty(PropertyName = "source")]
+        public DebuggerSource Source { get; }
+
+        [JsonProperty(PropertyName = "line")]
+        public int Line { get; }
+
+        [JsonProperty(PropertyName = "column")]
+        public int Column { get; }
+
+        [JsonProperty(PropertyName = "hint")]
+        public string Hint { get; }
+    }
+
+    internal sealed class DebuggerThread
+    {
+        public DebuggerThread(ThreadInfo info)
+        {
+            Thread = info;
+        }
+
+        [JsonProperty(PropertyName = "id")]
+        public long ID => Thread.Id;
+
+        [JsonProperty(PropertyName = "name")]
+        public string Name => Thread.Name;
+
+        [JsonIgnore]
+        public ThreadInfo Thread { get; }
+    }
+
+    internal sealed class DebuggerVariable
+    {
+        public static DebuggerVariable FromObjectValue(ObjectValue value,
+                                                       ObjectRegistry<IEnumerable<ObjectValue>> registry)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            string displayValue = value.DisplayValue;
+            if (displayValue.Length > 1 &&
+                displayValue[0] == '{' &&
+                displayValue[displayValue.Length - 1] == '}')
+            {
+                displayValue = displayValue.Substring(1, displayValue.Length - 2);
+            }
+
+            int handle = 0;
+            if (value.HasChildren)
+            {
+                var children = value.GetAllChildren();
+                handle = registry.Insert(children);
+            }
+
+            return new DebuggerVariable(value.Name, displayValue, value.TypeName, handle);
+        }
+
+        public DebuggerVariable(string name, string value, string type, int childrenSetId)
+        {
+            Name = name;
+            Value = value;
+            Type = type;
+            Children = childrenSetId;
+        }
+
+        [JsonProperty(PropertyName = "name")]
+        public string Name { get; }
+
+        [JsonProperty(PropertyName = "value")]
+        public string Value { get; }
+
+        [JsonProperty(PropertyName = "type")]
+        public string Type { get; }
+
+        [JsonProperty(PropertyName = "childrenSetId")]
+        public int Children { get; }
+    }
+
+    internal sealed class DebuggerScope
+    {
+        public DebuggerScope(string name, int variableSetId, bool expensive)
+        {
+            Name = name;
+            VariableSetID = variableSetId;
+            Expensive = expensive;
+        }
+
+        [JsonProperty(PropertyName = "name")]
+        public string Name { get; }
+
+        [JsonProperty(PropertyName = "variableSetId")]
+        public int VariableSetID { get; }
+
+        [JsonProperty(PropertyName = "expensive")]
+        public bool Expensive { get; }
+    }
+
+    internal struct ClientSettings
+    {
+        public void Parse(dynamic args)
+        {
+            UseURI = (bool)args.useURI;
+            LineStart = (int)args.lineStart;
+        }
+
+        public bool UseURI { get; set; }
+        public int LineStart { get; set; }
     }
 
     public sealed class Session : IDisposable
@@ -122,13 +268,10 @@ namespace SGE.Debugger
                 mSession = session;
             }
 
-            protected override void HandleEventException(Exception exc)
+            protected override void HandleEventException(Exception exc, MethodBase method)
             {
-                var stackframe = new System.Diagnostics.StackFrame(1);
-                var methodName = stackframe.GetMethod().Name;
-
                 string excName = exc.GetType().FullName;
-                Log.Error($"{excName} caught handling event {methodName}: {exc.Message}");
+                Log.Error($"{excName} caught handling event {method.Name}: {exc.Message}");
             }
 
             [DebuggerEvent]
@@ -224,23 +367,21 @@ namespace SGE.Debugger
             private void TargetThreadStarted(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
                 long threadId = args.Thread.Id;
-                string threadName = args.Thread.Name;
-
                 lock (mSession.mSeenThreads)
                 {
-                    var thread = new DebuggerThread(threadId, threadName);
+                    var thread = new DebuggerThread(args.Thread);
                     mSession.mSeenThreads.Add(threadId, thread);
                 }
 
                 mSession.mFrontend.SendEvent(SocketEventType.ThreadStarted, threadId);
-                Log.Info($"Target started a thread: {threadName}");
+                Log.Info($"Target started a thread: {args.Thread.Name}");
             });
 
             [DebuggerEvent]
             private void TargetThreadStopped(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
                 long threadId = args.Thread.Id;
-                string threadName = mSession.mSeenThreads[threadId].Name;
+                string threadName = args.Thread.Name;
 
                 lock (mSession.mSeenThreads)
                 {
@@ -256,17 +397,84 @@ namespace SGE.Debugger
 
         private sealed class ClientCommandHandler : EventHandler
         {
+
             public ClientCommandHandler(Session session)
             {
                 mSession = session;
+                mSettings = new ClientSettings
+                {
+                    UseURI = false,
+                    LineStart = 1
+                };
             }
 
-            protected override void HandleEventException(Exception exc)
-            {
-                var stackframe = new System.Diagnostics.StackFrame(1);
-                var method = stackframe.GetMethod();
-                var attribute = method.GetCustomAttribute<CommandAttribute>();
+            public const int DebuggerLineStart = 1;
+            public int LineStartDifference => DebuggerLineStart - mSettings.LineStart;
 
+            private int DebuggerLineToClient(int line) => line - LineStartDifference;
+            private int ClientLineToDebugger(int line) => line + LineStartDifference;
+
+            private string DebuggerPathToClient(string path)
+            {
+                if (mSettings.UseURI)
+                {
+                    try
+                    {
+                        var uri = new Uri(path);
+                        return uri.AbsoluteUri;
+                    }
+                    catch (Exception)
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    return Path.GetFullPath(path);
+                }
+            }
+
+            private string ClientPathToDebugger(string path)
+            {
+                if (path == null)
+                {
+                    return null;
+                }
+
+                if (mSettings.UseURI)
+                {
+                    if (Uri.IsWellFormedUriString(path, UriKind.Absolute))
+                    {
+                        var uri = new Uri(path);
+                        return uri.LocalPath;
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Malformed URI!");
+                    }
+                }
+                else
+                {
+                    return Utilities.GetRelativePath(path);
+                }
+            }
+
+            private void AddScope(List<DebuggerScope> scopes, string name, IEnumerable<ObjectValue> values, bool expensive = false)
+            {
+                int handle = mSession.mVariableHandles.Insert(values);
+                var scope = new DebuggerScope(name, handle, expensive);
+                scopes.Add(scope);
+            }
+
+            private void SubmitVariable(List<DebuggerVariable> variables, ObjectValue value)
+            {
+                var variable = DebuggerVariable.FromObjectValue(value, mSession.mVariableHandles);
+                variables.Add(variable);
+            }
+
+            protected override void HandleEventException(Exception exc, MethodBase method)
+            {
+                var attribute = method.GetCustomAttribute<CommandAttribute>();
                 string excName = exc.GetType().FullName;
                 Log.Error($"{excName} caught handling command {attribute.Name}: {exc.Message}");
             }
@@ -278,52 +486,266 @@ namespace SGE.Debugger
                 passedArgs = args
             });
 
+            [Command("setSettings")]
+            private dynamic SetSettings(dynamic args) => HandleEvent(() =>
+            {
+                mSettings.Parse(args);
+                return Null;
+            });
+
             [Command("next")]
             private dynamic Next(dynamic args) => HandleEvent(() =>
             {
+                mSession.WaitForSuspend();
+                lock (mSession.mLock)
+                {
+                    if (!mSession.mSession.IsRunning && !mSession.mSession.HasExited)
+                    {
+                        mSession.mSession.NextLine();
+                        mSession.mDebuggeeRunning = true;
+                    }
+                }
+
                 return Null;
             });
 
             [Command("continue")]
             private dynamic Continue(dynamic args) => HandleEvent(() =>
             {
+                mSession.WaitForSuspend();
+                lock (mSession.mLock)
+                {
+                    if (!mSession.mSession.IsRunning && !mSession.mSession.HasExited)
+                    {
+                        mSession.mSession.Continue();
+                        mSession.mDebuggeeRunning = true;
+                    }
+                }
+
                 return Null;
             });
 
             [Command("stepIn")]
             private dynamic StepIn(dynamic args) => HandleEvent(() =>
             {
+                mSession.WaitForSuspend();
+                lock (mSession.mLock)
+                {
+                    if (!mSession.mSession.IsRunning && !mSession.mSession.HasExited)
+                    {
+                        mSession.mSession.StepLine();
+                        mSession.mDebuggeeRunning = true;
+                    }
+                }
+
                 return Null;
             });
 
             [Command("stepOut")]
             private dynamic StepOut(dynamic args) => HandleEvent(() =>
             {
+                mSession.WaitForSuspend();
+                lock (mSession.mLock)
+                {
+                    if (!mSession.mSession.IsRunning && !mSession.mSession.HasExited)
+                    {
+                        mSession.mSession.Finish();
+                        mSession.mDebuggeeRunning = true;
+                    }
+                }
+
                 return Null;
             });
 
             [Command("pause")]
             private dynamic Pause(dynamic args) => HandleEvent(() =>
             {
+                lock (mSession.mLock)
+                {
+                    if (mSession.mSession.IsRunning)
+                    {
+                        mSession.mSession.Stop();
+                    }
+                }
+
                 return Null;
             });
 
             [Command("stackTrace")]
             private dynamic StackTrace(dynamic args) => HandleEvent(() =>
             {
-                return Null;
+                int maxLevels = Utilities.GetValue<int>(args, "levels", 10);
+                long threadId = Utilities.GetValue<long>(args, "threadId", 0);
+
+                mSession.WaitForSuspend();
+
+                var thread = mSession.ActiveThread;
+                if (thread.Id != threadId)
+                {
+                    thread = mSession.FindThread(threadId);
+                    if (thread != null)
+                    {
+                        thread.SetActive();
+                    }
+                }
+
+                var stackFrames = new List<DebuggerStackFrame>();
+                int totalFrames = 0;
+
+                var backtrace = thread.Backtrace;
+                if (backtrace != null && backtrace.FrameCount >= 0)
+                {
+                    totalFrames = backtrace.FrameCount;
+
+                    for (int i = 0; i < Math.Min(totalFrames, maxLevels); i++)
+                    {
+                        var frame = backtrace.GetFrame(i);
+                        string path = frame.SourceLocation.FileName;
+
+                        // vscode specific i think, but i'm not gonna question it lol
+                        string hint = "subtle";
+
+                        DebuggerSource source = null;
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            string sourceName = Path.GetFileName(path);
+                            if (File.Exists(path))
+                            {
+                                hint = "normal";
+                                string sourcePath = DebuggerPathToClient(path);
+                                source = new DebuggerSource(sourceName, sourcePath, 0, hint);
+                            }
+                            else
+                            {
+                                source = new DebuggerSource(sourceName, null, 1000, "deemphasize");
+                            }
+                        }
+
+                        string name = frame.SourceLocation.MethodName;
+                        int line = DebuggerLineToClient(frame.SourceLocation.Line);
+                        int handle = mSession.mFrameHandles.Insert(frame);
+
+                        var sentFrame = new DebuggerStackFrame(handle, name, source, line, 0, hint);
+                        stackFrames.Add(sentFrame);
+                    }
+                }
+
+                return new
+                {
+                    stackFrames = stackFrames.ToArray(),
+                    totalFrameCount = totalFrames
+                };
             });
 
             [Command("scopes")]
             private dynamic Scopes(dynamic args) => HandleEvent(() =>
             {
-                return Null;
+                int frameId = Utilities.GetValue(args, "frameId", 0);
+                var frame = mSession.mFrameHandles.Get(frameId);
+
+                var scopes = new List<DebuggerScope>();
+                if (frame.Index == 0 && mSession.mCurrentException != null)
+                {
+                    AddScope(scopes, "Exception", new ObjectValue[] { mSession.mCurrentException });
+                }
+
+                var localValues = new List<ObjectValue>
+                {
+                    frame.GetThisReference()
+                };
+
+                localValues.AddRange(frame.GetParameters());
+                localValues.AddRange(frame.GetLocalVariables());
+
+                ObjectValue[] locals = localValues.Where(x => x != null).ToArray();
+                if (locals.Length > 0)
+                {
+                    AddScope(scopes, "Local", locals);
+                }
+
+                return scopes.ToArray();
+            });
+
+            [Command("variables")]
+            private dynamic Variables(dynamic args) => HandleEvent(() =>
+            {
+                const int maxChildren = 100;
+
+                int setId = Utilities.GetValue<int>(args, "variableSetId", 0);
+                int offset = Utilities.GetValue<int>(args, "variableOffset", 0);
+
+                mSession.WaitForSuspend();
+                var variables = new List<DebuggerVariable>();
+                bool moreVariablesExist = false;
+
+                IEnumerable<ObjectValue> variableValues;
+                if (mSession.mVariableHandles.TryGet(setId, out variableValues) &&
+                    variableValues != null)
+                {
+                    var variableArray = variableValues.Skip(offset).ToArray();
+                    if (variableArray.Length > 0)
+                    {
+                        if (variableArray.Length > maxChildren)
+                        {
+                            variableArray = variableArray.Take(maxChildren).ToArray();
+                            moreVariablesExist = true;
+                        }
+
+                        if (variableArray.Length > 20)
+                        {
+                            foreach (var value in variableArray)
+                            {
+                                value.WaitHandle.WaitOne();
+                                SubmitVariable(variables, value);
+                            }
+                        }
+                        else
+                        {
+                            WaitHandle.WaitAll(variableArray.Select(x => x.WaitHandle).ToArray());
+                            foreach (var value in variableArray)
+                            {
+                                SubmitVariable(variables, value);
+                            }
+                        }
+                    }
+                }
+
+                return new
+                {
+                    variables = variables.ToArray(),
+                    moreExist = moreVariablesExist
+                };
             });
 
             [Command("threads")]
             private dynamic Threads(dynamic args) => HandleEvent(() =>
             {
-                return Null;
+                DebuggerThread[] threads = null;
+
+                var process = mSession.mActiveProcess;
+                if (process != null)
+                {
+                    Dictionary<long, DebuggerThread> threadTable;
+                    lock (mSession.mSeenThreads)
+                    {
+                        threadTable = new Dictionary<long, DebuggerThread>(mSession.mSeenThreads);
+                    }
+
+                    var processThreads = process.GetThreads();
+                    foreach (var thread in processThreads)
+                    {
+                        if (threadTable.ContainsKey(thread.Id))
+                        {
+                            continue;
+                        }
+
+                        threadTable.Add(thread.Id, new DebuggerThread(thread));
+                    }
+
+                    threads = threadTable.Values.ToArray();
+                }
+
+                return threads;
             });
 
             [Command("setBreakpoints")]
@@ -351,6 +773,7 @@ namespace SGE.Debugger
             });
 
             private readonly Session mSession;
+            private ClientSettings mSettings;
         }
 
         private sealed class CustomLogger : ICustomLogger
@@ -379,6 +802,9 @@ namespace SGE.Debugger
                 Log.Error($"Platform not supported: {platform}");
                 return 1;
             }
+
+            Log.Info($"Platform: {platform}, version {Environment.OSVersion.Version}, {Environment.ProcessorCount} processors");
+            Log.Info($"Running on CLR version {Environment.Version}");
 
             string ip = args.Get("address");
             int port = int.Parse(args.Get("port"));
@@ -415,7 +841,7 @@ namespace SGE.Debugger
             Address = address;
             Port = port;
 
-            mVariableHandles = new ObjectRegistry<ObjectValue[]>();
+            mVariableHandles = new ObjectRegistry<IEnumerable<ObjectValue>>();
             mFrameHandles = new ObjectRegistry<StackFrame>();
             mCurrentException = null;
             mSeenThreads = new Dictionary<long, DebuggerThread>();
@@ -425,6 +851,12 @@ namespace SGE.Debugger
 
             mResumeEvent = new AutoResetEvent(false);
             mDebuggeeRunning = false;
+
+            mActiveProcess = null;
+            mActiveFrame = null;
+            mNextBreakpointId = 0;
+            mBreakpoints = new SortedDictionary<long, BreakEvent>();
+            mCatchpoints = new List<Catchpoint>();
 
             mFrontend = new DebuggerFrontend(Port + 1); // lol
             mFrontend.SetHandler(new ClientCommandHandler(this));
@@ -532,6 +964,28 @@ namespace SGE.Debugger
             }
         }
 
+        private ThreadInfo FindThread(long threadId)
+        {
+            if (mSeenThreads.ContainsKey(threadId))
+            {
+                return mSeenThreads[threadId].Thread;
+            }
+
+            if (mActiveProcess != null)
+            {
+                var threads = mActiveProcess.GetThreads();
+                foreach (var thread in threads)
+                {
+                    if (thread.Id == threadId)
+                    {
+                        return thread;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         private void OnStopped()
         {
             mVariableHandles.Clear();
@@ -551,7 +1005,7 @@ namespace SGE.Debugger
         public IPAddress Address { get; }
         public int Port { get; }
 
-        private readonly ObjectRegistry<ObjectValue[]> mVariableHandles;
+        private readonly ObjectRegistry<IEnumerable<ObjectValue>> mVariableHandles;
         private readonly ObjectRegistry<StackFrame> mFrameHandles;
         private ObjectValue mCurrentException;
         private readonly Dictionary<long, DebuggerThread> mSeenThreads;
@@ -566,7 +1020,7 @@ namespace SGE.Debugger
         private StackFrame mActiveFrame;
         private long mNextBreakpointId;
         private readonly SortedDictionary<long, BreakEvent> mBreakpoints;
-        private readonly List<Catchpoint> mCatchpoint;
+        private readonly List<Catchpoint> mCatchpoints;
 
         private readonly SoftDebuggerSession mSession;
         private readonly DebuggerFrontend mFrontend;
