@@ -166,15 +166,16 @@ namespace sge {
         }
 
         std::stringstream args;
-        args << SGE_DOTNET_EXE << " build --nologo";
+        args << "\"" << SGE_DOTNET_EXE << "\" build --nologo";
         args << " -c " << project::get_config();
         args << " -a " << project::get_cpu_architecture();
-        args << " " << std::quoted(project_path.string());
+        args << " \"" << project_path.string() << "\"";
 
         process_info p_info;
         p_info.executable = SGE_DOTNET_EXE;
         p_info.cmdline = args.str();
 
+        spdlog::info("compiling ScriptAssembly.dll: {0}", p_info.cmdline);
         environment::run_command(p_info);
 #endif
 
