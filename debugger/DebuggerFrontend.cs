@@ -297,6 +297,7 @@ namespace SGE.Debugger
             mServer = new TcpListener(IPAddress.Parse(ipAddress), port);
         }
 
+        public event Action OnDisconnect;
         public void Run(Action exit = null)
         {
             if (mServerRunning)
@@ -365,6 +366,9 @@ namespace SGE.Debugger
                 {
                     // error occurred or server shut down, let's just silently close
                 }
+
+                // let's notify whoever called this
+                OnDisconnect?.Invoke();
 
                 mCurrentConnection.Dispose();
                 mCurrentConnection = null;

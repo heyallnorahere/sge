@@ -774,6 +774,18 @@ namespace SGE.Debugger
                         breakpoints.Add(breakpoint);
                     }
 
+                    string lines = string.Empty;
+                    foreach (int line in receievedBreakpoints)
+                    {
+                        if (lines.Length > 0)
+                        {
+                            lines += ", ";
+                        }
+
+                        lines += line.ToString();
+                    }
+
+                    Log.Info($"Breakpoints set: {lines}");
                     breakpointsSet = breakpoints.ToArray();
                 }
 
@@ -1008,6 +1020,7 @@ namespace SGE.Debugger
 
             mFrontend = new DebuggerFrontend(Port + 1, Encoding.UTF8);
             mFrontend.SetHandler(new ClientCommandHandler(this));
+            mFrontend.OnDisconnect += OnDisconnect;
 
             mSession = new SoftDebuggerSession
             {
@@ -1032,6 +1045,25 @@ namespace SGE.Debugger
 
                 eventInfo.AddEventHandler(mSession, delegateObject);
             });
+        }
+
+        private void OnDisconnect()
+        {
+            if (!mSession.IsConnected || mSession.HasExited)
+            {
+                return;
+            }
+
+            Log.Info("Removing all breakpoints...");
+            mBreakpoints.Clear();
+            mSession.Breakpoints.Clear();
+
+            if (!mSession.IsRunning)
+            {
+                Log.Info("Debuggee paused - continuing...");
+                mSession.Continue();
+                mDebuggeeRunning = true;
+            }
         }
 
         public void Dispose()
