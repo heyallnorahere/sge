@@ -54,6 +54,9 @@ namespace SGE.Debugger
 
         [JsonProperty(PropertyName = "body")]
         public dynamic Data { get; set; }
+
+        [JsonProperty(PropertyName = "id")]
+        public int? ID { get; set; }
     }
 
     public sealed class SocketRequest
@@ -245,7 +248,7 @@ namespace SGE.Debugger
             sConverterPositions = new Dictionary<Type, int>();
             sJsonSettings = new JsonSerializerSettings
             {
-                MissingMemberHandling = MissingMemberHandling.Error,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
                 NullValueHandling = NullValueHandling.Include
             };
 
@@ -294,7 +297,7 @@ namespace SGE.Debugger
             mServer = new TcpListener(IPAddress.Parse(ipAddress), port);
         }
 
-        public void Run()
+        public void Run(Action exit = null)
         {
             if (mServerRunning)
             {
@@ -307,6 +310,19 @@ namespace SGE.Debugger
             mServer.Start();
             while (mServerRunning)
             {
+                if (Session.InputEnabled)
+                {
+                    while (Console.KeyAvailable)
+                    {
+                        var key = Console.ReadKey(true);
+                        if (key.Modifiers.HasFlag(ConsoleModifiers.Control) &&
+                            key.Key == ConsoleKey.C)
+                        {
+                            exit?.Invoke();
+                        }
+                    }
+                }
+
                 if (!mServer.Pending())
                 {
                     Thread.Sleep(1);
@@ -425,11 +441,12 @@ namespace SGE.Debugger
                 }
 
                 buffer.Remove(0, dataLength - 1);
-                var message = JsonConvert.DeserializeObject<SocketMessage>(data);
+                string messageData = data.Substring(0, dataLength);
+                var message = JsonConvert.DeserializeObject<SocketMessage>(messageData);
 
                 if (message.MessageType == SocketMessageType.Request)
                 {
-                    DispatchRequest(message.Data);
+                    DispatchRequest(message.Data, message.ID);
                 }
                 else
                 {
@@ -443,7 +460,7 @@ namespace SGE.Debugger
             }
         }
 
-        private void DispatchRequest(dynamic data)
+        private void DispatchRequest(dynamic data, int? id)
         {
             SocketRequest request = SocketRequest.Parse(data);
 
@@ -464,15 +481,16 @@ namespace SGE.Debugger
                 };
             }
 
-            SendResponse(response);
+            SendResponse(response, id);
         }
 
-        private void SendResponse(dynamic data)
+        private void SendResponse(dynamic data, int? id)
         {
             var response = new SocketMessage
             {
                 MessageType = SocketMessageType.Response,
-                Data = data
+                Data = data,
+                ID = id
             };
 
             SendMessage(response);

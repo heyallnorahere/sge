@@ -878,8 +878,30 @@ namespace SGE.Debugger
         private const int MaxConnectionAttempts = 50;
         private const int ConnectionInterval = 500;
 
+        private static bool sInputEnabled;
+        public static bool InputEnabled => sInputEnabled;
+
+        static Session()
+        {
+            sInputEnabled = true;
+        }
+
         public static int Start(ArgumentParser.Result args)
         {
+            bool originalValue = false;
+            if (sInputEnabled)
+            {
+                try
+                {
+                    originalValue = Console.TreatControlCAsInput;
+                    Console.TreatControlCAsInput = true;
+                }
+                catch (IOException)
+                {
+                    sInputEnabled = false;
+                }
+            }
+
             var supportedPlatforms = new HashSet<PlatformID>
             {
                 PlatformID.MacOSX,
@@ -901,7 +923,14 @@ namespace SGE.Debugger
             int port = int.Parse(args.Get("port"));
 
             using var session = new Session(ip, port);
-            return session.Run();
+            int result = session.Run();
+
+            if (sInputEnabled)
+            {
+                Console.TreatControlCAsInput = originalValue;
+            }
+
+            return result;
         }
 
         private enum OutputSource
@@ -1024,7 +1053,7 @@ namespace SGE.Debugger
                 return 1;
             }
 
-            mFrontend.Run();
+            mFrontend.Run(mSession.Exit);
             return 0;
         }
 
