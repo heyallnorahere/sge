@@ -909,21 +909,21 @@ namespace SGE.Debugger
             Debuggee
         }
 
-        private void WriteOutput(string text, bool isStdErr, OutputSource source)
+        private void WriteOutput(string inputText, bool isStdErr, OutputSource source)
         {
-            string message = $"{source}: {text}";
-            for (int i = message.Length - 1; i >= 0; i--)
+            string text = inputText;
+            for (int i = text.Length - 1; i >= 0; i--)
             {
-                char character = message[i];
+                char character = text[i];
                 if (character != '\r' && character != '\n')
                 {
-                    message = message.Substring(0, i + 1);
+                    text = text.Substring(0, i + 1);
                     break;
                 }
             }
 
-            var severity = isStdErr ? Log.Severity.Error : Log.Severity.Info;
-            Log.Print(message, severity);
+            string message = $"{source}: {text}";
+            Log.Severity severity = isStdErr ? Log.Severity.Error : Log.Severity.Info;
 
             var eventType = source switch
             {
@@ -932,10 +932,8 @@ namespace SGE.Debugger
                 _ => throw new ArgumentException("Invalid output source!")
             };
 
-            SendEvent(eventType, new
-            {
-                text
-            });
+            Log.Print(message, severity);
+            SendEvent(eventType, new { text });
         }
 
         private void LogWriter(bool isStdErr, string text)
