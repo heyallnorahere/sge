@@ -79,7 +79,14 @@ namespace SGE
         /// <summary>
         /// The <see cref="SGE.GUID"/> of this entity.
         /// </summary>
-        public GUID GUID => InternalCalls.GetGUID(this);
+        public GUID GUID
+        {
+            get
+            {
+                InternalCalls.GetGUID(mID, mScene.mNativeAddress, out GUID guid);
+                return guid;
+            }
+        }
 
         /// <summary>
         /// The ID of this entity within the scene.

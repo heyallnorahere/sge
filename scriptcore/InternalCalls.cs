@@ -48,7 +48,7 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr GetComponent(Type componentType, Entity entity);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern GUID GetGUID(Entity entity);
+        public static extern void GetGUID(uint entityID, IntPtr scene, out GUID guid);
 
         // guid
         [MethodImpl(MethodImplOptions.InternalCall)]

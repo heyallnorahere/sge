@@ -103,10 +103,8 @@ namespace sge {
             _scene->destroy_entity(e);
         }
 
-        static bool FindEntity(guid id, uint32_t* entityID, void* _scene) {
-            auto scene_ptr = (scene*)_scene;
-
-            entity found_entity = scene_ptr->find_guid(id);
+        static bool FindEntity(guid id, uint32_t* entityID, scene* _scene) {
+            entity found_entity = _scene->find_guid(id);
             if (found_entity) {
                 *entityID = (uint32_t)found_entity;
                 return true;
@@ -144,9 +142,9 @@ namespace sge {
             return callbacks.get(e);
         }
 
-        static guid GetGUID(void* _entity) {
-            entity e = script_helpers::get_entity_from_object(_entity);
-            return e.get_guid();
+        static void GetGUID(uint32_t entityID, scene* _scene, guid* id) {
+            entity e((entt::entity)entityID, _scene);
+            *id = e.get_guid();
         }
 
         static guid GenerateGUID() { return guid(); }

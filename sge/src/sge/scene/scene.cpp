@@ -469,10 +469,10 @@ namespace sge {
         std::optional<float> velocity;
 
         if (e.has_all<rigid_body_component>()) {
-            update_physics_data(e);
-
-            b2Body* body = m_physics_data->bodies[e].body;
-            velocity = body->GetAngularVelocity();
+            if (m_physics_data->bodies.find(e) != m_physics_data->bodies.end()) {
+                b2Body* body = m_physics_data->bodies[e].body;
+                velocity = body->GetAngularVelocity();
+            }
         }
 
         return velocity;

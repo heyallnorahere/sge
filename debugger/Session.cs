@@ -437,13 +437,6 @@ namespace SGE.Debugger
                 Log.Error($"{excName} caught handling command {attribute.Name}: {exc.Message}");
             }
 
-            [Command("testCommand")]
-            private dynamic TestCommand(dynamic args) => HandleEvent(() => new
-            {
-                result = "this works!",
-                passedArgs = args
-            });
-
             [Command("setSettings")]
             private dynamic SetSettings(dynamic args) => HandleEvent(() =>
             {
@@ -630,23 +623,26 @@ namespace SGE.Debugger
                 const int maxChildren = 100;
 
                 int setId = Utilities.GetValue<int>(args, "variableSetId", 0);
-                int offset = Utilities.GetValue<int>(args, "variableOffset", 0);
+                string expandName = Utilities.GetValue<string>(args, "expandName", null);
 
                 mSession.WaitForSuspend();
                 var variables = new List<DebuggerVariable>();
-                bool moreVariablesExist = false;
 
                 IEnumerable<ObjectValue> variableValues;
                 if (mSession.mVariableHandles.TryGet(setId, out variableValues) &&
                     variableValues != null)
                 {
-                    var variableArray = variableValues.Skip(offset).ToArray();
+                    var variableArray = variableValues.ToArray();
                     if (variableArray.Length > 0)
                     {
-                        if (variableArray.Length > maxChildren)
+                        DebuggerVariable extraVariable = null;
+                        if (expandName != null && variableArray.Length > maxChildren)
                         {
+                            var extra = variableArray.Skip(maxChildren);
+                            int handle = mSession.mVariableHandles.Insert(extra);
+
+                            extraVariable = new DebuggerVariable(expandName, null, null, handle);
                             variableArray = variableArray.Take(maxChildren).ToArray();
-                            moreVariablesExist = true;
                         }
 
                         if (variableArray.Length > 20)
@@ -665,14 +661,19 @@ namespace SGE.Debugger
                                 SubmitVariable(variables, value);
                             }
                         }
+
+                        if (extraVariable != null)
+                        {
+                            variables.Add(extraVariable);
+                        }
                     }
                 }
-
-                return new
+                else
                 {
-                    variables = variables.ToArray(),
-                    moreExist = moreVariablesExist
-                };
+                    return null;
+                }
+
+                return variables.ToArray();
             });
 
             [Command("threads")]
@@ -780,7 +781,7 @@ namespace SGE.Debugger
             });
 
             [Command("evaluate")] // why does HandleEvent<dynamic> need to be specified?????
-            private dynamic Evaluate(dynamic args) => HandleEvent<dynamic>(() =>
+            private dynamic Evaluate(dynamic args) => HandleEvent(() =>
             {
                 // stupid, i know
                 IEvaluationError error = null;
@@ -845,7 +846,7 @@ namespace SGE.Debugger
 
                                 return new
                                 {
-                                    error = (object)null,
+                                    error = (string)null,
                                     value = value.DisplayValue,
                                     childrenSetId = handle
                                 };
@@ -857,7 +858,7 @@ namespace SGE.Debugger
                 return new
                 {
                     error = error.EvaluationError,
-                    value = (object)null,
+                    value = (string)null,
                     childrenSetId = 0
                 };
             });
@@ -933,7 +934,11 @@ namespace SGE.Debugger
             };
 
             Log.Print(message, severity);
-            SendEvent(eventType, new { text });
+            SendEvent(eventType, new
+            {
+                text = text,
+                stderr = isStdErr
+            });
         }
 
         private void LogWriter(bool isStdErr, string text)
