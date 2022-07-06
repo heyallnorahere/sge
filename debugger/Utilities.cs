@@ -138,48 +138,6 @@ namespace SGE.Debugger
         }
     }
 
-    public sealed class CamelCase : NamingStrategy
-    {
-        public CamelCase()
-        {
-            ProcessDictionaryKeys = true;
-            ProcessExtensionDataNames = true;
-        }
-
-        protected override string ResolvePropertyName(string name)
-        {
-            if (name.Length == 0)
-            {
-                return name;
-            }
-
-            return char.ToUpper(name[0]) + name.Substring(1);
-        }
-
-        public override string GetPropertyName(string name, bool hasSpecifiedName)
-        {
-            if (hasSpecifiedName)
-            {
-                return name;
-            }
-
-            return ToCamelCase(name);
-        }
-
-        public override string GetDictionaryKey(string key) => ToCamelCase(key);
-        public override string GetExtensionDataName(string name) => ToCamelCase(name);
-
-        private static string ToCamelCase(string name)
-        {
-            if (name.Length == 0)
-            {
-                return name;
-            }
-
-            return char.ToLower(name[0]) + name.Substring(1);
-        }
-    }
-
     internal sealed class ByteBuffer
     {
         public ByteBuffer()

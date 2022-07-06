@@ -22,6 +22,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 
 namespace SGE.Debugger
@@ -111,7 +112,7 @@ namespace SGE.Debugger
     {
         public void Parse(dynamic args)
         {
-            UseURI = (bool)args.useURI;
+            UseURI = (bool)args.useUri;
             LineStart = (int)args.lineStart;
         }
 
@@ -189,6 +190,11 @@ namespace SGE.Debugger
                 mSession = session;
             }
 
+            private bool SendEvent(SocketEventType type, dynamic context)
+            {
+                return mSession.SendEvent(type, context);
+            }
+
             protected override void HandleEventException(Exception exc, MethodBase method)
             {
                 string excName = exc.GetType().FullName;
@@ -199,7 +205,7 @@ namespace SGE.Debugger
             private void TargetStopped(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
                 mSession.OnStopped();
-                mSession.mFrontend.SendEvent(SocketEventType.DebuggerStep, new
+                SendEvent(SocketEventType.DebuggerStep, new
                 {
                     thread = args.Thread.Id,
                     message = Null
@@ -213,7 +219,7 @@ namespace SGE.Debugger
             private void TargetHitBreakpoint(object sender, TargetEventArgs args) => HandleEvent(() =>
             {
                 mSession.OnStopped();
-                mSession.mFrontend.SendEvent(SocketEventType.BreakpointHit, new
+                SendEvent(SocketEventType.BreakpointHit, new
                 {
                     thread = args.Thread.Id,
                     message = Null
@@ -231,7 +237,7 @@ namespace SGE.Debugger
                 if (exception != null)
                 {
                     mSession.mCurrentException = exception.Instance;
-                    mSession.mFrontend.SendEvent(eventType, new
+                    SendEvent(eventType, new
                     {
                         thread = args.Thread.Id,
                         message = exception.Message
@@ -293,7 +299,7 @@ namespace SGE.Debugger
                     mSession.mSeenThreads.Add(threadId, thread);
                 }
 
-                mSession.mFrontend.SendEvent(SocketEventType.ThreadStarted, threadId);
+                SendEvent(SocketEventType.ThreadStarted, threadId);
                 Log.Info($"Target started a thread: {args.Thread.Name}");
             });
 
@@ -308,8 +314,12 @@ namespace SGE.Debugger
                     mSession.mSeenThreads.Remove(threadId);
                 }
 
-                mSession.mFrontend.SendEvent(SocketEventType.ThreadExited, threadId);
                 Log.Info($"Target stopped a thread: {threadName}");
+                SendEvent(SocketEventType.ThreadExited, new
+                {
+                    id = threadId,
+                    name = threadName
+                });
             });
 
             private readonly Session mSession;
@@ -893,7 +903,13 @@ namespace SGE.Debugger
             return session.Run();
         }
 
-        private static void WriteOutput(string text, bool isStdErr, string source)
+        private enum OutputSource
+        {
+            Debugger,
+            Debuggee
+        }
+
+        private void WriteOutput(string text, bool isStdErr, OutputSource source)
         {
             string message = $"{source}: {text}";
             for (int i = message.Length - 1; i >= 0; i--)
@@ -908,6 +924,28 @@ namespace SGE.Debugger
 
             var severity = isStdErr ? Log.Severity.Error : Log.Severity.Info;
             Log.Print(message, severity);
+
+            var eventType = source switch
+            {
+                OutputSource.Debugger => SocketEventType.DebuggerOutput,
+                OutputSource.Debuggee => SocketEventType.DebuggeeOutput,
+                _ => throw new ArgumentException("Invalid output source!")
+            };
+
+            SendEvent(eventType, new
+            {
+                text
+            });
+        }
+
+        private void LogWriter(bool isStdErr, string text)
+        {
+            WriteOutput(text, isStdErr, OutputSource.Debugger);
+        }
+
+        private void OutputWriter(bool isStdErr, string text)
+        {
+            WriteOutput(text, isStdErr, OutputSource.Debuggee);
         }
 
         private Session(string ip, int port)
@@ -935,17 +973,16 @@ namespace SGE.Debugger
             mActiveProcess = null;
             mNextBreakpointId = 0;
             mBreakpoints = new SortedDictionary<long, BreakEvent>();
-            mCatchpoints = new List<Catchpoint>();
 
-            mFrontend = new DebuggerFrontend(Port + 1); // lol
+            mFrontend = new DebuggerFrontend(Port + 1, Encoding.UTF8);
             mFrontend.SetHandler(new ClientCommandHandler(this));
 
             mSession = new SoftDebuggerSession
             {
                 Breakpoints = new BreakpointStore(),
                 ExceptionHandler = exc => true,
-                LogWriter = (isStdErr, text) => WriteOutput(text, isStdErr, "Debugger"),
-                OutputWriter = (isStdErr, text) => WriteOutput(text, isStdErr, "Debuggee")
+                LogWriter = LogWriter,
+                OutputWriter = OutputWriter
             };
 
             var sessionType = mSession.GetType();
@@ -1081,6 +1118,11 @@ namespace SGE.Debugger
             }
         }
 
+        private bool SendEvent(SocketEventType type, dynamic context)
+        {
+            return mFrontend.SendEvent(type, context);
+        }
+
         public IPAddress Address { get; }
         public int Port { get; }
 
@@ -1098,7 +1140,6 @@ namespace SGE.Debugger
         private ProcessInfo mActiveProcess;
         private long mNextBreakpointId;
         private readonly SortedDictionary<long, BreakEvent> mBreakpoints;
-        private readonly List<Catchpoint> mCatchpoints;
 
         private readonly SoftDebuggerSession mSession;
         private readonly DebuggerFrontend mFrontend;

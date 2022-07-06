@@ -16,6 +16,7 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -92,6 +93,9 @@ namespace SGE.Debugger
 
     public enum SocketEventType
     {
+        [EventCategory(SocketEventCategory.Socket)]
+        Connected,
+
         [EventCategory(SocketEventCategory.Stopped)]
         DebuggerStep,
 
@@ -108,13 +112,21 @@ namespace SGE.Debugger
         ThreadStarted,
 
         [EventCategory(SocketEventCategory.Thread)]
-        ThreadExited
+        ThreadExited,
+
+        [EventCategory(SocketEventCategory.Output)]
+        DebuggerOutput,
+
+        [EventCategory(SocketEventCategory.Output)]
+        DebuggeeOutput,
     }
 
     public enum SocketEventCategory
     {
+        Socket,
         Stopped,
-        Thread
+        Thread,
+        Output,
     }
 
     public sealed class SocketEvent
@@ -217,6 +229,7 @@ namespace SGE.Debugger
     public sealed class DebuggerFrontend
     {
         private static readonly IReadOnlyDictionary<char, char> sScopeDeclarators;
+        private static readonly Dictionary<Type, int> sConverterPositions;
         private static readonly JsonSerializerSettings sJsonSettings;
 
         private static void AddJsonConverter<T>() where T : JsonConverter, new() => sJsonSettings.Converters.Add(new T());
@@ -229,17 +242,47 @@ namespace SGE.Debugger
                 ['<'] = '>', // afaik won't be used, but better safe than sorry
             };
 
+            sConverterPositions = new Dictionary<Type, int>();
             sJsonSettings = new JsonSerializerSettings
             {
                 MissingMemberHandling = MissingMemberHandling.Error,
                 NullValueHandling = NullValueHandling.Include
             };
 
-            sJsonSettings.Converters.Add(new StringEnumConverter(new CamelCase(), false));
+            AddEnumFormatter<CamelCaseNamingStrategy>();
         }
 
-        public DebuggerFrontend(int port)
+        private static void AddConverter(JsonConverter converter)
         {
+            var converterType = converter.GetType();
+            if (sConverterPositions.ContainsKey(converterType))
+            {
+                int index = sConverterPositions[converterType];
+                sJsonSettings.Converters[index] = converter;
+            }
+            else
+            {
+                sConverterPositions.Add(converterType, sJsonSettings.Converters.Count);
+                sJsonSettings.Converters.Add(converter);
+            }
+        }
+
+        private static void AddConverter<T>() where T : JsonConverter, new()
+        {
+            var converter = new T();
+            AddConverter(converter);
+        }
+
+        private static void AddEnumFormatter<T>() where T : NamingStrategy, new()
+        {
+            var namingStrategy = new T();
+            var converter = new StringEnumConverter(namingStrategy, false);
+            AddConverter(converter);
+        }
+
+        public DebuggerFrontend(int port, Encoding encoding)
+        {
+            mEncoding = encoding;
             mHandlers = new CommandCallbacks();
 
             const string ipAddress = "127.0.0.1";
@@ -282,6 +325,8 @@ namespace SGE.Debugger
                     var tempBuffer = new byte[bufferLength];
 
                     Log.Info("Client connected - listening for commands...");
+                    SendEvent(SocketEventType.Connected, null);
+
                     var dataBuffer = new ByteBuffer();
                     while (true)
                     {
@@ -371,7 +416,7 @@ namespace SGE.Debugger
         {
             try
             {
-                string data = buffer.GetData(Encoding.ASCII);
+                string data = buffer.GetData(mEncoding);
                 int dataLength = GetDataLength(data);
 
                 if (dataLength < 0)
@@ -419,10 +464,7 @@ namespace SGE.Debugger
                 };
             }
 
-            if (response != null)
-            {
-                SendResponse(response);
-            }
+            SendResponse(response);
         }
 
         private void SendResponse(dynamic data)
@@ -477,7 +519,7 @@ namespace SGE.Debugger
         private void SendMessage(SocketMessage message)
         {
             var json = JsonConvert.SerializeObject(message, sJsonSettings);
-            var bytes = Encoding.ASCII.GetBytes(json);
+            var bytes = mEncoding.GetBytes(json);
 
             var stream = mCurrentConnection.Stream;
             stream.Write(bytes, 0, bytes.Length);
@@ -516,5 +558,6 @@ namespace SGE.Debugger
         private readonly TcpListener mServer;
         private readonly string mAddress;
         private readonly object mLock;
+        private readonly Encoding mEncoding;
     }
 }
