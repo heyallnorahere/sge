@@ -21,10 +21,55 @@
 
 #include <sge/asset/asset_serializers.h>
 #include <sge/renderer/renderer.h>
+#include <sge/renderer/framebuffer.h>
 
 namespace sgm {
+    static bool dump_texture(ref<texture_2d> texture, fs::path asset_path) {
+        auto data = texture->get_image()->dump();
+        if (!data) {
+            return false;
+        }
+
+        std::string path = asset_path.string();
+        if (path.empty()) {
+            return false;
+        }
+
+        size_t position;
+        while ((position = path.find("..")) != std::string::npos) {
+            path.replace(position, 2, "__");
+        }
+
+        fs::path dump_path = fs::current_path() / "assets" / "logs" / "dump" /
+                             project::get().get_name() / "textures" / path;
+
+        fs::path directory = dump_path.parent_path();
+        fs::create_directories(directory);
+
+        return data->write(dump_path);
+    }
+
+    static void dump_assets(asset_manager& manager) {
+#ifdef SGE_DEBUG
+        auto& registry = manager.registry;
+
+        for (const auto& [current_path, desc] : registry) {
+            ref<asset> _asset = manager.get_asset(current_path);
+            if (_asset && _asset->get_asset_type() == asset_type::texture_2d) {
+                auto texture = _asset.as<texture_2d>();
+                if (!dump_texture(texture, current_path)) {
+                    spdlog::warn("failed to dump texture: {0}", current_path.string());
+                }
+            }
+        }
+#endif
+    }
+
     content_browser_panel::content_browser_panel() {
-        m_current = m_root = project::get().get_asset_dir();
+        auto& _project = project::get();
+        dump_assets(_project.get_asset_manager());
+
+        m_current = m_root = _project.get_asset_dir();
         m_padding = 16.f;
         m_icon_size = 128.f;
 
@@ -166,10 +211,13 @@ namespace sgm {
         }
 
         const auto& path = e.get_path();
-        auto& registry = project::get().get_asset_manager().registry;
+        fs::path asset_path = fs::relative(path, m_root);
 
         bool handled = false;
         bool tree_changed = false;
+
+        auto& manager = project::get().get_asset_manager();
+        auto& registry = manager.registry;
 
         switch (e.get_status()) {
         case file_status::created: {
@@ -195,23 +243,22 @@ namespace sgm {
             } else {
                 tree_changed |= registry.register_asset(path);
             }
-
         } break;
-        case file_status::deleted: {
-            fs::path asset_path = fs::relative(path, m_root);
+        case file_status::deleted:
             if (m_modified_files.find(asset_path) != m_modified_files.end()) {
                 m_modified_files.erase(asset_path);
             }
 
             handled = true;
             tree_changed |= registry.remove_asset(asset_path);
-        } break;
-        case file_status::modified: {
-            fs::path asset_path = fs::relative(path, m_root);
+
+            break;
+        case file_status::modified:
             if (m_modified_files.find(asset_path) == m_modified_files.end()) {
                 m_modified_files.insert(asset_path);
             }
-        } break;
+
+            break;
         }
 
         if (tree_changed) {
@@ -219,6 +266,7 @@ namespace sgm {
             build_directory_data(m_root, m_root_data);
         }
 
+        dump_assets(manager);
         return handled;
     }
 

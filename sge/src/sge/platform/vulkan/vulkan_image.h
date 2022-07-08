@@ -45,11 +45,14 @@ namespace sge {
         VkImageUsageFlags get_image_usage() { return m_usage; }
         VkImageView get_view() { return m_view; }
 
+    protected:
+        virtual void copy_from(const void* data, size_t size) override;
+        virtual bool copy_to(void* data, size_t size) override;
+
     private:
         void create_image();
         void create_view();
 
-        virtual void copy_from(const void* data, size_t size) override;
         void copy_from(ref<vulkan_buffer> source);
 
         VkImage m_image;

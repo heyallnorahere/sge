@@ -16,15 +16,22 @@
 
 #include "sgepch.h"
 #include "sge/renderer/image.h"
+
 #ifdef SGE_USE_VULKAN
 #include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_image.h"
 #endif
+
 #ifdef SGE_PLATFORM_LINUX
 #define STBI_NO_SIMD
 #endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 namespace sge {
     std::unique_ptr<image_data> image_data::load(const fs::path& path) {
         std::string string_path = path.string();
@@ -32,14 +39,17 @@ namespace sge {
             throw std::runtime_error("image " + string_path + " does not exist!");
         }
 
-        int32_t width, height, channels;
-        uint8_t* data = stbi_load(string_path.c_str(), &width, &height, &channels, 0);
+        int x, y, comp;
+        uint8_t* data = stbi_load(string_path.c_str(), &x, &y, &comp, 0);
         if (data == nullptr) {
             return std::unique_ptr<image_data>(nullptr);
         }
 
+        uint32_t width = (uint32_t)x;
+        uint32_t height = (uint32_t)y;
+
         image_format format;
-        switch (channels) {
+        switch (comp) {
         case 3:
             format = image_format::RGB8_SRGB;
             break;
@@ -50,7 +60,7 @@ namespace sge {
             throw std::runtime_error("invalid image format!");
         }
 
-        size_t data_size = (size_t)width * height * channels;
+        size_t data_size = (size_t)comp * width * height;
         auto img_data = create(data, data_size, width, height, format);
 
         stbi_image_free(data);
@@ -74,12 +84,72 @@ namespace sge {
 
     image_data::~image_data() { free(m_data); }
 
-    ref<image_2d> image_2d::create(const std::unique_ptr<image_data>& data, uint32_t additional_usage) {
+    static int write_png(const char* path, int x, int y, int comp, const void* data) {
+        int stride = x * comp;
+        return stbi_write_png(path, x, y, comp, data, stride);
+    }
+
+    static int write_jpeg(const char* path, int x, int y, int comp, const void* data) {
+        return stbi_write_jpg(path, x, y, comp, data, 100);
+    }
+
+    using write_callback_t = int (*)(const char*, int, int, int, const void*);
+    bool image_data::write(const fs::path& path) const {
+        static std::unordered_map<fs::path, write_callback_t, path_hasher> extension_types;
+        if (extension_types.empty()) {
+            auto register_format = [&](const std::vector<fs::path>& extensions,
+                                       write_callback_t callback) {
+                for (const auto& extension : extensions) {
+                    extension_types.insert(std::make_pair(extension, callback));
+                }
+            };
+
+            register_format({ ".png" }, write_png);
+            register_format({ ".bmp" }, stbi_write_bmp);
+            register_format({ ".tga" }, stbi_write_tga);
+            register_format({ ".jpeg", ".jpg" }, write_jpeg);
+        }
+
+        if (!path.has_extension()) {
+            return false;
+        }
+
+        fs::path extension = path.extension();
+        if (extension_types.find(extension) == extension_types.end()) {
+            return false;
+        }
+
+        std::string string_path = path.string();
+        const char* c_str = string_path.c_str();
+
+        int x = (int)m_width;
+        int y = (int)m_height;
+        int comp = (int)m_size / (x * y);
+
+        auto callback = extension_types.at(extension);
+        return callback(c_str, x, y, comp, m_data) == 1;
+    }
+
+    uint32_t image_2d::get_channel_count(image_format format) {
+        switch (format) {
+        case image_format::RGB8_UINT:
+        case image_format::RGB8_SRGB:
+            return 3;
+        case image_format::RGBA8_UINT:
+        case image_format::RGBA8_SRGB:
+            return 4;
+        default:
+            return 0;
+        }
+    }
+
+    ref<image_2d> image_2d::create(const std::unique_ptr<image_data>& data,
+                                   uint32_t additional_usage) {
         image_spec spec;
         spec.width = data->get_width();
         spec.height = data->get_height();
         spec.format = data->get_format();
-        spec.image_usage = image_usage_texture | additional_usage;
+        spec.image_usage = image_usage_transfer | additional_usage;
         spec.array_layers = 1;
 
         // todo(nora): compute mip levels
@@ -95,5 +165,24 @@ namespace sge {
 #endif
 
         return nullptr;
+    }
+
+    std::unique_ptr<image_data> image_2d::dump() {
+        uint32_t width = get_width();
+        uint32_t height = get_height();
+        image_format format = get_format();
+
+        uint32_t channels = get_channel_count(format);
+        size_t size = (size_t)width * height * channels;
+
+        void* buffer = malloc(size);
+        std::unique_ptr<image_data> result;
+
+        if (buffer != nullptr && copy_to(buffer, size)) {
+            result = image_data::create(buffer, size, width, height, format);
+        }
+
+        free(buffer);
+        return std::move(result);
     }
 } // namespace sge

@@ -48,7 +48,7 @@ namespace sge {
 
         texture_spec spec;
         spec.path = path;
-        spec.image = image_2d::create(img_data, image_usage_none);
+        spec.image = image_2d::create(img_data, image_usage_texture);
 
         fs::path settings_path = path.string() + ".sgetexture";
         if (fs::exists(settings_path)) {

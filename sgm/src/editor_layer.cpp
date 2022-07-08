@@ -20,8 +20,10 @@
 #include "texture_cache.h"
 #include "icon_directory.h"
 #include "panels/panels.h"
+
 #include <sge/scene/scene_serializer.h>
 #include <sge/imgui/imgui_layer.h>
+
 namespace sgm {
     void editor_layer::on_attach() {
         fs::path scene_path = project::get().get_start_scene();
@@ -136,8 +138,9 @@ namespace sgm {
 
             break;
         case key_code::R:
-            if (control) {
+            if (control && !editor_scene::running()) {
                 reload_project_assembly();
+                return true;
             }
 
             break;
@@ -356,10 +359,13 @@ namespace sgm {
                 }
 
                 ImGui::Separator();
+                ImGui::BeginDisabled(editor_scene::running());
+
                 if (ImGui::MenuItem("Reload C# assembly", "Ctrl+R")) {
                     reload_project_assembly();
                 }
 
+                ImGui::EndDisabled();
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit", "Ctrl+Q")) {
                     application::get().quit();

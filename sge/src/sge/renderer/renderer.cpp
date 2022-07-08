@@ -144,13 +144,13 @@ namespace sge {
             std::vector<uint8_t> data = { 0, 0, 0, 255 };
             auto img_data = image_data::create(data.data(), data.size() * sizeof(uint8_t), 1, 1,
                                                image_format::RGBA8_SRGB);
-            spec.image = image_2d::create(img_data, image_usage_none);
+            spec.image = image_2d::create(img_data, image_usage_texture);
             renderer_data.black_texture = texture_2d::create(spec);
 
             data = { 255, 255, 255, 255 };
             img_data = image_data::create(data.data(), data.size() * sizeof(uint8_t), 1, 1,
                                           image_format::RGBA8_SRGB);
-            spec.image = image_2d::create(img_data, image_usage_none);
+            spec.image = image_2d::create(img_data, image_usage_texture);
             renderer_data.white_texture = texture_2d::create(spec);
         }
     }

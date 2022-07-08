@@ -23,6 +23,7 @@
 #include "sge/platform/vulkan/vulkan_context.h"
 #include "sge/platform/vulkan/vulkan_buffer.h"
 #include "sge/platform/vulkan/vulkan_texture.h"
+
 namespace sge {
     VkFormat get_vulkan_image_format(image_format format) {
         switch (format) {
@@ -47,7 +48,7 @@ namespace sge {
 
         VkImageUsageFlags flags = 0;
         if ((usage & image_usage_texture) != 0) {
-            flags |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
         }
         if ((usage & image_usage_attachment) != 0) {
             // maybe pass depth boolean?
@@ -56,6 +57,11 @@ namespace sge {
         if ((usage & image_usage_storage) != 0) {
             flags |= VK_IMAGE_USAGE_STORAGE_BIT;
         }
+
+        if ((usage & image_usage_transfer) != 0) {
+            flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        }
+
         return flags;
     }
 
@@ -166,6 +172,56 @@ namespace sge {
         }
     }
 
+    void vulkan_image_2d::copy_from(const void* data, size_t size) {
+        auto staging_buffer = ref<vulkan_buffer>::create(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                         VMA_MEMORY_USAGE_CPU_TO_GPU);
+        staging_buffer->map();
+        memcpy(staging_buffer->mapped, data, size);
+        staging_buffer->unmap();
+
+        copy_from(staging_buffer);
+    }
+
+    bool vulkan_image_2d::copy_to(void* data, size_t size) {
+        if ((m_usage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) == 0) {
+            return false;
+        }
+
+        auto queue = renderer::get_queue(command_list_type::transfer);
+        auto buffer = ref<vulkan_buffer>::create(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                 VMA_MEMORY_USAGE_GPU_TO_CPU);
+
+        auto& cmdlist = (vulkan_command_list&)queue->get();
+        cmdlist.begin();
+
+        VkImageLayout original_layout = m_layout;
+        set_layout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, &cmdlist);
+
+        auto region = vk_init<VkBufferImageCopy>();
+        region.imageSubresource.aspectMask = m_aspect;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageSubresource.mipLevel = 0;
+
+        region.imageOffset = { 0, 0, 0 };
+        region.imageExtent.width = m_spec.width;
+        region.imageExtent.height = m_spec.height;
+        region.imageExtent.depth = 1;
+
+        auto cmdbuffer = cmdlist.get();
+        vkCmdCopyImageToBuffer(cmdbuffer, m_image, m_layout, buffer->get(), 1, &region);
+        set_layout(original_layout, &cmdlist);
+
+        cmdlist.end();
+        queue->submit(cmdlist, true);
+
+        buffer->map();
+        memcpy(data, buffer->mapped, size);
+        buffer->unmap();
+
+        return true;
+    }
+
     void vulkan_image_2d::create_image() {
         auto create_info = vk_init<VkImageCreateInfo>(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
         create_info.imageType = VK_IMAGE_TYPE_2D;
@@ -226,16 +282,6 @@ namespace sge {
         check_vk_result(result);
     }
 
-    void vulkan_image_2d::copy_from(const void* data, size_t size) {
-        auto staging_buffer = ref<vulkan_buffer>::create(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                                         VMA_MEMORY_USAGE_CPU_TO_GPU);
-        staging_buffer->map();
-        memcpy(staging_buffer->mapped, data, size);
-        staging_buffer->unmap();
-
-        copy_from(staging_buffer);
-    }
-
     void vulkan_image_2d::copy_from(ref<vulkan_buffer> source) {
         auto transfer_queue = renderer::get_queue(command_list_type::transfer);
         auto& cmdlist = (vulkan_command_list&)transfer_queue->get();
@@ -261,8 +307,7 @@ namespace sge {
             region.imageExtent.height = m_spec.height;
             region.imageExtent.depth = 1;
 
-            vkCmdCopyBufferToImage(cmdbuffer, source->get(), m_image, m_layout, 1,
-                                   &region);
+            vkCmdCopyBufferToImage(cmdbuffer, source->get(), m_image, m_layout, 1, &region);
         } else {
             throw std::runtime_error("can't copy more than one mip level yet");
         }

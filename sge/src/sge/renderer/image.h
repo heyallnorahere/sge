@@ -29,6 +29,7 @@ namespace sge {
         image_usage_texture = 0x1,
         image_usage_attachment = 0x2,
         image_usage_storage = 0x4,
+        image_usage_transfer = 0x8,
     };
 
     /*enum class image_mode {
@@ -56,6 +57,8 @@ namespace sge {
         uint32_t get_height() const { return m_height; }
         image_format get_format() const { return m_format; }
 
+        bool write(const fs::path& path) const;
+
     private:
         image_data() = default;
 
@@ -78,6 +81,8 @@ namespace sge {
 
     class image_2d : public ref_counted {
     public:
+        static uint32_t get_channel_count(image_format format);
+
         static ref<image_2d> create(const std::unique_ptr<image_data>& data,
                                     uint32_t additional_usage);
         static ref<image_2d> create(const image_spec& spec);
@@ -93,7 +98,10 @@ namespace sge {
         virtual image_format get_format() = 0;
         virtual uint32_t get_usage() = 0;
 
+        std::unique_ptr<image_data> dump();
+
     protected:
         virtual void copy_from(const void* data, size_t size) = 0;
+        virtual bool copy_to(void* data, size_t size) = 0;
     };
 } // namespace sge
