@@ -573,159 +573,197 @@ namespace sge {
         counter.remove();
     }
 
+    static void (*s_register_internal_call)(const std::string&, const void*);
+
+    class function_registerer {
+    public:
+        function_registerer(const std::string& class_name) { m_class_name = class_name; }
+
+        function_registerer(const function_registerer&) = delete;
+        function_registerer& operator=(const function_registerer&) = delete;
+
+        void operator()(const std::string& method_name, const void* function) const {
+            std::string name = m_class_name + "::" + method_name;
+            s_register_internal_call(name, function);
+        }
+
+    private:
+        std::string m_class_name;
+    };
+
+    template <typename Func>
+    static void register_class_functions(const std::string& id, Func&& callback) {
+        void* attribute_class = script_helpers::get_core_type("SGE.InternalCallsAttribute", true);
+        void* find_method = script_engine::get_method(attribute_class, "Find");
+
+        void* managed_string = script_engine::to_managed_string(id);
+        void* reflection_type = script_engine::call_method(nullptr, find_method, managed_string);
+
+        if (reflection_type == nullptr) {
+            spdlog::warn("could not find id: {0}", id);
+            return;
+        }
+
+        class_name_t class_name;
+        void* _class = script_engine::from_reflection_type(reflection_type);
+        script_engine::get_class_name(_class, class_name);
+        std::string full_name = script_engine::get_string(class_name);
+
+        function_registerer registerer(full_name);
+        callback(registerer);
+    }
+
     void script_engine::register_internal_script_calls() {
         register_component_types();
+        s_register_internal_call = register_internal_call;
 
-#define REGISTER_CALL(managed, native)                                                             \
-    register_internal_call("SGE.InternalCalls::" managed, (void*)native)
-
-#define REGISTER_FUNC(name) REGISTER_CALL(#name, internal_script_calls::name)
+#define REGISTER_FUNC(name) registerer(#name, internal_script_calls::name)
 #define REGISTER_REF_COUNTER(type)                                                                 \
-    REGISTER_CALL("AddRef_" #type, add_ref<type>);                                                 \
-    REGISTER_CALL("RemoveRef_" #type, remove_ref<type>)
+    registerer("AddRef_" #type, add_ref<type>);                                                     \
+    registerer("RemoveRef_" #type, remove_ref<type>)
 
-        // scene
-        REGISTER_FUNC(CreateEntity);
-        REGISTER_FUNC(CreateEntityWithGUID);
-        REGISTER_FUNC(CloneEntity);
-        REGISTER_FUNC(DestroyEntity);
-        REGISTER_FUNC(FindEntity);
-        REGISTER_FUNC(GetCollisionCategoryName);
+        register_class_functions("core", [](const function_registerer& registerer) {
+            // scene
+            REGISTER_FUNC(CreateEntity);
+            REGISTER_FUNC(CreateEntityWithGUID);
+            REGISTER_FUNC(CloneEntity);
+            REGISTER_FUNC(DestroyEntity);
+            REGISTER_FUNC(FindEntity);
+            REGISTER_FUNC(GetCollisionCategoryName);
 
-        // entity
-        REGISTER_FUNC(AddComponent);
-        REGISTER_FUNC(HasComponent);
-        REGISTER_FUNC(GetComponent);
-        REGISTER_FUNC(GetGUID);
+            // entity
+            REGISTER_FUNC(AddComponent);
+            REGISTER_FUNC(HasComponent);
+            REGISTER_FUNC(GetComponent);
+            REGISTER_FUNC(GetGUID);
 
-        // guid
-        REGISTER_FUNC(GenerateGUID);
+            // guid
+            REGISTER_FUNC(GenerateGUID);
 
-        // tag component
-        REGISTER_FUNC(SetTag);
-        REGISTER_FUNC(GetTag);
+            // tag component
+            REGISTER_FUNC(SetTag);
+            REGISTER_FUNC(GetTag);
 
-        // transform component
-        REGISTER_FUNC(GetTranslation);
-        REGISTER_FUNC(SetTranslation);
-        REGISTER_FUNC(GetRotation);
-        REGISTER_FUNC(SetRotation);
-        REGISTER_FUNC(GetScale);
-        REGISTER_FUNC(SetScale);
-        REGISTER_FUNC(GetZLayer);
-        REGISTER_FUNC(SetZLayer);
+            // transform component
+            REGISTER_FUNC(GetTranslation);
+            REGISTER_FUNC(SetTranslation);
+            REGISTER_FUNC(GetRotation);
+            REGISTER_FUNC(SetRotation);
+            REGISTER_FUNC(GetScale);
+            REGISTER_FUNC(SetScale);
+            REGISTER_FUNC(GetZLayer);
+            REGISTER_FUNC(SetZLayer);
 
-        // sprite renderer component
-        REGISTER_FUNC(GetColor);
-        REGISTER_FUNC(SetColor);
-        REGISTER_FUNC(GetTexture);
-        REGISTER_FUNC(SetTexture);
-        REGISTER_FUNC(GetShader);
-        REGISTER_FUNC(SetShader);
+            // sprite renderer component
+            REGISTER_FUNC(GetColor);
+            REGISTER_FUNC(SetColor);
+            REGISTER_FUNC(GetTexture);
+            REGISTER_FUNC(SetTexture);
+            REGISTER_FUNC(GetShader);
+            REGISTER_FUNC(SetShader);
 
-        // camera component
-        REGISTER_FUNC(GetPrimary);
-        REGISTER_FUNC(SetPrimary);
-        REGISTER_FUNC(GetProjectionType);
-        REGISTER_FUNC(SetProjectionType);
-        REGISTER_FUNC(GetViewSize);
-        REGISTER_FUNC(SetViewSize);
-        REGISTER_FUNC(GetFOV);
-        REGISTER_FUNC(SetFOV);
-        REGISTER_FUNC(GetOrthographicClips);
-        REGISTER_FUNC(SetOrthographicClips);
-        REGISTER_FUNC(GetPerspectiveClips);
-        REGISTER_FUNC(SetPerspectiveClips);
-        REGISTER_FUNC(SetOrthographic);
-        REGISTER_FUNC(SetPerspective);
+            // camera component
+            REGISTER_FUNC(GetPrimary);
+            REGISTER_FUNC(SetPrimary);
+            REGISTER_FUNC(GetProjectionType);
+            REGISTER_FUNC(SetProjectionType);
+            REGISTER_FUNC(GetViewSize);
+            REGISTER_FUNC(SetViewSize);
+            REGISTER_FUNC(GetFOV);
+            REGISTER_FUNC(SetFOV);
+            REGISTER_FUNC(GetOrthographicClips);
+            REGISTER_FUNC(SetOrthographicClips);
+            REGISTER_FUNC(GetPerspectiveClips);
+            REGISTER_FUNC(SetPerspectiveClips);
+            REGISTER_FUNC(SetOrthographic);
+            REGISTER_FUNC(SetPerspective);
 
-        // rigid body component
-        REGISTER_FUNC(GetBodyType);
-        REGISTER_FUNC(SetBodyType);
-        REGISTER_FUNC(GetFixedRotation);
-        REGISTER_FUNC(SetFixedRotation);
-        REGISTER_FUNC(GetAngularVelocity);
-        REGISTER_FUNC(SetAngularVelocity);
-        REGISTER_FUNC(AddForce);
-        REGISTER_FUNC(GetFilterCategory);
-        REGISTER_FUNC(SetFilterCategory);
-        REGISTER_FUNC(GetFilterMask);
-        REGISTER_FUNC(SetFilterMask);
+            // rigid body component
+            REGISTER_FUNC(GetBodyType);
+            REGISTER_FUNC(SetBodyType);
+            REGISTER_FUNC(GetFixedRotation);
+            REGISTER_FUNC(SetFixedRotation);
+            REGISTER_FUNC(GetAngularVelocity);
+            REGISTER_FUNC(SetAngularVelocity);
+            REGISTER_FUNC(AddForce);
+            REGISTER_FUNC(GetFilterCategory);
+            REGISTER_FUNC(SetFilterCategory);
+            REGISTER_FUNC(GetFilterMask);
+            REGISTER_FUNC(SetFilterMask);
 
-        // box collider component
-        REGISTER_FUNC(GetSize);
-        REGISTER_FUNC(SetSize);
-        REGISTER_FUNC(GetDensity);
-        REGISTER_FUNC(SetDensity);
-        REGISTER_FUNC(GetFriction);
-        REGISTER_FUNC(SetFriction);
-        REGISTER_FUNC(GetRestitution);
-        REGISTER_FUNC(SetRestitution);
-        REGISTER_FUNC(GetRestitutionThreashold);
-        REGISTER_FUNC(SetRestitutionThreashold);
+            // box collider component
+            REGISTER_FUNC(GetSize);
+            REGISTER_FUNC(SetSize);
+            REGISTER_FUNC(GetDensity);
+            REGISTER_FUNC(SetDensity);
+            REGISTER_FUNC(GetFriction);
+            REGISTER_FUNC(SetFriction);
+            REGISTER_FUNC(GetRestitution);
+            REGISTER_FUNC(SetRestitution);
+            REGISTER_FUNC(GetRestitutionThreashold);
+            REGISTER_FUNC(SetRestitutionThreashold);
 
-        // logger
-        REGISTER_FUNC(LogDebug);
-        REGISTER_FUNC(LogInfo);
-        REGISTER_FUNC(LogWarn);
-        REGISTER_FUNC(LogError);
+            // logger
+            REGISTER_FUNC(LogDebug);
+            REGISTER_FUNC(LogInfo);
+            REGISTER_FUNC(LogWarn);
+            REGISTER_FUNC(LogError);
 
-        // input
-        REGISTER_FUNC(GetKey);
-        REGISTER_FUNC(GetMouseButton);
-        REGISTER_FUNC(GetMousePosition);
+            // input
+            REGISTER_FUNC(GetKey);
+            REGISTER_FUNC(GetMouseButton);
+            REGISTER_FUNC(GetMousePosition);
 
-        // event
-        REGISTER_FUNC(IsEventHandled);
-        REGISTER_FUNC(SetEventHandled);
+            // event
+            REGISTER_FUNC(IsEventHandled);
+            REGISTER_FUNC(SetEventHandled);
 
-        // window events
-        REGISTER_FUNC(GetResizeWidth);
-        REGISTER_FUNC(GetResizeHeight);
+            // window events
+            REGISTER_FUNC(GetResizeWidth);
+            REGISTER_FUNC(GetResizeHeight);
 
-        // input events
-        REGISTER_FUNC(GetPressedEventKey);
-        REGISTER_FUNC(GetRepeatCount);
-        REGISTER_FUNC(GetReleasedEventKey);
-        REGISTER_FUNC(GetTypedEventKey);
-        REGISTER_FUNC(GetEventMousePosition);
-        REGISTER_FUNC(GetScrollOffset);
-        REGISTER_FUNC(GetEventMouseButton);
-        REGISTER_FUNC(GetMouseButtonReleased);
+            // input events
+            REGISTER_FUNC(GetPressedEventKey);
+            REGISTER_FUNC(GetRepeatCount);
+            REGISTER_FUNC(GetReleasedEventKey);
+            REGISTER_FUNC(GetTypedEventKey);
+            REGISTER_FUNC(GetEventMousePosition);
+            REGISTER_FUNC(GetScrollOffset);
+            REGISTER_FUNC(GetEventMouseButton);
+            REGISTER_FUNC(GetMouseButtonReleased);
 
-        // texture_2d
-        REGISTER_REF_COUNTER(texture_2d);
-        REGISTER_FUNC(LoadTexture2D);
-        REGISTER_FUNC(GetWrapTexture2D);
-        REGISTER_FUNC(GetFilterTexture2D);
+            // texture_2d
+            REGISTER_REF_COUNTER(texture_2d);
+            REGISTER_FUNC(LoadTexture2D);
+            REGISTER_FUNC(GetWrapTexture2D);
+            REGISTER_FUNC(GetFilterTexture2D);
 
-        // script component
-        REGISTER_FUNC(IsScriptEnabled);
-        REGISTER_FUNC(SetScriptEnabled);
-        REGISTER_FUNC(GetScript);
+            // script component
+            REGISTER_FUNC(IsScriptEnabled);
+            REGISTER_FUNC(SetScriptEnabled);
+            REGISTER_FUNC(GetScript);
 
-        // file changed event
-        REGISTER_FUNC(GetChangedFilePath);
-        REGISTER_FUNC(GetWatchedDirectory);
-        REGISTER_FUNC(GetFileStatus);
+            // file changed event
+            REGISTER_FUNC(GetChangedFilePath);
+            REGISTER_FUNC(GetWatchedDirectory);
+            REGISTER_FUNC(GetFileStatus);
 
-        // assets
-        REGISTER_FUNC(GetAssetPath);
-        REGISTER_FUNC(GetAssetType);
-        REGISTER_FUNC(GetAssetGUID);
-        REGISTER_FUNC(ReloadAsset);
+            // assets
+            REGISTER_FUNC(GetAssetPath);
+            REGISTER_FUNC(GetAssetType);
+            REGISTER_FUNC(GetAssetGUID);
+            REGISTER_FUNC(ReloadAsset);
 
-        // prefab
-        REGISTER_REF_COUNTER(prefab);
-        REGISTER_FUNC(CreatePrefab);
-        REGISTER_FUNC(InstantiatePrefab);
+            // prefab
+            REGISTER_REF_COUNTER(prefab);
+            REGISTER_FUNC(CreatePrefab);
+            REGISTER_FUNC(InstantiatePrefab);
 
-        // shader
-        REGISTER_REF_COUNTER(shader);
-        REGISTER_FUNC(LoadShaderAuto);
-        REGISTER_FUNC(LoadShaderExplicit);
-
-#undef REGISTER_CALL
+            // shader
+            REGISTER_REF_COUNTER(shader);
+            REGISTER_FUNC(LoadShaderAuto);
+            REGISTER_FUNC(LoadShaderExplicit);
+        });
 #undef REGISTER_FUNC
 #undef REGISTER_REF_COUNTER
     }

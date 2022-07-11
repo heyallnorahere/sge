@@ -72,7 +72,7 @@ namespace SGE
                         throw new IndexOutOfRangeException();
                     }
 
-                    return InternalCalls.GetCollisionCategoryName(mScene.mNativeAddress, index);
+                    return CoreInternalCalls.GetCollisionCategoryName(mScene.mNativeAddress, index);
                 }
             }
 
@@ -95,7 +95,7 @@ namespace SGE
         public Entity CreateEntity(string name = null)
         {
             string entityName = name ?? string.Empty;
-            uint entityID = InternalCalls.CreateEntity(entityName, mNativeAddress);
+            uint entityID = CoreInternalCalls.CreateEntity(entityName, mNativeAddress);
             return new Entity(entityID, this);
         }
 
@@ -108,7 +108,7 @@ namespace SGE
         public Entity CreateEntity(GUID id, string name = null)
         {
             string entityName = name ?? string.Empty;
-            uint entityID = InternalCalls.CreateEntityWithGUID(id, entityName, mNativeAddress);
+            uint entityID = CoreInternalCalls.CreateEntityWithGUID(id, entityName, mNativeAddress);
 
             return new Entity(entityID, this);
         }
@@ -128,7 +128,7 @@ namespace SGE
             }
 
             string entityName = name ?? string.Empty;
-            uint entityID = InternalCalls.CloneEntity(entity.ID, entityName, mNativeAddress);
+            uint entityID = CoreInternalCalls.CloneEntity(entity.ID, entityName, mNativeAddress);
 
             return new Entity(entityID, this);
         }
@@ -145,7 +145,7 @@ namespace SGE
                 throw new InvalidOperationException("Attempted to destroy an entity with an incompatible scene!");
             }
 
-            InternalCalls.DestroyEntity(entity.ID, mNativeAddress);
+            CoreInternalCalls.DestroyEntity(entity.ID, mNativeAddress);
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace SGE
         public Entity FindEntity(GUID id)
         {
             uint entityID;
-            if (InternalCalls.FindEntity(id, out entityID, mNativeAddress))
+            if (CoreInternalCalls.FindEntity(id, out entityID, mNativeAddress))
             {
                 return new Entity(entityID, this);
             }

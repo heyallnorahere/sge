@@ -33,8 +33,8 @@ namespace SGE.Components
         /// </summary>
         public BodyType BodyType
         {
-            get => InternalCalls.GetBodyType(mAddress);
-            set => InternalCalls.SetBodyType(mAddress, mParent, value);
+            get => CoreInternalCalls.GetBodyType(mAddress);
+            set => CoreInternalCalls.SetBodyType(mAddress, mParent, value);
         }
 
         /// <summary>
@@ -42,8 +42,8 @@ namespace SGE.Components
         /// </summary>
         public bool FixedRotation
         {
-            get => InternalCalls.GetFixedRotation(mAddress);
-            set => InternalCalls.SetFixedRotation(mAddress, mParent, value);
+            get => CoreInternalCalls.GetFixedRotation(mAddress);
+            set => CoreInternalCalls.SetFixedRotation(mAddress, mParent, value);
         }
 
         /// <summary>
@@ -53,10 +53,10 @@ namespace SGE.Components
         {
             get
             {
-                InternalCalls.GetAngularVelocity(mParent, out float velocity);
+                CoreInternalCalls.GetAngularVelocity(mParent, out float velocity);
                 return velocity;
             }
-            set => InternalCalls.SetAngularVelocity(mParent, value);
+            set => CoreInternalCalls.SetAngularVelocity(mParent, value);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace SGE.Components
         /// <param name="wake">Whether to wake the object. Default is true.</param>
         public void AddForce(Vector2 force, bool wake = true)
         {
-            InternalCalls.AddForce(mParent, force, wake);
+            CoreInternalCalls.AddForce(mParent, force, wake);
         }
     }
 
@@ -85,8 +85,8 @@ namespace SGE.Components
         /// </summary>
         public ushort CategoryBits
         {
-            get => InternalCalls.GetFilterCategory(mComponent.Address);
-            set => InternalCalls.SetFilterCategory(mComponent.Address, value);
+            get => CoreInternalCalls.GetFilterCategory(mComponent.Address);
+            set => CoreInternalCalls.SetFilterCategory(mComponent.Address, value);
         }
 
         /// <summary>
@@ -94,8 +94,8 @@ namespace SGE.Components
         /// </summary>
         public ushort MaskBits
         {
-            get => InternalCalls.GetFilterMask(mComponent.Address);
-            set => InternalCalls.SetFilterMask(mComponent.Address, value);
+            get => CoreInternalCalls.GetFilterMask(mComponent.Address);
+            set => CoreInternalCalls.SetFilterMask(mComponent.Address, value);
         }
 
         private readonly RigidBodyComponent mComponent;

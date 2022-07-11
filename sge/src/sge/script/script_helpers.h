@@ -26,6 +26,8 @@ namespace sge {
         script_helpers() = delete;
 
         static void init();
+        static void* get_class();
+
         static void report_exception(void* exception);
 
         static bool property_has_attribute(void* property, void* attribute_type);

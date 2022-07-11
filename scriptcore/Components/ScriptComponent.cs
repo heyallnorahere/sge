@@ -18,12 +18,12 @@ namespace SGE.Components
 {
     public sealed class ScriptComponent : Component<ScriptComponent>
     {
-        public Script Script => InternalCalls.GetScript(mAddress, mParent);
+        public Script Script => CoreInternalCalls.GetScript(mAddress, mParent);
 
         public bool Enabled
         {
-            get => InternalCalls.IsScriptEnabled(mAddress);
-            set => InternalCalls.SetScriptEnabled(mAddress, value);
+            get => CoreInternalCalls.IsScriptEnabled(mAddress);
+            set => CoreInternalCalls.SetScriptEnabled(mAddress, value);
         }
     }
 }

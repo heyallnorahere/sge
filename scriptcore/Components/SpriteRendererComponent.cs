@@ -28,17 +28,17 @@ namespace SGE.Components
             get
             {
                 Vector4 color;
-                InternalCalls.GetColor(mAddress, out color);
+                CoreInternalCalls.GetColor(mAddress, out color);
                 return color;
             }
-            set => InternalCalls.SetColor(mAddress, value);
+            set => CoreInternalCalls.SetColor(mAddress, value);
         }
 
         public Texture2D Texture
         {
             get
             {
-                InternalCalls.GetTexture(mAddress, out IntPtr address);
+                CoreInternalCalls.GetTexture(mAddress, out IntPtr address);
 
                 Texture2D texture = null;
                 if (address != IntPtr.Zero)
@@ -56,7 +56,7 @@ namespace SGE.Components
                     address = value.mAddress;
                 }
 
-                InternalCalls.SetTexture(mAddress, address);
+                CoreInternalCalls.SetTexture(mAddress, address);
             }
         }
 
@@ -64,7 +64,7 @@ namespace SGE.Components
         {
             get
             {
-                InternalCalls.GetShader(mAddress, out IntPtr address);
+                CoreInternalCalls.GetShader(mAddress, out IntPtr address);
 
                 Shader shader = null;
                 if (address != IntPtr.Zero)
@@ -82,7 +82,7 @@ namespace SGE.Components
                     address = value.mAddress;
                 }
 
-                InternalCalls.SetShader(mAddress, Parent, address);
+                CoreInternalCalls.SetShader(mAddress, Parent, address);
             }
         }
     }

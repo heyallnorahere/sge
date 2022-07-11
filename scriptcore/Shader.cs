@@ -29,7 +29,7 @@ namespace SGE
     {
         private static IntPtr Load(string path)
         {
-            InternalCalls.LoadShaderAuto(path, out IntPtr address);
+            CoreInternalCalls.LoadShaderAuto(path, out IntPtr address);
             if (address == IntPtr.Zero)
             {
                 throw new Exception("Failed to load shader!");
@@ -40,7 +40,7 @@ namespace SGE
 
         private static IntPtr Load(string path, ShaderLanguage language)
         {
-            InternalCalls.LoadShaderExplicit(path, language, out IntPtr address);
+            CoreInternalCalls.LoadShaderExplicit(path, language, out IntPtr address);
             if (address == IntPtr.Zero)
             {
                 throw new Exception("Failed to load shader!");
@@ -54,8 +54,8 @@ namespace SGE
 
         internal Shader(IntPtr address) : base(address)
         {
-            InternalCalls.AddRef_shader(address);
+            CoreInternalCalls.AddRef_shader(address);
         }
-        ~Shader() => InternalCalls.RemoveRef_shader(mAddress);
+        ~Shader() => CoreInternalCalls.RemoveRef_shader(mAddress);
     }
 }

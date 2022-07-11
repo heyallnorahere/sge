@@ -24,12 +24,12 @@ namespace SGE.Events
             get
             {
                 KeyCode key;
-                InternalCalls.GetPressedEventKey(mAddress, out key);
+                CoreInternalCalls.GetPressedEventKey(mAddress, out key);
                 return key;
             }
         }
 
-        public int RepeatCount => InternalCalls.GetRepeatCount(mAddress);
+        public int RepeatCount => CoreInternalCalls.GetRepeatCount(mAddress);
     }
 
     [EventID(EventID.KeyReleased)]
@@ -40,7 +40,7 @@ namespace SGE.Events
             get
             {
                 KeyCode key;
-                InternalCalls.GetReleasedEventKey(mAddress, out key);
+                CoreInternalCalls.GetReleasedEventKey(mAddress, out key);
                 return key;
             }
         }
@@ -54,7 +54,7 @@ namespace SGE.Events
             get
             {
                 KeyCode key;
-                InternalCalls.GetTypedEventKey(mAddress, out key);
+                CoreInternalCalls.GetTypedEventKey(mAddress, out key);
                 return key;
             }
         }
@@ -68,7 +68,7 @@ namespace SGE.Events
             get
             {
                 Vector2 position;
-                InternalCalls.GetEventMousePosition(mAddress, out position);
+                CoreInternalCalls.GetEventMousePosition(mAddress, out position);
                 return position;
             }
         }
@@ -82,7 +82,7 @@ namespace SGE.Events
             get
             {
                 Vector2 offset;
-                InternalCalls.GetScrollOffset(mAddress, out offset);
+                CoreInternalCalls.GetScrollOffset(mAddress, out offset);
                 return offset;
             }
         }
@@ -96,11 +96,11 @@ namespace SGE.Events
             get
             {
                 MouseButton button;
-                InternalCalls.GetEventMouseButton(mAddress, out button);
+                CoreInternalCalls.GetEventMouseButton(mAddress, out button);
                 return button;
             }
         }
 
-        public bool Released => InternalCalls.GetMouseButtonReleased(mAddress);
+        public bool Released => CoreInternalCalls.GetMouseButtonReleased(mAddress);
     }
 }

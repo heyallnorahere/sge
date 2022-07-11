@@ -26,34 +26,34 @@ namespace SGE.Components
             get
             {
                 Vector2 size;
-                InternalCalls.GetSize(mAddress, out size);
+                CoreInternalCalls.GetSize(mAddress, out size);
                 return size;
             }
-            set => InternalCalls.SetSize(mAddress, mParent, value);
+            set => CoreInternalCalls.SetSize(mAddress, mParent, value);
         }
 
         public float Density
         {
-            get => InternalCalls.GetDensity(mAddress);
-            set => InternalCalls.SetDensity(mAddress, mParent, value);
+            get => CoreInternalCalls.GetDensity(mAddress);
+            set => CoreInternalCalls.SetDensity(mAddress, mParent, value);
         }
 
         public float Friction
         {
-            get => InternalCalls.GetFriction(mAddress);
-            set => InternalCalls.SetFriction(mAddress, mParent, value);
+            get => CoreInternalCalls.GetFriction(mAddress);
+            set => CoreInternalCalls.SetFriction(mAddress, mParent, value);
         }
 
         public float Restitution
         {
-            get => InternalCalls.GetRestitution(mAddress);
-            set => InternalCalls.SetRestitution(mAddress, mParent, value);
+            get => CoreInternalCalls.GetRestitution(mAddress);
+            set => CoreInternalCalls.SetRestitution(mAddress, mParent, value);
         }
 
         public float RestitutionThreashold
         {
-            get => InternalCalls.GetRestitutionThreashold(mAddress);
-            set => InternalCalls.SetRestitutionThreashold(mAddress, mParent, value);
+            get => CoreInternalCalls.GetRestitutionThreashold(mAddress);
+            set => CoreInternalCalls.SetRestitutionThreashold(mAddress, mParent, value);
         }
     }
 }

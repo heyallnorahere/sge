@@ -17,14 +17,60 @@
 using SGE.Components;
 using SGE.Events;
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace SGE
 {
-    /// <summary>
-    /// Functions defined in sge/script/internal_calls.cpp
-    /// </summary>
-    internal static class InternalCalls
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    internal sealed class InternalCallsAttribute : Attribute
+    {
+        public InternalCallsAttribute(string id)
+        {
+            mID = id;
+        }
+
+        public static Type Find(string id)
+        {
+            var domain = AppDomain.CurrentDomain;
+            var assemblies = domain.GetAssemblies();
+
+            foreach (var assembly in assemblies)
+            {
+                if (assembly.IsDynamic)
+                {
+                    continue;
+                }
+
+                var types = assembly.GetTypes();
+                foreach (var type in types)
+                {
+                    if (!type.IsClass)
+                    {
+                        continue;
+                    }
+
+                    var attribute = type.GetCustomAttribute<InternalCallsAttribute>();
+                    if (attribute == null)
+                    {
+                        continue;
+                    }
+
+                    if (attribute.mID == id)
+                    {
+                        return type;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private readonly string mID;
+    }
+
+    [InternalCalls("core")]
+    internal static class CoreInternalCalls
     {
         // scene
         [MethodImpl(MethodImplOptions.InternalCall)]

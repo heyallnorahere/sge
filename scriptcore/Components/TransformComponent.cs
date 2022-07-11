@@ -26,16 +26,16 @@ namespace SGE.Components
             get
             {
                 Vector2 translation;
-                InternalCalls.GetTranslation(mAddress, out translation);
+                CoreInternalCalls.GetTranslation(mAddress, out translation);
                 return translation;
             }
-            set => InternalCalls.SetTranslation(mAddress, value);
+            set => CoreInternalCalls.SetTranslation(mAddress, value);
         }
 
         public float Rotation
         {
-            get => InternalCalls.GetRotation(mAddress);
-            set => InternalCalls.SetRotation(mAddress, value);
+            get => CoreInternalCalls.GetRotation(mAddress);
+            set => CoreInternalCalls.SetRotation(mAddress, value);
         }
 
         public Vector2 Scale
@@ -43,16 +43,16 @@ namespace SGE.Components
             get
             {
                 Vector2 scale;
-                InternalCalls.GetScale(mAddress, out scale);
+                CoreInternalCalls.GetScale(mAddress, out scale);
                 return scale;
             }
-            set => InternalCalls.SetScale(mAddress, value);
+            set => CoreInternalCalls.SetScale(mAddress, value);
         }
 
         public int ZLayer
         {
-            get => InternalCalls.GetZLayer(mAddress);
-            set => InternalCalls.SetZLayer(mAddress, Parent, value);
+            get => CoreInternalCalls.GetZLayer(mAddress);
+            set => CoreInternalCalls.SetZLayer(mAddress, Parent, value);
         }
     }
 }

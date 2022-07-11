@@ -37,8 +37,8 @@ namespace SGE
     {
         public bool Handled
         {
-            get => InternalCalls.IsEventHandled(mAddress);
-            set => InternalCalls.SetEventHandled(mAddress, value);
+            get => CoreInternalCalls.IsEventHandled(mAddress);
+            set => CoreInternalCalls.SetEventHandled(mAddress, value);
         }
 
         public EventID ID

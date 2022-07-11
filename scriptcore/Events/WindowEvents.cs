@@ -26,7 +26,7 @@ namespace SGE.Events
     [EventID(EventID.WindowResize)]
     public sealed class WindowResizeEvent : Event
     {
-        public int Width => InternalCalls.GetResizeWidth(mAddress);
-        public int Height => InternalCalls.GetResizeHeight(mAddress);
+        public int Width => CoreInternalCalls.GetResizeWidth(mAddress);
+        public int Height => CoreInternalCalls.GetResizeHeight(mAddress);
     }
 }

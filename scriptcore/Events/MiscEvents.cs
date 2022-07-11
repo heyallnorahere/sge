@@ -26,14 +26,14 @@ namespace SGE.Events
     [EventID(EventID.FileChanged)]
     public sealed class FileChangedEvent : Event
     {
-        public string Path => InternalCalls.GetChangedFilePath(mAddress);
-        public string WatchedDirectory => InternalCalls.GetWatchedDirectory(mAddress);
+        public string Path => CoreInternalCalls.GetChangedFilePath(mAddress);
+        public string WatchedDirectory => CoreInternalCalls.GetWatchedDirectory(mAddress);
 
         public FileStatus Status
         {
             get
             {
-                InternalCalls.GetFileStatus(mAddress, out FileStatus status);
+                CoreInternalCalls.GetFileStatus(mAddress, out FileStatus status);
                 return status;
             }
         }

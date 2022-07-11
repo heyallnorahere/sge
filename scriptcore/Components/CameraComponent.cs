@@ -31,31 +31,31 @@ namespace SGE.Components
     /// </summary>
     public sealed class CameraComponent : Component<CameraComponent>
     {
-        public void SetOrthographic(float viewSize, CameraClips clips) => InternalCalls.SetOrthographic(mAddress, viewSize, clips);
-        public void SetPerspective(float fov, CameraClips clips) => InternalCalls.SetPerspective(mAddress, fov, clips);
+        public void SetOrthographic(float viewSize, CameraClips clips) => CoreInternalCalls.SetOrthographic(mAddress, viewSize, clips);
+        public void SetPerspective(float fov, CameraClips clips) => CoreInternalCalls.SetPerspective(mAddress, fov, clips);
 
         public bool Primary
         {
-            get => InternalCalls.GetPrimary(mAddress);
-            set => InternalCalls.SetPrimary(mAddress, value);
+            get => CoreInternalCalls.GetPrimary(mAddress);
+            set => CoreInternalCalls.SetPrimary(mAddress, value);
         }
 
         public ProjectionType ProjectionType
         {
-            get => InternalCalls.GetProjectionType(mAddress);
-            set => InternalCalls.SetProjectionType(mAddress, value);
+            get => CoreInternalCalls.GetProjectionType(mAddress);
+            set => CoreInternalCalls.SetProjectionType(mAddress, value);
         }
 
         public float ViewSize
         {
-            get => InternalCalls.GetViewSize(mAddress);
-            set => InternalCalls.SetViewSize(mAddress, value);
+            get => CoreInternalCalls.GetViewSize(mAddress);
+            set => CoreInternalCalls.SetViewSize(mAddress, value);
         }
 
         public float FOV
         {
-            get => InternalCalls.GetFOV(mAddress);
-            set => InternalCalls.SetFOV(mAddress, value);
+            get => CoreInternalCalls.GetFOV(mAddress);
+            set => CoreInternalCalls.SetFOV(mAddress, value);
         }
 
         public CameraClips OrthographicClips
@@ -63,10 +63,10 @@ namespace SGE.Components
             get
             {
                 CameraClips clips;
-                InternalCalls.GetOrthographicClips(mAddress, out clips);
+                CoreInternalCalls.GetOrthographicClips(mAddress, out clips);
                 return clips;
             }
-            set => InternalCalls.SetOrthographicClips(mAddress, value);
+            set => CoreInternalCalls.SetOrthographicClips(mAddress, value);
         }
 
         public CameraClips PerspectiveClips
@@ -74,10 +74,10 @@ namespace SGE.Components
             get
             {
                 CameraClips clips;
-                InternalCalls.GetPerspectiveClips(mAddress, out clips);
+                CoreInternalCalls.GetPerspectiveClips(mAddress, out clips);
                 return clips;
             }
-            set => InternalCalls.SetPerspectiveClips(mAddress, value);
+            set => CoreInternalCalls.SetPerspectiveClips(mAddress, value);
         }
     }
 }

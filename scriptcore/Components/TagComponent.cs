@@ -23,8 +23,8 @@ namespace SGE.Components
     {
         public string Tag
         {
-            get => InternalCalls.GetTag(mAddress);
-            set => InternalCalls.SetTag(mAddress, value);
+            get => CoreInternalCalls.GetTag(mAddress);
+            set => CoreInternalCalls.SetTag(mAddress, value);
         }
     }
 }

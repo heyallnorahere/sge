@@ -18,15 +18,15 @@ namespace SGE
 {
     public static class Input
     {
-        public static bool GetKey(KeyCode key) => InternalCalls.GetKey(key);
-        public static bool GetMouseButton(MouseButton button) => InternalCalls.GetMouseButton(button);
+        public static bool GetKey(KeyCode key) => CoreInternalCalls.GetKey(key);
+        public static bool GetMouseButton(MouseButton button) => CoreInternalCalls.GetMouseButton(button);
 
         public static Vector2 MousePosition
         {
             get
             {
                 Vector2 position;
-                InternalCalls.GetMousePosition(out position);
+                CoreInternalCalls.GetMousePosition(out position);
                 return position;
             }
         }

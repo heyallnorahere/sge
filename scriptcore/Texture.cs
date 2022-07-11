@@ -36,7 +36,7 @@ namespace SGE
     {
         private static IntPtr Load(string path)
         {
-            InternalCalls.LoadTexture2D(path, out IntPtr address);
+            CoreInternalCalls.LoadTexture2D(path, out IntPtr address);
             if (address == IntPtr.Zero)
             {
                 throw new FileNotFoundException();
@@ -48,12 +48,12 @@ namespace SGE
         public Texture2D(string path) : base(Load(path)) { }
         internal Texture2D(IntPtr address) : base(address)
         {
-            InternalCalls.AddRef_texture_2d(mAddress);
+            CoreInternalCalls.AddRef_texture_2d(mAddress);
         }
 
-        ~Texture2D() => InternalCalls.RemoveRef_texture_2d(mAddress);
+        ~Texture2D() => CoreInternalCalls.RemoveRef_texture_2d(mAddress);
 
-        public TextureWrap Wrap => InternalCalls.GetWrapTexture2D(mAddress);
-        public TextureFilter Filter => InternalCalls.GetFilterTexture2D(mAddress);
+        public TextureWrap Wrap => CoreInternalCalls.GetWrapTexture2D(mAddress);
+        public TextureFilter Filter => CoreInternalCalls.GetFilterTexture2D(mAddress);
     }
 }

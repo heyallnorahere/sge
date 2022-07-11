@@ -45,7 +45,7 @@ namespace SGE
 
             return new T
             {
-                Address = InternalCalls.AddComponent(typeof(T), this),
+                Address = CoreInternalCalls.AddComponent(typeof(T), this),
                 Parent = this
             };
         }
@@ -55,7 +55,7 @@ namespace SGE
         /// </summary>
         /// <typeparam name="T">A type of a component.</typeparam>
         /// <returns>See above.</returns>
-        public bool HasComponent<T>() => InternalCalls.HasComponent(typeof(T), this);
+        public bool HasComponent<T>() => CoreInternalCalls.HasComponent(typeof(T), this);
 
         /// <summary>
         /// Retrieves a component of the specified type.
@@ -71,7 +71,7 @@ namespace SGE
 
             return new T
             {
-                Address = InternalCalls.GetComponent(typeof(T), this),
+                Address = CoreInternalCalls.GetComponent(typeof(T), this),
                 Parent = this
             };
         }
@@ -83,7 +83,7 @@ namespace SGE
         {
             get
             {
-                InternalCalls.GetGUID(mID, mScene.mNativeAddress, out GUID guid);
+                CoreInternalCalls.GetGUID(mID, mScene.mNativeAddress, out GUID guid);
                 return guid;
             }
         }

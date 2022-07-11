@@ -74,7 +74,7 @@ namespace SGE
 
         internal static Asset FromPointer(IntPtr address)
         {
-            InternalCalls.GetAssetType(address, out AssetType type);
+            CoreInternalCalls.GetAssetType(address, out AssetType type);
             if (!sAssetConstructors.ContainsKey(type))
             {
                 return null;
@@ -89,20 +89,20 @@ namespace SGE
             mAddress = address;
         }
 
-        public bool Reload() => InternalCalls.ReloadAsset(mAddress);
+        public bool Reload() => CoreInternalCalls.ReloadAsset(mAddress);
 
-        public string Path => InternalCalls.GetAssetPath(mAddress);
+        public string Path => CoreInternalCalls.GetAssetPath(mAddress);
 
         public AssetType Type
         {
             get
             {
-                InternalCalls.GetAssetType(mAddress, out AssetType type);
+                CoreInternalCalls.GetAssetType(mAddress, out AssetType type);
                 return type;
             }
         }
 
-        public GUID GUID => InternalCalls.GetAssetGUID(mAddress);
+        public GUID GUID => CoreInternalCalls.GetAssetGUID(mAddress);
 
         internal readonly IntPtr mAddress;
     }

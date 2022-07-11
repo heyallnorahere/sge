@@ -22,28 +22,28 @@ namespace SGE
         public static void Debug(string message, params object[] args)
         {
             string formattedString = string.Format(message, args);
-            InternalCalls.LogDebug(formattedString);
+            CoreInternalCalls.LogDebug(formattedString);
         }
 
         public static void Info(object data) => Info(data.ToString());
         public static void Info(string message, params object[] args)
         {
             string formattedString = string.Format(message, args);
-            InternalCalls.LogInfo(formattedString);
+            CoreInternalCalls.LogInfo(formattedString);
         }
 
         public static void Warn(object data) => Warn(data.ToString());
         public static void Warn(string message, params object[] args)
         {
             string formattedString = string.Format(message, args);
-            InternalCalls.LogWarn(formattedString);
+            CoreInternalCalls.LogWarn(formattedString);
         }
 
         public static void Error(object data) => Error(data.ToString());
         public static void Error(string message, params object[] args)
         {
             string formattedString = string.Format(message, args);
-            InternalCalls.LogError(formattedString);
+            CoreInternalCalls.LogError(formattedString);
         }
     }
 }

@@ -23,21 +23,21 @@ namespace SGE
     {
         private static IntPtr Create(Entity entity)
         {
-            InternalCalls.CreatePrefab(entity, out IntPtr address);
+            CoreInternalCalls.CreatePrefab(entity, out IntPtr address);
             return address;
         }
 
         public Prefab(Entity entity) : base(Create(entity)) { }
         internal Prefab(IntPtr address) : base(address)
         {
-            InternalCalls.AddRef_prefab(address);
+            CoreInternalCalls.AddRef_prefab(address);
         }
 
-        ~Prefab() => InternalCalls.RemoveRef_prefab(mAddress);
+        ~Prefab() => CoreInternalCalls.RemoveRef_prefab(mAddress);
 
         public Entity Instantiate(Scene scene)
         {
-            return InternalCalls.InstantiatePrefab(mAddress, scene.mNativeAddress);
+            return CoreInternalCalls.InstantiatePrefab(mAddress, scene.mNativeAddress);
         }
     }
 }

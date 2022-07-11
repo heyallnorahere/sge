@@ -25,6 +25,8 @@ namespace sge {
         register_property_handlers();
     }
 
+    void* script_helpers::get_class() { return managed_helpers_class; }
+
     void script_helpers::report_exception(void* exception) {
         void* method = script_engine::get_method(managed_helpers_class, "ReportException");
         script_engine::call_method(nullptr, method, exception);
