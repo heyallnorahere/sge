@@ -302,8 +302,6 @@ namespace sgm {
         {
             popup_manager::popup_data data;
             data.callback = [this]() mutable {
-                ImGuiStyle& style = ImGui::GetStyle();
-
                 std::string text;
                 switch (m_filter_editor_data.type) {
                 case filter_editor_type::category:
@@ -315,7 +313,7 @@ namespace sgm {
                 }
 
                 ImGui::Text("%s", text.c_str());
-                ImGui::Separator();
+                ImGuiStyle& style = ImGui::GetStyle();
 
                 auto _scene = editor_scene::get_scene();
                 uint16_t& field = *m_filter_editor_data.field;

@@ -231,6 +231,7 @@ namespace sge {
         }
 
         m_registry.destroy(e);
+        recalculate_render_order();
     }
 
     void scene::clear() {

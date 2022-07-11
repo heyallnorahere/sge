@@ -101,29 +101,36 @@ namespace sgm {
         filter_editor_data_t m_filter_editor_data;
     };
 
+    class browser_history;
     class content_browser_panel : public panel {
     public:
         content_browser_panel();
         virtual ~content_browser_panel() override;
 
         virtual void update(timestep ts) override;
-
-        virtual void render() override;
         virtual void on_event(event& e) override;
+
+        virtual void register_popups(popup_manager& popup_manager_) override;
+        virtual void render() override;
 
         virtual std::string get_title() override { return "Content Browser"; }
         virtual panel_id get_id() override { return panel_id::content_browser; }
 
     private:
-        struct asset_extension_data {
+        struct asset_extension_data_t {
             std::string drag_drop_id;
             std::string icon_name;
             std::optional<asset_type> type;
         };
 
-        struct asset_directory_data {
+        struct asset_directory_data_t {
             std::unordered_set<fs::path, path_hasher> files;
             std::unordered_map<fs::path, size_t, path_hasher> directories;
+        };
+
+        struct prefab_override_params_t {
+            std::function<void()> write_callback;
+            fs::path path;
         };
 
         bool on_file_changed(file_changed_event& e);
@@ -132,17 +139,22 @@ namespace sgm {
         ref<texture_2d> get_icon(const fs::path& path);
         std::string get_drag_drop_id(const fs::path& path);
 
-        void build_directory_data(const fs::path& path, asset_directory_data& data);
-        const asset_directory_data& get_directory_data(const fs::path& path);
+        void rebuild_directory_data();
+        void build_directory_data(const fs::path& path, asset_directory_data_t& data);
+        const asset_directory_data_t& get_directory_data(const fs::path& path);
 
         std::unordered_set<fs::path, path_hasher> m_modified_files;
 
-        fs::path m_root, m_current;
+        fs::path m_root;
+        browser_history* m_history;
         float m_padding, m_icon_size;
-        std::unordered_map<fs::path, asset_extension_data, path_hasher> m_extension_data;
+        std::unordered_map<fs::path, asset_extension_data_t, path_hasher> m_extension_data;
 
-        asset_directory_data m_root_data;
-        std::vector<asset_directory_data> m_subdirectories;
+        asset_directory_data_t m_root_data;
+        std::vector<asset_directory_data_t> m_subdirectories;
         bool m_remove_watcher;
+
+        popup_manager* m_popup_manager;
+        prefab_override_params_t* m_prefab_override_params;
     };
 } // namespace sgm

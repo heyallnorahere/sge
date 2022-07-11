@@ -217,6 +217,10 @@ namespace sge {
 
         auto selected_extensions = context.get_device_extensions();
         auto verify_extension = [&](const std::string& name) {
+            if (selected_extensions.find(name) != selected_extensions.end()) {
+                return true;
+            }
+
             bool supported = m_physical_device.is_extension_supported(name);
             if (supported) {
                 selected_extensions.insert(name);
@@ -235,8 +239,10 @@ namespace sge {
         if (verify_extension(VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME) &&
             verify_extension(VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME)) {
             spdlog::info("enabling GPU crash dumping");
+
             auto crash_tracker = new GpuCrashTracker;
             crash_tracker->Initialize();
+            m_crash_tracker = crash_tracker;
 
             aftermath_info = std::make_unique<aftermath_info_t>(vk_init<aftermath_info_t>(
                 VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV));

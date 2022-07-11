@@ -480,17 +480,6 @@ namespace sge {
                         "between reloads, script class {0} was deleted - deleting script data",
                         sc.class_name);
 
-                    std::vector<void*> classes;
-                    iterate_classes(script_engine_data->assemblies[1].image, classes);
-
-                    spdlog::info("classes in the user script assembly:");
-                    for (void* _class : classes) {
-                        class_name_t name;
-                        get_class_name(_class, name);
-                        spdlog::info("\t{0}", get_string(name));
-                    }
-
-                    sc.class_name.clear();
                     continue;
                 }
 

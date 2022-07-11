@@ -18,12 +18,18 @@
 #include "panels/panels.h"
 #include "icon_directory.h"
 #include "texture_cache.h"
+#include "editor_scene.h"
 
 #include <sge/asset/asset_serializers.h>
 #include <sge/renderer/renderer.h>
 #include <sge/renderer/framebuffer.h>
 
+// i absolutely DESPISE regular expressions but here we are
+#include <regex>
+
 namespace sgm {
+    static const std::string overwrite_prefab_popup_name = "Overwrite prefab";
+
     static bool dump_texture(ref<texture_2d> texture, fs::path asset_path) {
         auto data = texture->get_image()->dump();
         if (!data) {
@@ -65,22 +71,92 @@ namespace sgm {
 #endif
     }
 
+    class browser_history {
+    public:
+        browser_history(const fs::path& root) {
+            m_paths.push_back(root);
+            m_current = m_paths.begin();
+        }
+
+        browser_history(const browser_history&) = delete;
+        browser_history& operator=(const browser_history&) = delete;
+
+        bool can_undo() const { return m_current != m_paths.begin(); }
+
+        bool can_redo() const {
+            auto temp = m_current;
+            temp++;
+            return temp != m_paths.end();
+        }
+
+        bool undo() {
+            if (!can_undo()) {
+                return false;
+            }
+
+            m_current--;
+            return true;
+        }
+
+        bool redo() {
+            if (!can_redo()) {
+                return false;
+            }
+
+            m_current++;
+            return true;
+        }
+
+        void push(const fs::path& path) {
+            auto temp = m_current;
+            temp++;
+
+            while (temp != m_paths.end()) {
+                m_paths.erase(temp);
+
+                temp = m_current;
+                temp++;
+            }
+
+            m_paths.insert(m_paths.end(), path);
+            m_current++;
+
+            static constexpr size_t max_paths = 10;
+            while (m_paths.size() > max_paths) {
+                temp = m_paths.begin();
+                m_paths.erase(temp);
+            }
+        }
+
+        const fs::path& get() const { return *m_current; }
+
+    private:
+        using container_t = std::list<fs::path>;
+
+        container_t m_paths;
+        container_t::const_iterator m_current;
+    };
+
     content_browser_panel::content_browser_panel() {
         auto& _project = project::get();
         dump_assets(_project.get_asset_manager());
 
-        m_current = m_root = _project.get_asset_dir();
+        m_root = _project.get_asset_dir();
+        m_history = new browser_history(m_root);
         m_padding = 16.f;
         m_icon_size = 128.f;
 
         build_extension_data();
-        build_directory_data(m_root, m_root_data);
+        rebuild_directory_data();
 
         auto& app = application::get();
         m_remove_watcher = app.watch_directory(m_root);
+
+        m_prefab_override_params = nullptr;
     }
 
     content_browser_panel::~content_browser_panel() {
+        delete m_history;
         if (m_remove_watcher) {
             auto& app = application::get();
             app.remove_watched_directory(m_root);
@@ -109,14 +185,79 @@ namespace sgm {
         m_modified_files.clear();
     }
 
+    void content_browser_panel::on_event(event& e) {
+        event_dispatcher dispatcher(e);
+        dispatcher.dispatch<file_changed_event>(
+            SGE_BIND_EVENT_FUNC(content_browser_panel::on_file_changed));
+    }
+
+    void content_browser_panel::register_popups(popup_manager& popup_manager_) {
+        {
+            popup_manager::popup_data data;
+            data.callback = [this]() mutable {
+                if (m_prefab_override_params == nullptr) {
+                    ImGui::CloseCurrentPopup();
+                    return;
+                }
+
+                std::string string_path = m_prefab_override_params->path.string();
+                ImGui::Text("Overwrite %s?", string_path.c_str());
+
+                bool overwritten = false;
+                if (ImGui::Button("Yes")) {
+                    m_prefab_override_params->write_callback();
+                    overwritten = true;
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("No") || overwritten) {
+                    delete m_prefab_override_params;
+                    m_prefab_override_params = nullptr;
+                }
+            };
+
+            popup_manager_.register_popup(overwrite_prefab_popup_name, data);
+        }
+
+        m_popup_manager = &popup_manager_;
+    }
+
     void content_browser_panel::render() {
-        if (m_current != m_root) {
-            if (ImGui::Button("Back")) {
-                m_current = m_current.parent_path();
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        {
+            auto arrow = icon_directory::get("arrow");
+
+            static constexpr float button_size = 25.f;
+            ImGui::BeginChild("navigation-bar",
+                              ImVec2(0.f, button_size + (style.FramePadding.y * 2.f)));
+
+            ImGui::PushID("undo");
+            ImGui::BeginDisabled(!m_history->can_undo());
+            if (ImGui::ImageButton(arrow->get_imgui_id(), ImVec2(button_size, button_size),
+                                   ImVec2(1.f, 0.f), ImVec2(0.f, 1.f))) {
+                m_history->undo();
             }
 
+            ImGui::EndDisabled();
+            ImGui::PopID();
+            ImGui::SameLine();
+
+            ImGui::PushID("redo");
+            ImGui::BeginDisabled(!m_history->can_redo());
+            if (ImGui::ImageButton(arrow->get_imgui_id(), ImVec2(button_size, button_size))) {
+                m_history->redo();
+            }
+
+            ImGui::EndDisabled();
+            ImGui::PopID();
+
+            ImGui::EndChild();
             ImGui::Separator();
         }
+
+        const auto& current_path = m_history->get();
+        ImGui::BeginChild("directory-items");
 
         float cell_size = m_padding + m_icon_size;
         float panel_width = ImGui::GetContentRegionAvail().x;
@@ -127,12 +268,12 @@ namespace sgm {
         }
 
         ImGui::Columns(column_count, nullptr, false);
-        for (const auto& entry : fs::directory_iterator(m_current)) {
+        for (const auto& entry : fs::directory_iterator(current_path)) {
             fs::path path = fs::absolute(entry.path());
             fs::path asset_path = path.lexically_relative(m_root);
 
             bool irrelevant_asset = false;
-            const auto& directory_data = get_directory_data(m_current);
+            const auto& directory_data = get_directory_data(current_path);
 
             fs::path filename = path.filename();
             if (entry.is_directory()) {
@@ -169,12 +310,13 @@ namespace sgm {
             ImGui::PopStyleColor();
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                 if (entry.is_directory()) {
-                    m_current = path;
+                    m_history->push(path);
                 } else {
                     // maybe some kind of open function?
                 }
             }
 
+            // todo: fix filename display
             {
                 float text_width = ImGui::CalcTextSize(filename_string.c_str()).x;
 
@@ -197,12 +339,71 @@ namespace sgm {
         }
 
         ImGui::Columns(1);
-    }
+        ImGui::EndChild();
 
-    void content_browser_panel::on_event(event& e) {
-        event_dispatcher dispatcher(e);
-        dispatcher.dispatch<file_changed_event>(
-            SGE_BIND_EVENT_FUNC(content_browser_panel::on_file_changed));
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("entity")) {
+                if (editor_scene::running()) {
+                    spdlog::warn("attempted to create a prefab during runtime");
+                } else {
+                    guid id = *(guid*)payload->Data;
+                    entity e = editor_scene::get_scene()->find_guid(id);
+
+                    if (!e) {
+                        throw std::runtime_error("invalid guid passed!");
+                    }
+
+                    std::string tag = e.get_component<tag_component>().tag;
+                    if (tag.empty()) {
+                        tag = "Entity";
+                    }
+
+                    std::regex re("[#%&\\{\\}\\\\<>\\*\\?/\\$\\!'\":@\\+`\\|=]");
+                    std::cmatch match;
+
+                    if (std::regex_search(tag.c_str(), match, re)) {
+                        spdlog::warn("attempted to create prefab with illegal tag - replacing "
+                                     "illegal characters");
+
+                        for (auto& submatch : match) {
+                            if (!submatch.matched) {
+                                continue;
+                            }
+
+                            size_t position = tag.find(submatch.first);
+                            size_t count = strlen(submatch.first);
+
+                            std::string replacement;
+                            for (size_t i = 0; i < count; i++) {
+                                replacement += '-';
+                            }
+
+                            tag.replace(position, count, replacement);
+                        }
+                    }
+
+                    fs::path path = current_path / (tag + ".sgeprefab");
+                    auto write = [e, path, this]() mutable {
+                        prefab::from_entity(e, path);
+                        rebuild_directory_data();
+                    };
+
+                    if (!fs::exists(path)) {
+                        write();
+                    } else if (m_prefab_override_params == nullptr) {
+                        m_prefab_override_params = new prefab_override_params_t;
+                        m_prefab_override_params->write_callback = write;
+                        m_prefab_override_params->path = path;
+
+                        m_popup_manager->open(overwrite_prefab_popup_name);
+                    } else {
+                        spdlog::error("could not open popup!");
+                    }
+                }
+            }
+
+            ImGui::EndDragDropTarget();
+        }
     }
 
     bool content_browser_panel::on_file_changed(file_changed_event& e) {
@@ -262,8 +463,7 @@ namespace sgm {
         }
 
         if (tree_changed) {
-            m_subdirectories.clear();
-            build_directory_data(m_root, m_root_data);
+            rebuild_directory_data();
         }
 
         dump_assets(manager);
@@ -276,13 +476,13 @@ namespace sgm {
         }
 
         auto add_extension_entry = [this](const fs::path& extension,
-                                          const asset_extension_data& data) mutable {
+                                          const asset_extension_data_t& data) mutable {
             m_extension_data.insert(std::make_pair(extension, data));
         };
 
         // images
         {
-            asset_extension_data data;
+            asset_extension_data_t data;
             data.drag_drop_id = "texture_2d";
             data.icon_name = "image";
             data.type = asset_type::texture_2d;
@@ -296,7 +496,7 @@ namespace sgm {
 
         // scenes
         {
-            asset_extension_data data;
+            asset_extension_data_t data;
             data.drag_drop_id = "scene";
             data.icon_name = "file"; // for now
 
@@ -305,7 +505,7 @@ namespace sgm {
 
         // shaders
         {
-            asset_extension_data data;
+            asset_extension_data_t data;
             data.drag_drop_id = "shader";
             data.icon_name = "file"; // for now
             data.type = asset_type::shader;
@@ -319,7 +519,7 @@ namespace sgm {
 
         // scripts
         {
-            asset_extension_data data;
+            asset_extension_data_t data;
             data.drag_drop_id = "script";
             data.icon_name = "file"; // for now
 
@@ -328,7 +528,7 @@ namespace sgm {
 
         // prefabs
         {
-            asset_extension_data data;
+            asset_extension_data_t data;
             data.drag_drop_id = "prefab";
             data.icon_name = "file"; // for now
             data.type = asset_type::prefab;
@@ -378,8 +578,13 @@ namespace sgm {
         return "file";
     }
 
+    void content_browser_panel::rebuild_directory_data() {
+        m_subdirectories.clear();
+        build_directory_data(m_root, m_root_data);
+    }
+
     void content_browser_panel::build_directory_data(const fs::path& path,
-                                                     asset_directory_data& data) {
+                                                     asset_directory_data_t& data) {
         data.files.clear();
         data.directories.clear();
 
@@ -402,7 +607,7 @@ namespace sgm {
                 }
 
                 if (found) {
-                    asset_directory_data subdirectory;
+                    asset_directory_data_t subdirectory;
                     build_directory_data(entry_path, subdirectory);
 
                     data.directories.insert(std::make_pair(filename, m_subdirectories.size()));
@@ -417,11 +622,11 @@ namespace sgm {
         }
     }
 
-    const content_browser_panel::asset_directory_data& content_browser_panel::get_directory_data(
+    const content_browser_panel::asset_directory_data_t& content_browser_panel::get_directory_data(
         const fs::path& path) {
         auto asset_path = path.lexically_relative(m_root);
 
-        asset_directory_data* current = &m_root_data;
+        asset_directory_data_t* current = &m_root_data;
         for (const auto& segment : asset_path) {
             if (segment == ".") {
                 continue;

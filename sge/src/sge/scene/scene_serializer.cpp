@@ -87,7 +87,7 @@ namespace sge {
     }
 
     static json serialize_asset_path(ref<asset> _asset) {
-        if (_asset) {
+        if (!_asset) {
             return nullptr;
         }
 
