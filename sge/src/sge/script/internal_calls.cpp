@@ -476,7 +476,7 @@ namespace sge {
         static bool IsScriptEnabled(script_component* component) { return component->enabled; }
 
         static void SetScriptEnabled(script_component* component, bool enabled) {
-            if (component->gc_handle == 0) {
+            if (!component->instance || component->instance->get() == nullptr) {
                 return;
             }
 
@@ -487,11 +487,11 @@ namespace sge {
             entity e = script_helpers::get_entity_from_object(_entity);
             component->verify_script(e);
 
-            if (component->gc_handle == 0) {
+            if (!component->instance) {
                 return nullptr;
             }
 
-            return garbage_collector::get_ref_data(component->gc_handle);
+            return component->instance->get();
         }
 
         static void* GetChangedFilePath(file_changed_event* e) {
@@ -582,9 +582,10 @@ namespace sge {
         function_registerer(const function_registerer&) = delete;
         function_registerer& operator=(const function_registerer&) = delete;
 
-        void operator()(const std::string& method_name, const void* function) const {
+        template <typename T>
+        void operator()(const std::string& method_name, const T& function) const {
             std::string name = m_class_name + "::" + method_name;
-            s_register_internal_call(name, function);
+            s_register_internal_call(name, (void*)function);
         }
 
     private:

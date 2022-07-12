@@ -24,6 +24,7 @@
 #include "sge/core/guid.h"
 #include "sge/core/meta_register.h"
 #include "sge/scene/scene.h"
+#include "sge/script/garbage_collector.h"
 
 // Components are attached to a registry via the scene object.
 //
@@ -242,7 +243,7 @@ namespace sge {
         script_component(const script_component&) = default;
         script_component& operator=(const script_component&) = default;
 
-        uint32_t gc_handle = 0;
+        ref<object_ref> instance;
         void* _class = nullptr;
         std::string class_name;
         bool enabled = true;

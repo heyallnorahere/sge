@@ -17,7 +17,7 @@
 #include "sgepch.h"
 #include "sge/script/script_helpers.h"
 #include "sge/script/script_engine.h"
-#include "sge/script/garbage_collector.h"
+
 namespace sge {
     static void* managed_helpers_class = nullptr;
     void script_helpers::init() {
@@ -43,7 +43,7 @@ namespace sge {
         return script_engine::unbox_object<bool>(returned);
     }
 
-    uint32_t script_helpers::get_property_attribute(void* property, void* attribute_type) {
+    ref<object_ref> script_helpers::get_property_attribute(void* property, void* attribute_type) {
         void* reflection_property = script_engine::to_reflection_property(property);
         void* reflection_type = script_engine::to_reflection_type(attribute_type);
 
@@ -51,9 +51,9 @@ namespace sge {
         void* returned =
             script_engine::call_method(nullptr, method, reflection_property, reflection_type);
 
-        uint32_t handle = 0;
+        ref<object_ref> handle;
         if (returned != nullptr) {
-            handle = garbage_collector::create_ref(returned);
+            handle = object_ref::from_object(returned);
         }
 
         return handle;

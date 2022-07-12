@@ -402,9 +402,8 @@ namespace sgm {
 
             std::vector<std::string> header_names;
             if (script_helpers::property_has_attribute(property, attribute_type)) {
-                uint32_t attribute =
-                    script_helpers::get_property_attribute(property, attribute_type);
-                void* object = garbage_collector::get_ref_data(attribute);
+                auto attribute = script_helpers::get_property_attribute(property, attribute_type);
+                void* object = attribute->get();
 
                 void* list = script_engine::get_property_value(object, header_names_property);
                 void* list_type = script_engine::get_class_from_object(list);
@@ -420,8 +419,6 @@ namespace sgm {
                     std::string name = script_engine::from_managed_string(returned);
                     header_names.push_back(name);
                 }
-
-                garbage_collector::destroy_ref(attribute);
             } else {
                 header_names.push_back("");
             }
@@ -464,7 +461,7 @@ namespace sgm {
         _scene->verify_script(selection);
 
         auto& sc = selection.get_component<script_component>();
-        void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+        void* instance = sc.instance->get();
 
         if (m_section_header_cache.find(sc._class) == m_section_header_cache.end()) {
             cache_script_class(sc._class);

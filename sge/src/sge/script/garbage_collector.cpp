@@ -20,10 +20,71 @@
 #include <mono/metadata/mono-gc.h>
 namespace sge {
     struct gc_data_t {
-        std::unordered_map<uint32_t, void*> strong_map, weak_map;
+        std::unordered_set<object_ref*> refs;
     };
 
     static std::unique_ptr<gc_data_t> gc_data;
+    bool object_ref::get_all(std::vector<ref<object_ref>>& refs) {
+        refs.clear();
+        if (!gc_data) {
+            return false;
+        }
+
+        for (auto ptr : gc_data->refs) {
+            refs.push_back(ptr);
+        }
+
+        return true;
+    }
+
+    ref<object_ref> object_ref::from_object(void* object) {
+        auto result = ref<object_ref>::create();
+        result->set(object);
+        return result;
+    }
+
+    void object_ref::set(void* object) {
+        if (m_handle != 0) {
+            destroy();
+        }
+
+        auto mono_object = (MonoObject*)object;
+        m_handle = mono_gchandle_new(mono_object, false);
+
+        if (m_handle == 0) {
+            throw std::runtime_error("could not create a garbage collector ref!");
+        }
+
+        gc_data->refs.insert(this);
+    }
+
+    bool object_ref::destroy() {
+        if (m_handle == 0) {
+            return false;
+        }
+
+        mono_gchandle_free(m_handle);
+        gc_data->refs.erase(this);
+
+        reset();
+        return true;
+    }
+
+    void* object_ref::get() {
+        if (m_handle == 0) {
+            return nullptr;
+        }
+
+        MonoObject* object = mono_gchandle_get_target(m_handle);
+        if (object != nullptr && mono_object_get_vtable(object) == nullptr) {
+            return nullptr;
+        }
+
+        return object;
+    }
+
+    void object_ref::reset() { m_handle = 0; }
+
     void garbage_collector::init() {
         if (gc_data) {
             throw std::runtime_error("the garbage collector has already been initialized!");
@@ -37,12 +98,13 @@ namespace sge {
             throw std::runtime_error("the garbage collector has not been initialized!");
         }
 
-        if (!gc_data->strong_map.empty()) {
+        if (!gc_data->refs.empty()) {
             spdlog::warn("a memory leak has been detected!");
+        }
 
-            for (auto [gc_handle, object] : gc_data->strong_map) {
-                mono_gchandle_free(gc_handle);
-            }
+        std::unordered_set<object_ref*> refs(gc_data->refs.begin(), gc_data->refs.end());
+        for (auto object : refs) {
+            object->destroy();
         }
 
         collect(true);
@@ -56,53 +118,6 @@ namespace sge {
             while (mono_gc_pending_finalizers()) {
                 // nothing
             }
-        }
-    }
-
-    uint32_t garbage_collector::create_ref(void* object, bool weak) {
-        auto mono_object = (MonoObject*)object;
-        uint32_t gc_handle;
-
-        if (weak) {
-            gc_handle = mono_gchandle_new_weakref(mono_object, false);
-            gc_data->weak_map.insert(std::make_pair(gc_handle, object));
-        } else {
-            gc_handle = mono_gchandle_new(mono_object, false);
-            gc_data->strong_map.insert(std::make_pair(gc_handle, object));
-        }
-
-        if (gc_handle == 0) {
-            throw std::runtime_error("could not create a garbage collector ref!");
-        }
-        return gc_handle;
-    }
-
-    void garbage_collector::destroy_ref(uint32_t gc_handle) {
-        if (gc_data->strong_map.find(gc_handle) == gc_data->strong_map.end()) {
-            throw std::runtime_error("invalid gc handle!");
-        }
-
-        gc_data->strong_map.erase(gc_handle);
-        mono_gchandle_free(gc_handle);
-    }
-
-    void* garbage_collector::get_ref_data(uint32_t gc_handle) {
-        MonoObject* object = mono_gchandle_get_target(gc_handle);
-        if (object != nullptr && mono_object_get_vtable(object) == nullptr) {
-            return nullptr;
-        }
-
-        return object;
-    }
-
-    void garbage_collector::get_strong_refs(std::vector<uint32_t>& handles) {
-        handles.clear();
-        if (gc_data->strong_map.empty()) {
-            return;
-        }
-
-        for (auto [handle, object] : gc_data->strong_map) {
-            handles.push_back(handle);
         }
     }
 } // namespace sge

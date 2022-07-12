@@ -333,12 +333,12 @@ namespace sge {
 
             _scene->for_each<script_component>([&](entity e) {
                 auto& sc = e.get_component<script_component>();
-                if (sc.gc_handle == 0) {
+                if (!sc.instance || sc.instance->get() == nullptr) {
                     return; // if the script isn't already initialized, theres nothing to save
                 }
 
                 void* _class = sc._class;
-                void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+                void* instance = sc.instance->get();
 
                 std::vector<void*> properties;
                 iterate_properties(_class, properties);
@@ -443,8 +443,7 @@ namespace sge {
                 guid id = e.get_guid();
                 entity_data.insert(std::make_pair(id, property_values));
 
-                garbage_collector::destroy_ref(sc.gc_handle);
-                sc.gc_handle = 0;
+                sc.instance.reset();
                 sc._class = nullptr;
             });
 
@@ -484,7 +483,7 @@ namespace sge {
                 }
 
                 sc.verify_script(current_entity);
-                void* script_object = garbage_collector::get_ref_data(sc.gc_handle);
+                void* script_object = sc.instance->get();
 
                 for (const auto& [property_name, data] : property_values) {
                     void* property = get_property(sc._class, property_name);

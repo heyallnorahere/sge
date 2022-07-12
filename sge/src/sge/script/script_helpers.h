@@ -19,6 +19,7 @@
 #include "sge/scene/entity.h"
 #include "sge/asset/json.h"
 #include "sge/asset/asset.h"
+#include "sge/script/garbage_collector.h"
 
 namespace sge {
     class script_helpers {
@@ -31,7 +32,7 @@ namespace sge {
         static void report_exception(void* exception);
 
         static bool property_has_attribute(void* property, void* attribute_type);
-        static uint32_t get_property_attribute(void* property, void* attribute_type);
+        static ref<object_ref> get_property_attribute(void* property, void* attribute_type);
 
         static void get_enum_value_names(void* _class, std::vector<std::string>& names);
         static int32_t parse_enum(const std::string& value, void* enum_type);

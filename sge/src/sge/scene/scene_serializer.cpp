@@ -217,8 +217,8 @@ namespace sge {
         data["enabled"] = component.enabled;
         data["properties"] = nullptr;
 
-        if (component.gc_handle != 0) {
-            void* instance = garbage_collector::get_ref_data(component.gc_handle);
+        if (component.instance && component.instance->get() != nullptr) {
+            void* instance = component.instance->get();
 
             std::vector<void*> properties;
             script_engine::iterate_properties(component._class, properties);
@@ -244,8 +244,9 @@ namespace sge {
     struct script_deserializer {
         void operator()(json property_data, script_component& component) {
             entity current_entity = current_serialization->current_entity;
+
             component.verify_script(current_entity);
-            void* instance = garbage_collector::get_ref_data(component.gc_handle);
+            void* instance = component.instance->get();
 
             std::vector<void*> properties;
             script_engine::iterate_properties(component._class, properties);

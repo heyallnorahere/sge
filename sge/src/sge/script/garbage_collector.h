@@ -16,6 +16,46 @@
 
 #pragma once
 namespace sge {
+    class object_ref : public ref_counted {
+    public:
+        static bool get_all(std::vector<ref<object_ref>>& refs);
+        static ref<object_ref> from_object(void* object);
+
+        object_ref() { reset(); }
+        ~object_ref() { destroy(); }
+
+        object_ref(const object_ref&) = delete;
+        object_ref& operator=(const object_ref&) = delete;
+
+        void set(void* object);
+        bool destroy();
+
+        void* get();
+
+    private:
+        void reset();
+
+        uint32_t m_handle;
+    };
+
+    struct scope_ref {
+    public:
+        scope_ref(ref<object_ref> object) {
+            m_ref = object;
+            if (!m_ref || m_ref->get() == nullptr) {
+                throw std::runtime_error("invalid ref!");
+            }
+        }
+
+        ~scope_ref() { m_ref->destroy(); }
+
+        scope_ref(const scope_ref&) = delete;
+        scope_ref& operator=(const scope_ref&) = delete;
+
+    private:
+        ref<object_ref> m_ref;
+    };
+
     class garbage_collector {
     public:
         garbage_collector() = delete;
@@ -23,10 +63,5 @@ namespace sge {
         static void init();
         static void shutdown();
         static void collect(bool wait = false);
-
-        static uint32_t create_ref(void* object, bool weak = false);
-        static void destroy_ref(uint32_t gc_handle);
-        static void* get_ref_data(uint32_t gc_handle);
-        static void get_strong_refs(std::vector<uint32_t>& handles);
     };
 } // namespace sge

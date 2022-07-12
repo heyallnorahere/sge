@@ -92,7 +92,7 @@ namespace sge {
                     void* OnCollision = script_engine::get_method(sc._class, event_name);
 
                     if (OnCollision != nullptr) {
-                        void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+                        void* instance = sc.instance->get();
 
                         void* param = script_helpers::create_entity_object(entity_b);
                         script_engine::call_method(instance, OnCollision, param);
@@ -108,7 +108,7 @@ namespace sge {
                     void* OnCollision = script_engine::get_method(sc._class, event_name);
 
                     if (OnCollision != nullptr) {
-                        void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+                        void* instance = sc.instance->get();
 
                         void* param = script_helpers::create_entity_object(entity_a);
                         script_engine::call_method(instance, OnCollision, param);
@@ -581,7 +581,7 @@ namespace sge {
 
                 void* OnStart = script_engine::get_method(sc._class, "OnStart()");
                 if (OnStart != nullptr) {
-                    void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+                    void* instance = sc.instance->get();
                     script_engine::call_method(instance, OnStart);
                 }
             }
@@ -603,7 +603,7 @@ namespace sge {
 
                 void* OnStop = script_engine::get_method(sc._class, "OnStop()");
                 if (OnStop != nullptr) {
-                    void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+                    void* instance = sc.instance->get();
                     script_engine::call_method(instance, OnStop);
                 }
             }
@@ -647,7 +647,7 @@ namespace sge {
 
                 void* OnUpdate = script_engine::get_method(sc._class, "OnUpdate(Timestep)");
                 if (OnUpdate != nullptr) {
-                    void* instance = garbage_collector::get_ref_data(sc.gc_handle);
+                    void* instance = sc.instance->get();
 
                     double timestep_data = ts.count();
                     script_engine::call_method(instance, OnUpdate, &timestep_data);
@@ -783,12 +783,12 @@ namespace sge {
 
         // managed scripts
         {
-            uint32_t event_handle = 0;
+            ref<object_ref> event_handle;
 
             auto view = m_registry.view<script_component>();
             for (entt::entity id : view) {
                 if (e.handled) {
-                    continue;
+                    break;
                 }
 
                 entity current(id, this);
@@ -803,24 +803,20 @@ namespace sge {
                     continue;
                 }
 
-                if (event_handle == 0) {
+                if (!event_handle) {
                     void* event_instance = script_helpers::create_event_object(e);
                     if (event_instance == nullptr) {
                         break;
                     }
 
-                    event_handle = garbage_collector::create_ref(event_instance);
+                    event_handle = object_ref::from_object(event_instance);
                 }
 
                 verify_script(current);
-                void* script_instance = garbage_collector::get_ref_data(sc.gc_handle);
+                void* script_instance = sc.instance->get();
 
-                void* event_instance = garbage_collector::get_ref_data(event_handle);
+                void* event_instance = event_handle->get();
                 script_engine::call_method(script_instance, OnEvent, event_instance);
-            }
-
-            if (event_handle != 0) {
-                garbage_collector::destroy_ref(event_handle);
             }
         }
     }

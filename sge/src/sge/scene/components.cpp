@@ -42,11 +42,11 @@ namespace sge {
         cdst.class_name = csrc.class_name;
         cdst.enabled = csrc.enabled;
 
-        if (csrc.gc_handle != 0) {
+        if (csrc.instance && csrc.instance->get() != nullptr) {
             cdst.verify_script(dst);
 
-            void* src_instance = garbage_collector::get_ref_data(csrc.gc_handle);
-            void* dst_instance = garbage_collector::get_ref_data(cdst.gc_handle);
+            void* src_instance = csrc.instance->get();
+            void* dst_instance = cdst.instance->get();
 
             std::vector<void*> properties;
             script_engine::iterate_properties(csrc._class, properties);
@@ -102,13 +102,13 @@ namespace sge {
     }
 
     void script_component::verify_script(entity e) {
-        if (_class != nullptr && gc_handle == 0) {
-            void* instance = script_engine::alloc_object(_class);
+        if (_class != nullptr && !instance) {
+            void* object = script_engine::alloc_object(_class);
 
             if (script_engine::get_method(_class, ".ctor") != nullptr) {
                 void* constructor = script_engine::get_method(_class, ".ctor()");
                 if (constructor != nullptr) {
-                    script_engine::call_method(instance, constructor);
+                    script_engine::call_method(object, constructor);
                 } else {
                     class_name_t name_data;
                     script_engine::get_class_name(_class, name_data);
@@ -118,24 +118,20 @@ namespace sge {
                                              full_name);
                 }
             } else {
-                script_engine::init_object(instance);
+                script_engine::init_object(object);
             }
 
             void* entity_instance = script_helpers::create_entity_object(e);
             void* entity_field = script_engine::get_field(_class, "__internal_mEntity");
-            script_engine::set_field_value(instance, entity_field, entity_instance);
+            script_engine::set_field_value(object, entity_field, entity_instance);
 
-            gc_handle = garbage_collector::create_ref(instance);
+            instance = object_ref::from_object(object);
         }
     }
 
     void script_component::remove_script() {
         if (_class != nullptr) {
-            if (gc_handle != 0) {
-                garbage_collector::destroy_ref(gc_handle);
-                gc_handle = 0;
-            }
-
+            instance.reset();
             _class = nullptr;
         }
     }
