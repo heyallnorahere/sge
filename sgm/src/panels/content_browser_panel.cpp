@@ -267,6 +267,7 @@ namespace sgm {
             column_count = 1;
         }
 
+        std::unordered_set<fs::path, path_hasher> to_delete;
         ImGui::Columns(column_count, nullptr, false);
         for (const auto& entry : fs::directory_iterator(current_path)) {
             fs::path path = fs::absolute(entry.path());
@@ -307,6 +308,14 @@ namespace sgm {
                 ImGui::EndDragDropSource();
             }
 
+            if (ImGui::BeginPopupContextItem()) {
+                if (ImGui::MenuItem("Delete")) {
+                    to_delete.insert(path);
+                }
+
+                ImGui::EndPopup();
+            }
+
             ImGui::PopStyleColor();
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                 if (entry.is_directory()) {
@@ -340,6 +349,20 @@ namespace sgm {
 
         ImGui::Columns(1);
         ImGui::EndChild();
+
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+            ImGui::OpenPopup("item-context");
+        }
+
+        if (ImGui::BeginPopup("item-context")) {
+            // todo: add items
+
+            ImGui::EndPopup();
+        }
+
+        for (const auto& path : to_delete) {
+            fs::remove_all(path);
+        }
 
         if (ImGui::BeginDragDropTarget()) {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("entity")) {
