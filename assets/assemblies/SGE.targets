@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <OutDir>$(MSBuildThisFileDirectory)\$(Configuration)\$(AssemblyName)</OutDir>
+    <OutDir>$(MSBuildThisFileDirectory)\$(Configuration)</OutDir>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">

@@ -54,7 +54,7 @@ namespace sge {
         if (script_engine_data->assemblies.empty()) {
             script_engine::load_assembly(fs::current_path() / "assets" / "assemblies" /
                                          project::get_config(application::get().is_editor()) /
-                                         "SGE.Scriptcore" / "SGE.Scriptcore.dll");
+                                         "SGE.Scriptcore.dll");
 
             script_engine::register_internal_script_calls();
             script_helpers::init();

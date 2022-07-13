@@ -63,8 +63,7 @@ namespace sgm {
 #endif
 
                 fs::path debugger_path = fs::current_path() / "assets/assemblies" /
-                                         debugger_configuration / "SGE.Debugger" /
-                                         "SGE.Debugger.exe";
+                                         debugger_configuration / "SGE.Debugger.exe";
 
 #ifdef SGE_PLATFORM_WINDOWS
                 p_info.executable = debugger_path;

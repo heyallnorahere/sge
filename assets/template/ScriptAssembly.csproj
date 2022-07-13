@@ -12,6 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="$(SGE_DIR)\assets\assemblies\$(Configuration)\SGE.Scriptcore\SGE.Scriptcore.dll" />
+    <Reference Include="$(SGE_DIR)\assets\assemblies\$(Configuration)\SGE.Scriptcore.dll" />
   </ItemGroup>
 </Project>

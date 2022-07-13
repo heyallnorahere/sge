@@ -93,45 +93,47 @@ set_target_properties(sgm launcher PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 
 # managed code
 if(SGE_BUILD_SCRIPTCORE)
-    set(MANAGED_PROJECTS
-        "${CMAKE_SOURCE_DIR}/scriptcore/scriptcore.csproj~core")
+    set(CSHARP_DIR "${CMAKE_SOURCE_DIR}/csharp")
+    if(MSVC)
+        set(MANAGED_PROJECTS
+            "${CSHARP_DIR}/SGE.Scriptcore/SGE.Scriptcore.csproj~core")
 
-    foreach(PROJECT_DESC ${MANAGED_PROJECTS})
-        string(FIND ${PROJECT_DESC} "~" SEPARATOR_POS REVERSE)
-        string(LENGTH ${PROJECT_DESC} DESC_LENGTH)
+        foreach(PROJECT_DESC ${MANAGED_PROJECTS})
+            string(FIND ${PROJECT_DESC} "~" SEPARATOR_POS REVERSE)
+            string(LENGTH ${PROJECT_DESC} DESC_LENGTH)
 
-        if(${SEPARATOR_POS} LESS 0)
-            message(FATAL_ERROR "Malformed project description!")
-        endif()
+            if(${SEPARATOR_POS} LESS 0)
+                message(FATAL_ERROR "Malformed project description!")
+            endif()
 
-        string(SUBSTRING ${PROJECT_DESC} 0 ${SEPARATOR_POS} PROJECT_PATH)
-        cmake_path(GET PROJECT_PATH FILENAME PROJECT_FILENAME)
+            string(SUBSTRING ${PROJECT_DESC} 0 ${SEPARATOR_POS} PROJECT_PATH)
+            cmake_path(GET PROJECT_PATH FILENAME PROJECT_FILENAME)
 
-        math(EXPR FOLDER_START "${SEPARATOR_POS} + 1")
-        math(EXPR FOLDER_LENGTH "${DESC_LENGTH} - ${FOLDER_START}")
-        string(SUBSTRING ${PROJECT_DESC} ${FOLDER_START} ${FOLDER_LENGTH} PROJECT_FOLDER)
+            math(EXPR FOLDER_START "${SEPARATOR_POS} + 1")
+            math(EXPR FOLDER_LENGTH "${DESC_LENGTH} - ${FOLDER_START}")
+            string(SUBSTRING ${PROJECT_DESC} ${FOLDER_START} ${FOLDER_LENGTH} PROJECT_FOLDER)
 
-        string(FIND ${PROJECT_FILENAME} "." SEPARATOR_POS REVERSE)
-        if(${SEPARATOR_POS} LESS 0)
-            message(FATAL_ERROR "Malformed project path!")
-        endif()
+            string(FIND ${PROJECT_FILENAME} "." SEPARATOR_POS REVERSE)
+            if(${SEPARATOR_POS} LESS 0)
+                message(FATAL_ERROR "Malformed project path!")
+            endif()
 
-        string(SUBSTRING ${PROJECT_FILENAME} 0 ${SEPARATOR_POS} MANAGED_PROJECT_NAME)
-        if(MSVC)
+            string(SUBSTRING ${PROJECT_FILENAME} 0 ${SEPARATOR_POS} MANAGED_PROJECT_NAME)
             include_external_msproject(${MANAGED_PROJECT_NAME} ${PROJECT_PATH})
             set_target_properties(${MANAGED_PROJECT_NAME} PROPERTIES FOLDER ${PROJECT_FOLDER})
-        else()
-            string(FIND ${PROJECT_PATH} "vendor" POS)
+        endforeach()
 
-            if(${POS} LESS 0)
-                add_custom_target(${MANAGED_PROJECT_NAME} ALL
-                    COMMAND ${DOTNET_EXE} build --nologo -v m -c $<CONFIG> -a ${SGE_CPU_ARCHITECTURE} ${PROJECT_PATH}
-                    COMMENT "Building managed project: ${MANAGED_PROJECT_NAME}")
-            endif()
-        endif()
-    endforeach()
+        set(SCRIPTCORE_NAME SGE.Scriptcore)
+    else()
+        set(SCRIPTCORE_NAME managed)
+        set(SLN_PATH "${CSHARP_DIR}/csharp.sln")
 
-    add_dependencies(sge scriptcore)
+        add_custom_target(${SCRIPTCORE_NAME} ALL
+            COMMAND ${DOTNET_EXE} build --nologo -v m -c $<CONFIG> -a ${SGE_CPU_ARCHITECTURE} ${SLN_PATH}
+            COMMENT "Building managed projects...")
+    endif()
+
+    add_dependencies(sge ${SCRIPTCORE_NAME})
 endif()
 
 if(MSVC)

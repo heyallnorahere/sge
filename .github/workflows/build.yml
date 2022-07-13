@@ -34,6 +34,6 @@ jobs:
       - name: build
         shell: bash
         run: |
-          dotnet restore scriptcore/scriptcore.csproj
+          dotnet restore csharp/csharp.sln
           cmake --preset default
           cmake --build --preset default
