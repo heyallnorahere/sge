@@ -129,7 +129,7 @@ if(SGE_BUILD_SCRIPTCORE)
         set(SLN_PATH "${CSHARP_DIR}/csharp.sln")
 
         add_custom_target(${SCRIPTCORE_NAME} ALL
-            COMMAND ${DOTNET_EXE} build --nologo -v m -c $<CONFIG> -a ${SGE_CPU_ARCHITECTURE} ${SLN_PATH}
+            COMMAND ${DOTNET_EXE} build --nologo -v m -c $<CONFIG> ${SLN_PATH}
             COMMENT "Building managed projects...")
     endif()
 

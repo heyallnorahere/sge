@@ -37,24 +37,29 @@ namespace sge {
         return true;
     }
 
-    ref<object_ref> object_ref::from_object(void* object) {
+    ref<object_ref> object_ref::from_object(void* object, bool weak) {
         auto result = ref<object_ref>::create();
-        result->set(object);
+        result->set(object, weak);
         return result;
     }
 
-    void object_ref::set(void* object) {
+    void object_ref::set(void* object, bool weak) {
         if (m_handle != 0) {
             destroy();
         }
 
         auto mono_object = (MonoObject*)object;
-        m_handle = mono_gchandle_new(mono_object, false);
+        if (weak) {
+            m_handle = mono_gchandle_new_weakref(mono_object, false);
+        } else {
+            m_handle = mono_gchandle_new(mono_object, false);
+        }
 
         if (m_handle == 0) {
             throw std::runtime_error("could not create a garbage collector ref!");
         }
 
+        m_weak = weak;
         gc_data->refs.insert(this);
     }
 
@@ -63,11 +68,17 @@ namespace sge {
             return false;
         }
 
-        mono_gchandle_free(m_handle);
-        gc_data->refs.erase(this);
+        bool destroyed = true;
+        if (!m_weak) {
+            mono_gchandle_free(m_handle);
+        } else if (get() == nullptr) {
+            destroyed = false;
+        }
 
+        gc_data->refs.erase(this);
         reset();
-        return true;
+
+        return destroyed;
     }
 
     void* object_ref::get() {
@@ -80,10 +91,17 @@ namespace sge {
             return nullptr;
         }
 
+        if (m_weak && object == nullptr) {
+            destroy();
+        }
+
         return object;
     }
 
-    void object_ref::reset() { m_handle = 0; }
+    void object_ref::reset() {
+        m_handle = 0;
+        m_weak = false;
+    }
 
     void garbage_collector::init() {
         if (gc_data) {

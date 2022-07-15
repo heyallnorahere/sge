@@ -304,13 +304,21 @@ namespace sge {
             queue_create_info.push_back(create_info);
         }
 
+        VkPhysicalDeviceFeatures device_features, enabled_features;
+        m_physical_device.get_features(device_features);
+        memset(&enabled_features, 0, sizeof(VkPhysicalDeviceFeatures));
+
+        // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkPhysicalDeviceFeatures.html
+        // use the macro for every device feature used, preferably in specification order
+#define ENABLE_DEVICE_FEATURE(feature) enabled_features.feature = device_features.feature
+        ENABLE_DEVICE_FEATURE(geometryShader);
+        ENABLE_DEVICE_FEATURE(samplerAnisotropy);
+#undef ENABLE_DEVICE_FEATURE
+
         auto create_info = vk_init<VkDeviceCreateInfo>(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
         create_info.pQueueCreateInfos = queue_create_info.data();
         create_info.queueCreateInfoCount = queue_create_info.size();
-
-        VkPhysicalDeviceFeatures features;
-        m_physical_device.get_features(features);
-        create_info.pEnabledFeatures = &features;
+        create_info.pEnabledFeatures = &enabled_features;
 
         if (!device_extensions.empty()) {
             create_info.ppEnabledExtensionNames = device_extensions.data();

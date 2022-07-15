@@ -19,7 +19,7 @@ namespace sge {
     class object_ref : public ref_counted {
     public:
         static bool get_all(std::vector<ref<object_ref>>& refs);
-        static ref<object_ref> from_object(void* object);
+        static ref<object_ref> from_object(void* object, bool weak = false);
 
         object_ref() { reset(); }
         ~object_ref() { destroy(); }
@@ -27,7 +27,7 @@ namespace sge {
         object_ref(const object_ref&) = delete;
         object_ref& operator=(const object_ref&) = delete;
 
-        void set(void* object);
+        void set(void* object, bool weak = false);
         bool destroy();
 
         void* get();
@@ -36,6 +36,7 @@ namespace sge {
         void reset();
 
         uint32_t m_handle;
+        bool m_weak;
     };
 
     struct scope_ref {
