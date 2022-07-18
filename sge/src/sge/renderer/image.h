@@ -17,10 +17,10 @@
 #pragma once
 namespace sge {
     enum class image_format {
-        RGB8_UINT,
+        RGB8_UNORM,
         RGB8_SRGB,
 
-        RGBA8_UINT,
+        RGBA8_UNORM,
         RGBA8_SRGB,
     };
 
@@ -69,7 +69,7 @@ namespace sge {
     };
 
     struct image_spec {
-        image_format format = image_format::RGBA8_UINT;
+        image_format format = image_format::RGBA8_UNORM;
         uint32_t image_usage = image_usage_none;
 
         uint32_t width = 1;

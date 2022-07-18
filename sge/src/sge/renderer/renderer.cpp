@@ -137,19 +137,25 @@ namespace sge {
         renderer_data.grid_buffer = uniform_buffer::create(sizeof(grid_data_t));
 
         {
+            static constexpr image_format format = image_format::RGBA8_UNORM;
+            static constexpr uint32_t width = 1;
+            static constexpr uint32_t height = 1;
+
             texture_spec spec;
             spec.filter = texture_filter::linear;
             spec.wrap = texture_wrap::repeat;
 
             std::vector<uint8_t> data = { 0, 0, 0, 255 };
-            auto img_data = image_data::create(data.data(), data.size() * sizeof(uint8_t), 1, 1,
-                                               image_format::RGBA8_SRGB);
+            auto img_data = image_data::create(data.data(), data.size() * sizeof(uint8_t), width,
+                                               height, format);
+
             spec.image = image_2d::create(img_data, image_usage_texture);
             renderer_data.black_texture = texture_2d::create(spec);
 
             data = { 255, 255, 255, 255 };
-            img_data = image_data::create(data.data(), data.size() * sizeof(uint8_t), 1, 1,
-                                          image_format::RGBA8_SRGB);
+            img_data = image_data::create(data.data(), data.size() * sizeof(uint8_t), width, height,
+                                          format);
+
             spec.image = image_2d::create(img_data, image_usage_texture);
             renderer_data.white_texture = texture_2d::create(spec);
         }
@@ -204,15 +210,18 @@ namespace sge {
     }
 
     void renderer::add_shader_dependency(guid shader_guid, pipeline* _pipeline) {
-        if (renderer_data.shader_dependencies.find(shader_guid) == renderer_data.shader_dependencies.end()) {
-            renderer_data.shader_dependencies.insert(std::make_pair(shader_guid, shader_dependency_t()));
+        if (renderer_data.shader_dependencies.find(shader_guid) ==
+            renderer_data.shader_dependencies.end()) {
+            renderer_data.shader_dependencies.insert(
+                std::make_pair(shader_guid, shader_dependency_t()));
         }
 
         renderer_data.shader_dependencies[shader_guid].pipelines.insert(_pipeline);
     }
 
     void renderer::remove_shader_dependency(guid shader_guid, pipeline* _pipeline) {
-        if (renderer_data.shader_dependencies.find(shader_guid) != renderer_data.shader_dependencies.end()) {
+        if (renderer_data.shader_dependencies.find(shader_guid) !=
+            renderer_data.shader_dependencies.end()) {
             auto& dependency = renderer_data.shader_dependencies[shader_guid];
             dependency.pipelines.erase(_pipeline);
 
@@ -223,7 +232,8 @@ namespace sge {
     }
 
     void renderer::on_shader_reloaded(guid shader_guid) {
-        if (renderer_data.shader_dependencies.find(shader_guid) == renderer_data.shader_dependencies.end()) {
+        if (renderer_data.shader_dependencies.find(shader_guid) ==
+            renderer_data.shader_dependencies.end()) {
             return;
         }
         const auto& dependency = renderer_data.shader_dependencies[shader_guid];

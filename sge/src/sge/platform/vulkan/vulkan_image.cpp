@@ -27,12 +27,12 @@
 namespace sge {
     VkFormat get_vulkan_image_format(image_format format) {
         switch (format) {
-        case image_format::RGB8_UINT:
-            return VK_FORMAT_R8G8B8A8_UINT;
+        case image_format::RGB8_UNORM:
+            return VK_FORMAT_R8G8B8A8_UNORM;
         case image_format::RGB8_SRGB:
             return VK_FORMAT_R8G8B8A8_SRGB;
-        case image_format::RGBA8_UINT:
-            return VK_FORMAT_R8G8B8A8_UINT;
+        case image_format::RGBA8_UNORM:
+            return VK_FORMAT_R8G8B8A8_UNORM;
         case image_format::RGBA8_SRGB:
             return VK_FORMAT_R8G8B8A8_SRGB;
         default:

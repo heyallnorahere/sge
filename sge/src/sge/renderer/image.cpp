@@ -51,10 +51,10 @@ namespace sge {
         image_format format;
         switch (comp) {
         case 3:
-            format = image_format::RGB8_SRGB;
+            format = image_format::RGB8_UNORM;
             break;
         case 4:
-            format = image_format::RGBA8_SRGB;
+            format = image_format::RGBA8_UNORM;
             break;
         default:
             throw std::runtime_error("invalid image format!");
@@ -132,10 +132,10 @@ namespace sge {
 
     uint32_t image_2d::get_channel_count(image_format format) {
         switch (format) {
-        case image_format::RGB8_UINT:
+        case image_format::RGB8_UNORM:
         case image_format::RGB8_SRGB:
             return 3;
-        case image_format::RGBA8_UINT:
+        case image_format::RGBA8_UNORM:
         case image_format::RGBA8_SRGB:
             return 4;
         default:
