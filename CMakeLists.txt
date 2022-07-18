@@ -124,13 +124,12 @@ if(SGE_BUILD_SCRIPTCORE)
         endforeach()
 
         set(SCRIPTCORE_NAME SGE.Scriptcore)
-        set(EDITOR_NAME SGE.Editor)
     else()
         set(MANAGED_TARGET_NAME managed)
-        set(SCRIPTCORE_NAME ${MANAGED_PROJECT_NAME})
+        set(SCRIPTCORE_NAME ${MANAGED_TARGET_NAME})
 
         set(SLN_PATH "${CSHARP_DIR}/csharp.sln")
-        add_custom_target(${MANAGED_PROJECT_NAME} ALL
+        add_custom_target(${MANAGED_TARGET_NAME} ALL
             COMMAND ${DOTNET_EXE} build --nologo -v m -c $<CONFIG> ${SLN_PATH}
             COMMENT "Building managed projects...")
     endif()
