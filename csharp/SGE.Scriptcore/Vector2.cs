@@ -22,6 +22,7 @@ namespace SGE
     /// <summary>
     /// An object representing two floating point numbers. Maps to glm::vec2.
     /// </summary>
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct Vector2
     {

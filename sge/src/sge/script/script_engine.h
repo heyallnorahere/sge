@@ -42,13 +42,34 @@ namespace sge {
         member_visibility_flags_static = 0x10
     };
 
+    class function_registerer {
+    public:
+        function_registerer(const std::string& class_name) : m_class_name(class_name) {}
+
+        function_registerer(const function_registerer&) = delete;
+        function_registerer& operator=(const function_registerer&) = delete;
+
+        template <typename T>
+        void operator()(const std::string& method_name, const T& function) const {
+            std::string name = m_class_name + "::" + method_name;
+            register_call(name, (const void*)function);
+        }
+
+    private:
+        static void register_call(const std::string& name, const void* function);
+
+        std::string m_class_name;
+    };
+
     class script_engine {
     public:
         script_engine() = delete;
 
         static void init();
         static void shutdown();
-        static void register_internal_call(const std::string& name, const void* callback);
+
+        static void register_call_group(const std::string& managed_group_id,
+                                        const std::function<void(function_registerer&)>& callback);
 
         static void register_internal_script_calls();
         static void register_component_types();

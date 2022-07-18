@@ -2,6 +2,7 @@
 
 	<PropertyGroup>
 		<Platforms>x64;ARM64</Platforms>
+		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)..\assets\assemblies\SGE.targets" />

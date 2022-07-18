@@ -573,57 +573,15 @@ namespace sge {
         counter.remove();
     }
 
-    static void (*s_register_internal_call)(const std::string&, const void*);
-
-    class function_registerer {
-    public:
-        function_registerer(const std::string& class_name) { m_class_name = class_name; }
-
-        function_registerer(const function_registerer&) = delete;
-        function_registerer& operator=(const function_registerer&) = delete;
-
-        template <typename T>
-        void operator()(const std::string& method_name, const T& function) const {
-            std::string name = m_class_name + "::" + method_name;
-            s_register_internal_call(name, (void*)function);
-        }
-
-    private:
-        std::string m_class_name;
-    };
-
-    template <typename Func>
-    static void register_class_functions(const std::string& id, Func&& callback) {
-        void* attribute_class = script_helpers::get_core_type("SGE.InternalCallsAttribute", true);
-        void* find_method = script_engine::get_method(attribute_class, "Find");
-
-        void* managed_string = script_engine::to_managed_string(id);
-        void* reflection_type = script_engine::call_method(nullptr, find_method, managed_string);
-
-        if (reflection_type == nullptr) {
-            spdlog::warn("could not find id: {0}", id);
-            return;
-        }
-
-        class_name_t class_name;
-        void* _class = script_engine::from_reflection_type(reflection_type);
-        script_engine::get_class_name(_class, class_name);
-        std::string full_name = script_engine::get_string(class_name);
-
-        function_registerer registerer(full_name);
-        callback(registerer);
-    }
-
     void script_engine::register_internal_script_calls() {
         register_component_types();
-        s_register_internal_call = register_internal_call;
 
 #define REGISTER_FUNC(name) registerer(#name, internal_script_calls::name)
 #define REGISTER_REF_COUNTER(type)                                                                 \
     registerer("AddRef_" #type, add_ref<type>);                                                     \
     registerer("RemoveRef_" #type, remove_ref<type>)
 
-        register_class_functions("core", [](const function_registerer& registerer) {
+        register_call_group("core", [](const function_registerer& registerer) {
             // scene
             REGISTER_FUNC(CreateEntity);
             REGISTER_FUNC(CreateEntityWithGUID);

@@ -176,7 +176,7 @@ namespace sge {
 
         if ((m_disabled_subsystems &
              (subsystem_asset | subsystem_script_engine | subsystem_project)) == 0) {
-            project::init(is_editor());
+            project::init();
             m_initialized_subsystems |= subsystem_project;
         }
 

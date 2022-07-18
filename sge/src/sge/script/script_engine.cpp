@@ -26,6 +26,10 @@
 #include "sge/core/application.h"
 
 namespace sge {
+    void function_registerer::register_call(const std::string& name, const void* function) {
+        mono_add_internal_call(name.c_str(), function);
+    }
+
     struct assembly_t {
         MonoAssembly* assembly = nullptr;
         MonoImage* image = nullptr;
@@ -53,8 +57,7 @@ namespace sge {
 
         if (script_engine_data->assemblies.empty()) {
             script_engine::load_assembly(fs::current_path() / "assets" / "assemblies" /
-                                         project::get_config(application::get().is_editor()) /
-                                         "SGE.Scriptcore.dll");
+                                         project::get_config() / "SGE.Scriptcore.dll");
 
             script_engine::register_internal_script_calls();
             script_helpers::init();
@@ -152,8 +155,28 @@ namespace sge {
         script_engine_data.reset();
     }
 
-    void script_engine::register_internal_call(const std::string& name, const void* callback) {
-        mono_add_internal_call(name.c_str(), callback);
+    void script_engine::register_call_group(
+        const std::string& managed_group_id,
+        const std::function<void(function_registerer&)>& callback) {
+
+        void* attribute_class = script_helpers::get_core_type("SGE.InternalCallsAttribute", true);
+        void* find_method = script_engine::get_method(attribute_class, "Find");
+
+        void* managed_string = script_engine::to_managed_string(managed_group_id);
+        void* reflection_type = script_engine::call_method(nullptr, find_method, managed_string);
+
+        if (reflection_type == nullptr) {
+            spdlog::warn("could not find id: {0}", managed_group_id);
+            return;
+        }
+
+        class_name_t class_name;
+        void* _class = script_engine::from_reflection_type(reflection_type);
+        script_engine::get_class_name(_class, class_name);
+        std::string full_name = script_engine::get_string(class_name);
+
+        function_registerer registerer(full_name);
+        callback(registerer);
     }
 
     bool script_engine::compile_app_assembly() {
@@ -224,7 +247,6 @@ namespace sge {
         for (size_t i = 0; i < script_engine_data->assemblies.size(); i++) {
             if (script_engine_data->assemblies[i].path == path &&
                 script_engine_data->assemblies[i].assembly != nullptr) {
-                spdlog::warn("attempted to load {0} more than once", string_path);
                 return i;
             }
         }

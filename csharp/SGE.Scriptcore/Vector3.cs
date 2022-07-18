@@ -22,6 +22,7 @@ namespace SGE
     /// <summary>
     /// An object representing three floating point numbers. Maps to glm::vec3.
     /// </summary>
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct Vector3
     {

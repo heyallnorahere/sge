@@ -23,12 +23,8 @@
 #include "texture_cache.h"
 
 namespace sgm {
-    static const std::string sgm_title = "Simple Game Maker v" + application::get_engine_version();
-
-    static std::unique_ptr<std::thread> s_debugger_thread;
-    static bool s_exit_debugger = false;
-
-    static void start_debugger() {}
+    static const std::string s_sgm_title =
+        "Simple Game Maker v" + application::get_engine_version();
 
     class sgm_app : public application {
     public:
@@ -51,10 +47,6 @@ namespace sgm {
             // debug the proxy debugger, as ironic as that sounds, do not pass this flag and debug
             // the proxy debugger manually.
             if (args.size() >= 3 && args[2] == "--launched") {
-#ifdef SGE_BUILD_DEBUGGER
-                process_info p_info;
-                p_info.detach = true;
-
                 std::string debugger_configuration;
 #ifdef SGE_DEBUG
                 debugger_configuration = "Debug";
@@ -64,6 +56,10 @@ namespace sgm {
 
                 fs::path debugger_path = fs::current_path() / "assets/assemblies" /
                                          debugger_configuration / "SGE.Debugger.exe";
+
+#ifdef SGE_BUILD_DEBUGGER
+                process_info p_info;
+                p_info.detach = true;
 
 #ifdef SGE_PLATFORM_WINDOWS
                 p_info.executable = debugger_path;
@@ -78,7 +74,8 @@ namespace sgm {
 
                 environment::run_command(p_info);
 #else
-                spdlog::error("could not launch debugger!");
+                spdlog::error("could not launch debugger at {0} (mono executable not found)",
+                              debugger_path.string());
 #endif
             }
 
@@ -92,7 +89,7 @@ namespace sgm {
             }
 
             project& _project = project::get();
-            m_window->set_title(sgm_title + " - " + _project.get_name());
+            m_window->set_title(s_sgm_title + " - " + _project.get_name());
 
             icon_directory::load();
             editor_scene::create();
@@ -103,15 +100,6 @@ namespace sgm {
         }
 
         virtual void on_shutdown() override {
-            if (s_debugger_thread) {
-                s_exit_debugger = true;
-                if (s_debugger_thread->joinable()) {
-                    s_debugger_thread->join();
-                }
-
-                s_debugger_thread.reset();
-            }
-
             pop_layer(m_editor_layer);
             delete m_editor_layer;
 
@@ -120,7 +108,7 @@ namespace sgm {
             icon_directory::clear();
         }
 
-        virtual std::string get_window_title() override { return sgm_title; }
+        virtual std::string get_window_title() override { return s_sgm_title; }
         virtual fs::path get_imgui_config_path() override { return fs::current_path() / "sgm.ini"; }
 
         virtual fs::path get_log_file_path() override {

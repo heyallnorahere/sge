@@ -20,10 +20,10 @@
 namespace sge {
     class project {
     public:
-        static void init(bool editor);
+        static void init();
         static void shutdown();
 
-        static std::string get_config(std::optional<bool> editor = {});
+        static std::string get_config();
         static std::string get_cpu_architecture();
 
         static bool loaded();

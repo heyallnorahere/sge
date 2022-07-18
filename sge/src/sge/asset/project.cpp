@@ -17,17 +17,18 @@
 #include "sgepch.h"
 #include "sge/asset/project.h"
 #include "sge/asset/json.h"
+#include "sge/core/application.h"
 #include "sge/core/environment.h"
 #include "sge/script/script_engine.h"
+
 namespace sge {
     struct project_data_t {
         std::unique_ptr<project> instance;
-        bool editor;
     };
-    static std::unique_ptr<project_data_t> project_data;
 
-    void project::init(bool editor) {
-        if (project_data) {
+    static std::unique_ptr<project_data_t> s_project_data;
+    void project::init() {
+        if (s_project_data) {
             spdlog::warn("projects have already been initialized");
             return;
         }
@@ -35,28 +36,25 @@ namespace sge {
         auto instance = new project;
         instance->m_asset_manager = std::make_unique<asset_manager>();
 
-        project_data = std::make_unique<project_data_t>();
-        project_data->instance = std::unique_ptr<project>(instance);
-        project_data->editor = editor;
+        s_project_data = std::make_unique<project_data_t>();
+        s_project_data->instance = std::unique_ptr<project>(instance);
     }
 
     void project::shutdown() {
-        if (!project_data) {
+        if (!s_project_data) {
             spdlog::warn("projects have not been initalized!");
         }
 
-        project_data.reset();
+        s_project_data.reset();
     }
 
-    std::string project::get_config(std::optional<bool> editor) {
-        bool is_editor;
-        if (editor.has_value()) {
-            is_editor = editor.value();
-        } else {
-            is_editor = project_data->editor;
-        }
+    static bool is_editor() {
+        auto& app = application::get();
+        return app.is_editor();
+    }
 
-        if (is_editor) {
+    std::string project::get_config() {
+        if (is_editor()) {
             return "Debug";
         } else {
             return "Release";
@@ -65,8 +63,8 @@ namespace sge {
 
     std::string project::get_cpu_architecture() { return SGE_CPU_ARCHITECTURE; }
 
-    bool project::loaded() { return !project_data->instance->m_path.empty(); }
-    project& project::get() { return *project_data->instance; }
+    bool project::loaded() { return !s_project_data->instance->m_path.empty(); }
+    project& project::get() { return *s_project_data->instance; }
 
     bool project::save() {
         if (!loaded()) {
@@ -146,7 +144,7 @@ namespace sge {
         auto& instance = get();
         auto compile = [&]() {
             bool load = true;
-            if (project_data->editor) {
+            if (is_editor()) {
                 load = script_engine::compile_app_assembly();
             }
 

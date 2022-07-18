@@ -22,6 +22,7 @@ namespace SGE
     /// <summary>
     /// An object representing four floating point numbers. Maps to glm::vec4.
     /// </summary>
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct Vector4
     {
