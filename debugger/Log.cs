@@ -17,6 +17,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace SGE.Debugger
 {
@@ -98,8 +99,11 @@ namespace SGE.Debugger
             Print(message, severity);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Info(string message) => Print(message);
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Warn(string message) => Print(message);
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Error(string message) => Print(message);
     }
 }

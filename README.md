@@ -3,6 +3,8 @@
 Simple 2D game engine in C++17.
 Please use [this project](https://github.com/yodasoda1219/TestProject) for testing.
 
+**Remember:** SGE is currently in development. Stuff will break!
+
 ```bash
 # configure
 cmake --preset default
