@@ -54,7 +54,11 @@ namespace sge {
         void update_physics_data(entity e);
         void recalculate_render_order();
 
-        bool add_force(entity e, glm::vec2 force, bool wake = true);
+        bool apply_force(entity e, glm::vec2 force, glm::vec2 point, bool wake = true);
+        bool apply_force(entity e, glm::vec2 force, bool wake = true);
+        bool apply_linear_impulse(entity e, glm::vec2 impulse, glm::vec2 point, bool wake = true);
+        bool apply_linear_impulse(entity e, glm::vec2 impulse, bool wake = true);
+        bool apply_torque(entity e, float torque, bool wake = true);
 
         std::optional<glm::vec2> get_velocity(entity e);
         bool set_velocity(entity e, glm::vec2 velocity);

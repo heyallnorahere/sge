@@ -188,7 +188,15 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool SetAngularVelocity(Entity entity, float velocity);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool AddForce(Entity entity, Vector2 force, bool wake);
+        public static extern bool ApplyForce(Entity entity, Vector2 force, Vector2 point, bool wake);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool ApplyForceToCenter(Entity entity, Vector2 force, bool wake);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool ApplyLinearImpulse(Entity entity, Vector2 force, Vector2 point, bool wake);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool ApplyLinearImpulseToCenter(Entity entity, Vector2 force, bool wake);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool ApplyTorque(Entity entity, float torque, bool wake);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern ushort GetFilterCategory(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]

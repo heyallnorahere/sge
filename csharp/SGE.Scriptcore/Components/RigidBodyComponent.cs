@@ -81,13 +81,55 @@ namespace SGE.Components
         }
 
         /// <summary>
-        /// Adds a force to this rigid body.
+        /// Applies a force to this rigid body.
         /// </summary>
-        /// <param name="force">The force to add.</param>
+        /// <param name="force">The force to apply.</param>
+        /// <param name="point">The point on this rigid body at which to apply this force.</param>
         /// <param name="wake">Whether to wake the object. Default is true.</param>
-        public void AddForce(Vector2 force, bool wake = true)
+        public void ApplyForce(Vector2 force, Vector2 point, bool wake = true)
         {
-            CoreInternalCalls.AddForce(mParent, force, wake);
+            CoreInternalCalls.ApplyForce(mParent, force, point, wake);
+        }
+
+        /// <summary>
+        /// Applies a force to the center of this rigid body.
+        /// </summary>
+        /// <param name="force">The force to apply.</param>
+        /// <param name="wake">Whether to wake the object. Default is true.</param>
+        public void ApplyForce(Vector2 force, bool wake = true)
+        {
+            CoreInternalCalls.ApplyForceToCenter(mParent, force, wake);
+        }
+
+        /// <summary>
+        /// Applies a force to this rigid body without adding torque.
+        /// </summary>
+        /// <param name="impulse">The impulse to apply.</param>
+        /// <param name="point">The point on this rigid body at which to apply this force.</param>
+        /// <param name="wake">Whether to wake the object. Default is true.</param>
+        public void ApplyLinearImpulse(Vector2 impulse, Vector2 point, bool wake = true)
+        {
+            CoreInternalCalls.ApplyLinearImpulse(mParent, impulse, point, wake);
+        }
+
+        /// <summary>
+        /// Applies a force to the center of this rigid body without adding torque.
+        /// </summary>
+        /// <param name="impulse">The impulse to apply.</param>
+        /// <param name="wake">Whether to wake the object. Default is true.</param>
+        public void ApplyLinearImpulse(Vector2 impulse, bool wake = true)
+        {
+            CoreInternalCalls.ApplyLinearImpulseToCenter(mParent, impulse, wake);
+        }
+
+        /// <summary>
+        /// Applies torque to the angular velocity of this rigid body.
+        /// </summary>
+        /// <param name="torque">The amount of torque to add.</param>
+        /// <param name="wake">Whether to wake the object. Default is true.</param>
+        public void ApplyTorque(float torque, bool wake = true)
+        {
+            CoreInternalCalls.ApplyTorque(mParent, torque, wake);
         }
     }
 

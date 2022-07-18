@@ -347,11 +347,40 @@ namespace sge {
             return _scene->set_angular_velocity(e, velocity);
         }
 
-        static bool AddForce(void* _entity, glm::vec2 force, bool wake) {
+        static bool ApplyForce(void* _entity, glm::vec2 force, glm::vec2 point, bool wake) {
             entity e = script_helpers::get_entity_from_object(_entity);
 
             scene* _scene = e.get_scene();
-            return _scene->add_force(e, force, wake);
+            return _scene->apply_force(e, force, point, wake);
+        }
+
+        static bool ApplyForceToCenter(void* _entity, glm::vec2 force, bool wake) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            return _scene->apply_force(e, force, wake);
+        }
+
+        static bool ApplyLinearImpulse(void* _entity, glm::vec2 impulse, glm::vec2 point,
+                                       bool wake) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            return _scene->apply_linear_impulse(e, impulse, point, wake);
+        }
+
+        static bool ApplyLinearImpulseToCenter(void* _entity, glm::vec2 impulse, bool wake) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            return _scene->apply_linear_impulse(e, impulse, wake);
+        }
+
+        static bool ApplyTorque(void* _entity, float torque, bool wake) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            return _scene->apply_torque(e, torque, wake);
         }
 
         static uint16_t GetFilterCategory(rigid_body_component* component) {
@@ -609,7 +638,7 @@ namespace sge {
 
 #define REGISTER_FUNC(name) registerer(#name, internal_script_calls::name)
 #define REGISTER_REF_COUNTER(type)                                                                 \
-    registerer("AddRef_" #type, add_ref<type>);                                                     \
+    registerer("AddRef_" #type, add_ref<type>);                                                    \
     registerer("RemoveRef_" #type, remove_ref<type>)
 
         register_call_group("core", [](const function_registerer& registerer) {
@@ -678,7 +707,11 @@ namespace sge {
             REGISTER_FUNC(SetVelocity);
             REGISTER_FUNC(GetAngularVelocity);
             REGISTER_FUNC(SetAngularVelocity);
-            REGISTER_FUNC(AddForce);
+            REGISTER_FUNC(ApplyForce);
+            REGISTER_FUNC(ApplyForceToCenter);
+            REGISTER_FUNC(ApplyLinearImpulse);
+            REGISTER_FUNC(ApplyLinearImpulseToCenter);
+            REGISTER_FUNC(ApplyTorque);
             REGISTER_FUNC(GetFilterCategory);
             REGISTER_FUNC(SetFilterCategory);
             REGISTER_FUNC(GetFilterMask);

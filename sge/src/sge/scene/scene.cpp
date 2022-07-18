@@ -451,7 +451,7 @@ namespace sge {
         }
     }
 
-    bool scene::add_force(entity e, glm::vec2 force, bool wake) {
+    bool scene::apply_force(entity e, glm::vec2 force, glm::vec2 point, bool wake) {
         if (!e.has_all<rigid_body_component>()) {
             return false;
         }
@@ -459,10 +459,70 @@ namespace sge {
         // verify that the given entity has a b2Body attached
         update_physics_data(e);
 
-        // add the force
+        // apply the force
+        b2Vec2 b2_force(force.x, force.y);
+        b2Vec2 b2_point(point.x, point.y);
+        m_physics_data->bodies[e].body->ApplyForce(b2_force, b2_point, wake);
+
+        return true;
+    }
+
+    bool scene::apply_force(entity e, glm::vec2 force, bool wake) {
+        if (!e.has_all<rigid_body_component>()) {
+            return false;
+        }
+
+        // verify that the given entity has a b2Body attached
+        update_physics_data(e);
+
+        // apply the force
         b2Vec2 b2_force(force.x, force.y);
         m_physics_data->bodies[e].body->ApplyForceToCenter(b2_force, wake);
 
+        return true;
+    }
+
+    bool scene::apply_linear_impulse(entity e, glm::vec2 impulse, glm::vec2 point, bool wake) {
+        if (!e.has_all<rigid_body_component>()) {
+            return false;
+        }
+
+        // verify that the given entity has a b2Body attached
+        update_physics_data(e);
+
+        // apply the impulse
+        b2Vec2 b2_impulse(impulse.x, impulse.y);
+        b2Vec2 b2_point(point.x, point.y);
+        m_physics_data->bodies[e].body->ApplyLinearImpulse(b2_impulse, b2_point, wake);
+
+        return true;
+    }
+
+    bool scene::apply_linear_impulse(entity e, glm::vec2 impulse, bool wake) {
+        if (!e.has_all<rigid_body_component>()) {
+            return false;
+        }
+
+        // verify that the given entity has a b2Body attached
+        update_physics_data(e);
+
+        // apply the impulse
+        b2Vec2 b2_impulse(impulse.x, impulse.y);
+        m_physics_data->bodies[e].body->ApplyLinearImpulseToCenter(b2_impulse, wake);
+
+        return true;
+    }
+
+    bool scene::apply_torque(entity e, float torque, bool wake) {
+        if (!e.has_all<rigid_body_component>()) {
+            return false;
+        }
+
+        // verify that the given entity has a b2Body attached
+        update_physics_data(e);
+
+        // apply the torque
+        m_physics_data->bodies[e].body->ApplyTorque(torque, wake);
         return true;
     }
 
