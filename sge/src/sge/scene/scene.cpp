@@ -466,6 +466,34 @@ namespace sge {
         return true;
     }
 
+    std::optional<glm::vec2> scene::get_velocity(entity e) {
+        std::optional<glm::vec2> velocity;
+
+        if (e.has_all<rigid_body_component>()) {
+            if (m_physics_data->bodies.find(e) != m_physics_data->bodies.end()) {
+                b2Body* body = m_physics_data->bodies[e].body;
+
+                const auto& linear_velocity = body->GetLinearVelocity();
+                velocity = glm::vec2(linear_velocity.x, linear_velocity.y);
+            }
+        }
+
+        return velocity;
+    }
+
+    bool scene::set_velocity(entity e, glm::vec2 velocity) {
+        if (e.has_all<rigid_body_component>()) {
+            if (m_physics_data->bodies.find(e) != m_physics_data->bodies.end()) {
+                b2Body* body = m_physics_data->bodies[e].body;
+                body->SetLinearVelocity(b2Vec2(velocity.x, velocity.y));
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     std::optional<float> scene::get_angular_velocity(entity e) {
         std::optional<float> velocity;
 
@@ -481,12 +509,12 @@ namespace sge {
 
     bool scene::set_angular_velocity(entity e, float velocity) {
         if (e.has_all<rigid_body_component>()) {
-            update_physics_data(e);
+            if (m_physics_data->bodies.find(e) != m_physics_data->bodies.end()) {
+                b2Body* body = m_physics_data->bodies[e].body;
+                body->SetAngularVelocity(velocity);
 
-            b2Body* body = m_physics_data->bodies[e].body;
-            body->SetAngularVelocity(velocity);
-
-            return true;
+                return true;
+            }
         }
 
         return false;

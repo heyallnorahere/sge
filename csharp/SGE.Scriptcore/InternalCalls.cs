@@ -178,6 +178,10 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetFixedRotation(IntPtr component, Entity entity, bool fixedRotation);
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool GetVelocity(Entity entity, out Vector2 velocity);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool SetVelocity(Entity entity, Vector2 velocity);
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool GetAngularVelocity(Entity entity, out float velocity);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool SetAngularVelocity(Entity entity, float velocity);

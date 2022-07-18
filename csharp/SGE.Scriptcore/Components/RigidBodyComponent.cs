@@ -47,13 +47,34 @@ namespace SGE.Components
         }
 
         /// <summary>
+        /// The velocity of this object.
+        /// </summary>
+        public Vector2 Velocity
+        {
+            get
+            {
+                if (!CoreInternalCalls.GetVelocity(mParent, out Vector2 velocity))
+                {
+                    velocity = new Vector2(0f);
+                }
+
+                return velocity;
+            }
+            set => CoreInternalCalls.SetVelocity(mParent, value);
+        }
+
+        /// <summary>
         /// The angular velocity of this object.
         /// </summary>
         public float AngularVelocity
         {
             get
             {
-                CoreInternalCalls.GetAngularVelocity(mParent, out float velocity);
+                if (!CoreInternalCalls.GetAngularVelocity(mParent, out float velocity))
+                {
+                    velocity = 0f;
+                }
+
                 return velocity;
             }
             set => CoreInternalCalls.SetAngularVelocity(mParent, value);

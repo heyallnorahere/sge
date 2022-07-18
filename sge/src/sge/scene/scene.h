@@ -56,6 +56,9 @@ namespace sge {
 
         bool add_force(entity e, glm::vec2 force, bool wake = true);
 
+        std::optional<glm::vec2> get_velocity(entity e);
+        bool set_velocity(entity e, glm::vec2 velocity);
+
         std::optional<float> get_angular_velocity(entity e);
         bool set_angular_velocity(entity e, float velocity);
 

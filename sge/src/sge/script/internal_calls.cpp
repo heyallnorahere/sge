@@ -295,11 +295,32 @@ namespace sge {
             e.get_scene()->update_physics_data(e);
         }
 
+        static bool GetVelocity(void* _entity, glm::vec2* velocity) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            auto value = _scene->get_velocity(e);
+
+            if (value.has_value()) {
+                *velocity = value.value();
+                return true;
+            }
+
+            return false;
+        }
+
+        static bool SetVelocity(void* _entity, glm::vec2 velocity) {
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            scene* _scene = e.get_scene();
+            return _scene->set_velocity(e, velocity);
+        }
+
         static bool GetAngularVelocity(void* _entity, float* velocity) {
             entity e = script_helpers::get_entity_from_object(_entity);
 
             scene* _scene = e.get_scene();
-            std::optional<float> value = _scene->get_angular_velocity(e);
+            auto value = _scene->get_angular_velocity(e);
 
             if (value.has_value()) {
                 *velocity = value.value();
@@ -642,6 +663,8 @@ namespace sge {
             REGISTER_FUNC(SetBodyType);
             REGISTER_FUNC(GetFixedRotation);
             REGISTER_FUNC(SetFixedRotation);
+            REGISTER_FUNC(GetVelocity);
+            REGISTER_FUNC(SetVelocity);
             REGISTER_FUNC(GetAngularVelocity);
             REGISTER_FUNC(SetAngularVelocity);
             REGISTER_FUNC(AddForce);
