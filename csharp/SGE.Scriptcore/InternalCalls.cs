@@ -84,6 +84,8 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool FindEntity(GUID id, out uint entityID, IntPtr scene);
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void ForEach(Delegate callback, IntPtr scene);
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern string GetCollisionCategoryName(IntPtr scene, int index);
 
         // entity

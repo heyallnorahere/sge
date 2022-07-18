@@ -139,7 +139,7 @@ namespace sgm {
 
     content_browser_panel::content_browser_panel() {
         auto& _project = project::get();
-        dump_assets(_project.get_asset_manager());
+        // dump_assets(_project.get_asset_manager());
 
         m_root = _project.get_asset_dir();
         m_history = new browser_history(m_root);
@@ -489,7 +489,7 @@ namespace sgm {
             rebuild_directory_data();
         }
 
-        dump_assets(manager);
+        // dump_assets(manager);
         return handled;
     }
 

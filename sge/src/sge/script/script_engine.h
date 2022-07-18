@@ -127,6 +127,7 @@ namespace sge {
         static void iterate_methods(void* _class, std::vector<void*>& methods);
 
         static void* call_method(void* object, void* method, void** arguments = nullptr);
+        static void* call_delegate(void* delegate, void** arguments = nullptr);
         static void handle_exception(void* exception);
 
         template <typename... Args>
@@ -135,6 +136,14 @@ namespace sge {
             void** arguments = args_vector.empty() ? nullptr : args_vector.data();
 
             return call_method(object, method, arguments);
+        }
+        
+        template <typename... Args>
+        static void* call_delegate(void* delegate, Args*... args) {
+            std::vector<void*> args_vector = { std::forward<Args*>(args)... };
+            void** arguments = args_vector.empty() ? nullptr : args_vector.data();
+
+            return call_delegate(delegate, arguments);
         }
 
         static void* get_property(void* _class, const std::string& name);

@@ -883,10 +883,25 @@ namespace sge {
         if (method == nullptr) {
             throw std::runtime_error("attempted to call nullptr!");
         }
-        auto mono_method = (MonoMethod*)method;
 
         MonoObject* exc = nullptr;
+        auto mono_method = (MonoMethod*)method;
+
         void* returned = mono_runtime_invoke(mono_method, object, arguments, &exc);
+        handle_exception(exc);
+
+        return returned;
+    }
+
+    void* script_engine::call_delegate(void* delegate, void** arguments) {
+        if (delegate == nullptr) {
+            throw std::runtime_error("attempted to call nullptr!");
+        }
+
+        MonoObject* exc = nullptr;
+        auto mono_delegate = (MonoObject*)delegate;
+
+        void* returned = mono_runtime_delegate_invoke(mono_delegate, arguments, &exc);
         handle_exception(exc);
 
         return returned;

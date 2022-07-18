@@ -113,6 +113,16 @@ namespace sge {
             return false;
         }
 
+        static void ForEach(void* callback, scene* _scene) {
+            auto gc_ref = object_ref::from_object(callback);
+            _scene->for_each([gc_ref](entity e) {
+                auto delegate = gc_ref->get();
+
+                auto entity_object = script_helpers::create_entity_object(e);
+                script_engine::call_delegate(delegate, entity_object);
+            });
+        }
+
         static void* GetCollisionCategoryName(scene* _scene, int32_t index) {
             std::string name = _scene->collision_category_name(index);
             return script_engine::to_managed_string(name);
@@ -609,6 +619,7 @@ namespace sge {
             REGISTER_FUNC(CloneEntity);
             REGISTER_FUNC(DestroyEntity);
             REGISTER_FUNC(FindEntity);
+            REGISTER_FUNC(ForEach);
             REGISTER_FUNC(GetCollisionCategoryName);
 
             // entity

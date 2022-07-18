@@ -25,7 +25,7 @@ namespace SGE
     /// </summary>
     public sealed class Scene
     {
-        private class CollisionCategoryList : IReadOnlyList<string>
+        private sealed class CollisionCategoryList : IReadOnlyList<string>
         {
             private struct Enumerator : IEnumerator<string>
             {
@@ -163,6 +163,12 @@ namespace SGE
 
             return null;
         }
+
+        /// <summary>
+        /// Iterates through every entity in the scene.
+        /// </summary>
+        /// <param name="callback">The callback called on every iteration.</param>
+        public void ForEach(Action<Entity> callback) => CoreInternalCalls.ForEach(callback, mNativeAddress);
 
         /// <summary>
         /// The names of the collision categories in this scene.
