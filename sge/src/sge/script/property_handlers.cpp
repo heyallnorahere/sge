@@ -85,7 +85,7 @@ namespace sge {
                 if (!path.empty()) {
                     if (path.is_absolute()) {
                         fs::path asset_dir = project::get().get_asset_dir();
-                        data = asset_dir / path;
+                        data = fs::relative(path, asset_dir);
                     } else {
                         data = path;
                     }
