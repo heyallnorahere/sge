@@ -79,7 +79,7 @@ namespace sge {
             data = nullptr;
 
             if (object != nullptr) {
-                auto _asset = (asset*)object;
+                auto _asset = script_helpers::get_asset_from_object(object);
                 const auto& path = _asset->get_path();
 
                 if (!path.empty()) {

@@ -17,6 +17,7 @@
 using SGE.Components;
 using SGE.Events;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -72,6 +73,34 @@ namespace SGE
     [InternalCalls("core")]
     internal static class CoreInternalCalls
     {
+        // application
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetEngineVersion();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void QuitApplication();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetApplicationTitle();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetMainWindow(out IntPtr pointer);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool IsApplicationEditor();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool IsSubsystemInitialized(Subsystem subsystem);
+
+        // window
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void AddRef_window(IntPtr window);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveRef_window(IntPtr window);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void CreateWindow(string title, uint width, uint height, out IntPtr pointer);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern uint GetWindowWidth(IntPtr window);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern uint GetWindowHeight(IntPtr window);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string WindowFileDialog(IntPtr window, DialogMode mode, IReadOnlyList<DialogFilter> filters);
+
         // scene
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern uint CreateEntity(string name, IntPtr scene);
@@ -149,6 +178,8 @@ namespace SGE
         public static extern ProjectionType GetProjectionType(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetProjectionType(IntPtr component, ProjectionType type);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetAspectRatio(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float GetViewSize(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -291,6 +322,8 @@ namespace SGE
         public static extern void SetScriptEnabled(IntPtr address, bool enabled);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern Script GetScript(IntPtr address, Entity entity);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetScript(IntPtr address, Entity entity, Type scriptType);
 
         // file changed event
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -306,7 +339,7 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetAssetType(IntPtr address, out AssetType type);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern GUID GetAssetGUID(IntPtr address);
+        public static extern void GetAssetGUID(IntPtr address, out GUID guid);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool ReloadAsset(IntPtr address);
 

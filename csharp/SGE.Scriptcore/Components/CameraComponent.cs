@@ -46,6 +46,8 @@ namespace SGE.Components
             set => CoreInternalCalls.SetProjectionType(mAddress, value);
         }
 
+        public float AspectRatio => CoreInternalCalls.GetAspectRatio(mAddress);
+
         public float ViewSize
         {
             get => CoreInternalCalls.GetViewSize(mAddress);

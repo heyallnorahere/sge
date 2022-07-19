@@ -98,7 +98,14 @@ namespace sge {
         guid get_guid() const { return m_scene->get_guid(*this); }
         scene* get_scene() const { return m_scene; }
 
-        operator bool() const { return m_handle != entt::null; }
+        operator bool() const {
+            if (m_scene == nullptr) {
+                return false;
+            }
+
+            return m_scene->m_registry.valid(m_handle);
+        }
+
         operator entt::entity() const { return m_handle; }
         operator uint32_t() const { return (uint32_t)m_handle; }
 

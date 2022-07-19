@@ -726,8 +726,11 @@ namespace sge {
             auto view = m_registry.view<script_component>();
             for (auto id : view) {
                 entity e(id, this);
-                verify_script(e);
+                if (!e) {
+                    continue;
+                }
 
+                verify_script(e);
                 auto& sc = e.get_component<script_component>();
                 if (sc._class == nullptr || !sc.enabled) {
                     continue;

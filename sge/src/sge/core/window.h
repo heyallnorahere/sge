@@ -17,7 +17,7 @@
 #pragma once
 #include "sge/events/event.h"
 namespace sge {
-    enum class dialog_mode { open, save };
+    enum class dialog_mode : int32_t { open = 0, save };
 
     struct dialog_file_filter {
         std::string name, filter;

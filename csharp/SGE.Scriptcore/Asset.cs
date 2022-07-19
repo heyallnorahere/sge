@@ -102,7 +102,15 @@ namespace SGE
             }
         }
 
-        public GUID GUID => CoreInternalCalls.GetAssetGUID(mAddress);
+        public GUID GUID
+        {
+            get
+            {
+                CoreInternalCalls.GetAssetGUID(mAddress, out GUID guid);
+                return guid;
+            }
+        }
+
 
         internal readonly IntPtr mAddress;
     }

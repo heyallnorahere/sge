@@ -42,11 +42,11 @@ namespace sge {
             m_object = object;
         }
 
-        void add() {
+        void operator++(int) {
             m_object->m_ref_count++;
         }
 
-        void remove() {
+        void operator--(int) {
             m_object->m_ref_count--;
 
             if (m_object->m_ref_count == 0) {

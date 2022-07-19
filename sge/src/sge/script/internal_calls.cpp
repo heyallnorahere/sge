@@ -15,6 +15,8 @@
 */
 
 #include "sgepch.h"
+#include "sge/core/application.h"
+#include "sge/core/window.h"
 #include "sge/script/script_engine.h"
 #include "sge/script/script_helpers.h"
 #include "sge/script/garbage_collector.h"
@@ -81,6 +83,88 @@ namespace sge {
     }
 
     namespace internal_script_calls {
+        static void* GetEngineVersion() {
+            std::string version = application::get_engine_version();
+            return script_engine::to_managed_string(version);
+        }
+
+        static void QuitApplication() {
+            auto& app = application::get();
+            app.quit();
+        }
+
+        static void* GetApplicationTitle() {
+            auto& app = application::get();
+            const auto& title = app.get_title();
+
+            return script_engine::to_managed_string(title);
+        }
+
+        static void GetMainWindow(window** _window) {
+            auto& app = application::get();
+            *_window = app.get_window().raw();
+        }
+
+        static bool IsApplicationEditor() {
+            auto& app = application::get();
+            return app.is_editor();
+        }
+
+        static bool IsSubsystemInitialized(subsystem id) {
+            auto& app = application::get();
+            return app.is_subsystem_initialized(id);
+        }
+
+        static void CreateWindow(void* title, uint32_t width, uint32_t height, window** _window) {
+            std::string window_title = script_engine::from_managed_string(title);
+            auto created_window = window::create(window_title, width, height);
+
+            auto ptr = created_window.raw();
+            if (ptr != nullptr) {
+                ref_counter<window> counter(ptr);
+                counter++;
+            }
+
+            *_window = ptr;
+        }
+
+        static uint32_t GetWindowWidth(window* _window) { return _window->get_width(); }
+        static uint32_t GetWindowHeight(window* _window) { return _window->get_height(); }
+
+        static void* WindowFileDialog(window* _window, dialog_mode mode, void* filter_list) {
+            void* list_type = script_engine::get_class_from_object(filter_list);
+            void* count_property = script_engine::get_property(list_type, "Count");
+
+            void* returned = script_engine::get_property_value(filter_list, count_property);
+            int32_t count = script_engine::unbox_object<int32_t>(returned);
+
+            void* item_property = script_engine::get_property(list_type, "Item");
+            void* filter_type = script_engine::get_property_type(item_property);
+
+            void* name_property = script_engine::get_property(filter_type, "Name");
+            void* filter_property = script_engine::get_property(filter_type, "Filter");
+
+            std::vector<dialog_file_filter> filters;
+            for (int32_t i = 0; i < count; i++) {
+                void* filter = script_engine::get_property_value(filter_list, item_property, &i);
+                auto& filter_desc = filters.emplace_back();
+
+                returned = script_engine::get_property_value(filter, name_property);
+                filter_desc.name = script_engine::from_managed_string(returned);
+
+                returned = script_engine::get_property_value(filter, filter_property);
+                filter_desc.filter = script_engine::from_managed_string(returned);
+            }
+
+            auto path = _window->file_dialog(mode, filters);
+            if (path.has_value()) {
+                auto path_string = path.value().string();
+                return script_engine::to_managed_string(path_string);
+            }
+
+            return nullptr;
+        }
+
         static uint32_t CreateEntity(void* name, scene* _scene) {
             std::string native_name = script_engine::from_managed_string(name);
             return (uint32_t)_scene->create_entity(native_name);
@@ -239,6 +323,10 @@ namespace sge {
 
         static void SetProjectionType(camera_component* component, projection_type type) {
             component->camera.set_projection_type(type);
+        }
+
+        static float GetAspectRatio(camera_component* component) {
+            return component->camera.get_aspect_ratio();
         }
 
         static float GetViewSize(camera_component* component) {
@@ -522,7 +610,7 @@ namespace sge {
             auto texture = texture_2d::load(texture_path);
 
             ref_counter counter(texture.raw());
-            counter.add();
+            counter++;
 
             *address = texture.raw();
         }
@@ -554,6 +642,18 @@ namespace sge {
             return component->instance->get();
         }
 
+        static void SetScript(script_component* component, void* _entity, void* script_type) {
+            component->remove_script();
+
+            void* script_class = script_engine::from_reflection_type(script_type);
+            entity e = script_helpers::get_entity_from_object(_entity);
+
+            component->_class = script_class;
+            component->class_name = script_helpers::get_type_name_safe(script_class);
+
+            component->verify_script(e);
+        }
+
         static void* GetChangedFilePath(file_changed_event* e) {
             const auto& path = e->get_path();
             return script_engine::to_managed_string(path.string());
@@ -574,7 +674,7 @@ namespace sge {
         }
 
         static void GetAssetType(asset* a, asset_type* type) { *type = a->get_asset_type(); }
-        static guid GetAssetGUID(asset* a) { return a->id; }
+        static void GetAssetGUID(asset* a, guid* id) { *id = a->id; }
 
         static bool ReloadAsset(asset* a) { return a->reload(); }
 
@@ -584,7 +684,7 @@ namespace sge {
 
             prefab* ptr = _prefab.raw();
             ref_counter<prefab> counter(ptr);
-            counter.add();
+            counter++;
 
             *result = ptr;
         }
@@ -601,7 +701,7 @@ namespace sge {
             shader* ptr = _shader.raw();
             if (ptr != nullptr) {
                 ref_counter<shader> counter(ptr);
-                counter.add();
+                counter++;
             }
 
             *address = ptr;
@@ -614,7 +714,7 @@ namespace sge {
             shader* ptr = _shader.raw();
             if (ptr != nullptr) {
                 ref_counter<shader> counter(ptr);
-                counter.add();
+                counter++;
             }
 
             *address = ptr;
@@ -624,13 +724,13 @@ namespace sge {
     template <typename T>
     static void add_ref(T* address) {
         ref_counter<T> counter(address);
-        counter.add();
+        counter++;
     }
 
     template <typename T>
     static void remove_ref(T* address) {
         ref_counter<T> counter(address);
-        counter.remove();
+        counter--;
     }
 
     void script_engine::register_internal_script_calls() {
@@ -642,6 +742,21 @@ namespace sge {
     registerer("RemoveRef_" #type, remove_ref<type>)
 
         register_call_group("core", [](const function_registerer& registerer) {
+            // application
+            REGISTER_FUNC(GetEngineVersion);
+            REGISTER_FUNC(QuitApplication);
+            REGISTER_FUNC(GetApplicationTitle);
+            REGISTER_FUNC(GetMainWindow);
+            REGISTER_FUNC(IsApplicationEditor);
+            REGISTER_FUNC(IsSubsystemInitialized);
+
+            // window
+            REGISTER_REF_COUNTER(window);
+            REGISTER_FUNC(CreateWindow);
+            REGISTER_FUNC(GetWindowWidth);
+            REGISTER_FUNC(GetWindowHeight);
+            REGISTER_FUNC(WindowFileDialog);
+
             // scene
             REGISTER_FUNC(CreateEntity);
             REGISTER_FUNC(CreateEntityWithGUID);
@@ -687,6 +802,7 @@ namespace sge {
             REGISTER_FUNC(SetPrimary);
             REGISTER_FUNC(GetProjectionType);
             REGISTER_FUNC(SetProjectionType);
+            REGISTER_FUNC(GetAspectRatio);
             REGISTER_FUNC(GetViewSize);
             REGISTER_FUNC(SetViewSize);
             REGISTER_FUNC(GetFOV);
@@ -768,6 +884,7 @@ namespace sge {
             REGISTER_FUNC(IsScriptEnabled);
             REGISTER_FUNC(SetScriptEnabled);
             REGISTER_FUNC(GetScript);
+            REGISTER_FUNC(SetScript);
 
             // file changed event
             REGISTER_FUNC(GetChangedFilePath);

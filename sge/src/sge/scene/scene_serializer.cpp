@@ -386,12 +386,12 @@ namespace sge {
 
         // todo: global scene data
 
-        json entities;
+        std::list<json> entities;
         m_scene->for_each([&](entity current) {
             json entity_data;
             serialize_entity(entity_data, current);
 
-            entities.push_back(entity_data);
+            entities.push_front(entity_data);
         });
 
         std::array<json, scene::collision_category_count> collision_category_names;

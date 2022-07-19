@@ -33,6 +33,7 @@ namespace sge {
         void set_orthographic(float size, float near_plane, float far_plane);
 
         void set_render_target_size(uint32_t width, uint32_t height);
+        float get_aspect_ratio() const { return m_aspect_ratio; }
 
         float get_vertical_fov() const { return m_fov; }
         void set_vertical_fov(float fov) {
@@ -101,6 +102,6 @@ namespace sge {
         float m_orthographic_size = 10.f;
         clips m_orthographic_clips = { -1.f, 1.f };
 
-        float m_aspect_ratio;
+        float m_aspect_ratio = 1.f;
     };
 } // namespace sge

@@ -19,6 +19,10 @@ namespace SGE.Components
     public sealed class ScriptComponent : Component<ScriptComponent>
     {
         public Script Script => CoreInternalCalls.GetScript(mAddress, mParent);
+        public void SetScript<T>() where T : Script, new()
+        {
+            CoreInternalCalls.SetScript(mAddress, mParent, typeof(T));
+        }
 
         public bool Enabled
         {
