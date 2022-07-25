@@ -42,8 +42,6 @@ set(SGE_PLATFORM_DESKTOP ${SGE_PLATFORM_WINDOWS} OR ${SGE_PLATFORM_LINUX} OR ${S
 # independent options
 option(SGE_BUILD_SCRIPTCORE "Build the SGE scriptcore." ON)
 option(SGE_BUILD_DEBUGGER "Build SGE.Debugger.exe" ON)
-set(SGE_DEBUGGER_AGENT_ADDRESS "127.0.0.1" CACHE STRING "The address to host the mono debugger agent at.")
-set(SGE_DEBUGGER_AGENT_PORT "62222" CACHE STRING "The port to host the mono debugger agent on.")
 
 # find packages
 find_package(Aftermath)

@@ -22,6 +22,8 @@
 #include "icon_directory.h"
 #include "texture_cache.h"
 
+#include <random>
+
 namespace sgm {
     static const std::string s_sgm_title =
         "Simple Game Maker v" + application::get_engine_version();
@@ -42,6 +44,9 @@ namespace sgm {
             if (args.size() < 2) {
                 throw std::runtime_error("cannot run SGM without a project!");
             }
+
+            uint16_t debugger_port = generate_debugger_port();
+            script_engine::set_debugger_port(debugger_port);
 
             // if --launched is passed, SGM will start the proxy debugger, SGE.Debugger.exe. to
             // debug the proxy debugger, as ironic as that sounds, do not pass this flag and debug
@@ -69,14 +74,17 @@ namespace sgm {
                 p_info.cmdline = p_info.executable.string() + " \"" + debugger_path.string() + "\"";
 #endif
 
-                p_info.cmdline += " --address=" + std::string(SGE_DEBUGGER_AGENT_ADDRESS);
-                p_info.cmdline += " --port=" + std::string(SGE_DEBUGGER_AGENT_PORT);
+                p_info.cmdline += " --address=127.0.0.1";
+                p_info.cmdline += " --port=" + std::to_string(debugger_port);
 
                 environment::run_command(p_info);
+                spdlog::info("proxy debugger listening on 127.0.0.1:{0}", debugger_port + 1);
 #else
                 spdlog::error("could not launch debugger at {0} (mono executable not found)",
                               debugger_path.string());
 #endif
+            } else {
+                spdlog::info("debugger agent listening on 127.0.0.1:{0}", debugger_port);
             }
 
             m_project_path = args[1];
@@ -113,6 +121,15 @@ namespace sgm {
 
         virtual fs::path get_log_file_path() override {
             return fs::current_path() / "assets" / "logs" / "sgm.log";
+        }
+
+    private:
+        static uint16_t generate_debugger_port() {
+            std::random_device device;
+            std::mt19937 random_engine(device());
+            std::uniform_int_distribution<uint16_t> uniform_distribution;
+
+            return uniform_distribution(random_engine);
         }
 
         editor_layer* m_editor_layer;

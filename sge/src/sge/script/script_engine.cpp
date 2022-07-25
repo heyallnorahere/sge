@@ -36,6 +36,10 @@ namespace sge {
         fs::path path;
     };
 
+    struct debugger_info_t {
+        uint16_t port = 62222;
+    };
+
     struct script_engine_data_t {
         MonoDomain* root_domain = nullptr;
         MonoDomain* script_domain = nullptr;
@@ -47,8 +51,18 @@ namespace sge {
     };
 
     static std::unique_ptr<script_engine_data_t> script_engine_data;
+    static std::unique_ptr<debugger_info_t> mono_debugger_info;
+
+    void script_engine::set_debugger_port(uint16_t port) {
+        if (!mono_debugger_info) {
+            mono_debugger_info = std::make_unique<debugger_info_t>();
+        }
+
+        mono_debugger_info->port = port;
+    }
+
     static void script_engine_init_internal() {
-        char domain_name[16];
+        char domain_name[32];
         strcpy(domain_name, "SGE-Runtime");
 
         script_engine_data->script_domain = mono_domain_create_appdomain(domain_name, nullptr);
@@ -70,8 +84,18 @@ namespace sge {
         void set(const std::string& key, const char* value) { m_data[key] = value; }
         void set(const std::string& key, bool value) { m_data[key] = value ? "y" : "n"; }
 
-        void set(const std::string& key, const std::string& address, const std::string& port) {
-            m_data[key] = address + ":" + port;
+        template <typename T>
+        void set(const std::string& key, const std::string& address, const T& port) {
+            std::string port_string;
+            if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, const char*>) {
+                port_string = port;
+            } else if constexpr (std::is_integral_v<T> || std::is_floating_point_v<T>) {
+                port_string = std::to_string(port);
+            } else {
+                throw std::runtime_error("invalid port type!");
+            }
+
+            m_data[key] = address + ":" + port_string;
         }
 
         operator std::string() const {
@@ -97,19 +121,20 @@ namespace sge {
         }
 
         script_engine_data = std::make_unique<script_engine_data_t>();
-        script_engine_data->debug_enabled = application::get().is_editor();
+        script_engine_data->debug_enabled = false;
 
         std::string assembly_path = (fs::current_path() / "assets").string();
         mono_set_assemblies_path(assembly_path.c_str());
         mono_config_parse(nullptr);
 
         std::vector<std::string> args;
-        if (script_engine_data->debug_enabled) {
+        if (mono_debugger_info) {
+            script_engine_data->debug_enabled = true;
             debugger_agent agent;
 
             agent.set("transport", "dt_socket");
             agent.set("server", true);
-            agent.set("address", SGE_DEBUGGER_AGENT_ADDRESS, SGE_DEBUGGER_AGENT_PORT);
+            agent.set("address", "127.0.0.1", mono_debugger_info->port);
             agent.set("logfile", "assets/logs/mono-debugger.log");
             agent.set("loglevel", "10");
 

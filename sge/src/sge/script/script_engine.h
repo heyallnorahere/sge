@@ -65,6 +65,7 @@ namespace sge {
     public:
         script_engine() = delete;
 
+        static void set_debugger_port(uint16_t port);
         static void init();
         static void shutdown();
 

@@ -205,10 +205,20 @@ namespace sge {
             return nullptr;
         }
 
-        void* asset_class = get_core_type("SGE.Asset", true);
+        void* asset_class = script_engine::get_class_from_object(object);
         void* field = script_engine::get_field(asset_class, "mAddress");
 
         void* value = script_engine::get_field_value(object, field);
+
+        void* type = script_engine::get_class_from_object(value);
+        std::vector<void*> fields;
+        script_engine::iterate_fields(type, fields);
+
+        for (void* field : fields) {
+            std::string name = script_engine::get_field_name(field);
+            continue;
+        }
+
         return script_engine::unbox_object<asset*>(value);
     }
 

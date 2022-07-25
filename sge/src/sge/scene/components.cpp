@@ -81,11 +81,8 @@ namespace sge {
                                 script_helpers::create_entity_object(found_entity);
                             script_engine::set_property_value(dst_instance, property,
                                                               entity_object);
-                        } else if (property_type == asset_class) {
-                            ref<asset> _asset = script_helpers::get_asset_from_object(value);
-                            void* asset_object = script_helpers::create_asset_object(_asset);
-
-                            script_engine::set_property_value(dst_instance, property, asset_object);
+                        } else if (script_helpers::type_extends(property_type, asset_class)) {
+                            script_engine::set_property_value(dst_instance, property, value);
                         } else {
                             void* new_value = script_engine::clone_object(value);
                             script_engine::set_property_value(dst_instance, property, new_value);

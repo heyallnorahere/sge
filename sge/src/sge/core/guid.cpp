@@ -16,11 +16,13 @@
 
 #include "sgepch.h"
 #include "sge/core/guid.h"
+
 #include <random>
+
 namespace sge {
     static std::random_device random_device;
-    static std::mt19937_64 engine(random_device());
+    static std::mt19937_64 random_engine(random_device());
     static std::uniform_int_distribution<uint64_t> uniform_distribution;
 
-    void guid::regenerate() { m_guid = uniform_distribution(engine); }
+    void guid::regenerate() { m_guid = uniform_distribution(random_engine); }
 } // namespace sge
