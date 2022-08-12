@@ -36,10 +36,6 @@ namespace sge {
         fs::path path;
     };
 
-    struct debugger_info_t {
-        uint16_t port = 62222;
-    };
-
     struct script_engine_data_t {
         MonoDomain* root_domain = nullptr;
         MonoDomain* script_domain = nullptr;
@@ -53,12 +49,48 @@ namespace sge {
     static std::unique_ptr<script_engine_data_t> script_engine_data;
     static std::unique_ptr<debugger_info_t> mono_debugger_info;
 
-    void script_engine::set_debugger_port(uint16_t port) {
-        if (!mono_debugger_info) {
-            mono_debugger_info = std::make_unique<debugger_info_t>();
+    void script_engine::enable_debugging() {
+        if (mono_debugger_info) {
+            return;
         }
 
+        mono_debugger_info = std::make_unique<debugger_info_t>();
+    }
+
+    void script_engine::disable_debugging() {
+        if (!mono_debugger_info) {
+            return;
+        }
+
+        mono_debugger_info.reset();
+    }
+
+    bool script_engine::is_debugging_enabled() { return mono_debugger_info.get() != nullptr; }
+
+    static void verify_debugging_enabled() {
+        if (!mono_debugger_info) {
+            throw std::runtime_error("debugging is not enabled!");
+        }
+    }
+
+    void script_engine::set_debugger_config(const debugger_info_t& config) {
+        verify_debugging_enabled();
+        *mono_debugger_info = config;
+    }
+
+    void script_engine::set_debugger_address(const std::string& address) {
+        verify_debugging_enabled();
+        mono_debugger_info->address = address;
+    }
+
+    void script_engine::set_debugger_port(uint16_t port) {
+        verify_debugging_enabled();
         mono_debugger_info->port = port;
+    }
+
+    void script_engine::set_debugger_mode(bool server) {
+        verify_debugging_enabled();
+        mono_debugger_info->server = server;
     }
 
     static void script_engine_init_internal() {
@@ -133,7 +165,7 @@ namespace sge {
             debugger_agent agent;
 
             agent.set("transport", "dt_socket");
-            agent.set("server", true);
+            agent.set("server", mono_debugger_info->server);
             agent.set("address", "127.0.0.1", mono_debugger_info->port);
             agent.set("logfile", "assets/logs/mono-debugger.log");
             agent.set("loglevel", "10");

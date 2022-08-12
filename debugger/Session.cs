@@ -933,8 +933,9 @@ namespace SGE.Debugger
 
             string ip = args.Get("address");
             int port = int.Parse(args.Get("port"));
+            bool connect = bool.Parse(args.Get("connect"));
 
-            using var session = new Session(ip, port);
+            using var session = new Session(ip, port, connect);
             int result = session.Run();
 
             if (sInputEnabled)
@@ -992,7 +993,7 @@ namespace SGE.Debugger
             WriteOutput(text, isStdErr, OutputSource.Debuggee);
         }
 
-        private Session(string ip, int port)
+        private Session(string ip, int port, bool connect)
         {
             var address = Utilities.ResolveIP(ip);
             if (address == null)
@@ -1002,6 +1003,7 @@ namespace SGE.Debugger
 
             Address = address;
             Port = port;
+            Hosting = !connect;
 
             mVariableHandles = new ObjectRegistry<IEnumerable<ObjectValue>>();
             mFrameHandles = new ObjectRegistry<StackFrame>();
@@ -1080,13 +1082,68 @@ namespace SGE.Debugger
         private int Run()
         {
             DebuggerLoggingService.CustomLogger = new CustomLogger();
-            if (!Connect())
+
+            bool succeeded;
+            if (Hosting)
+            {
+                succeeded = Host();
+            }
+            else
+            {
+                succeeded = Connect();
+            }
+
+            if (!succeeded)
             {
                 return 1;
             }
 
             mFrontend.Run(mSession.Exit);
             return 0;
+        }
+
+        private bool WaitForConnection()
+        {
+            for (int i = 0; i < MaxConnectionAttempts; i++)
+            {
+                Thread.Sleep(ConnectionInterval);
+                if (mActiveProcess != null)
+                {
+                    Log.Info($"Successfully connected to {Address}:{Port}!");
+                    mDebuggeeRunning = true;
+                    return true;
+                }
+
+                if (!mSession.IsRunning)
+                {
+                    break;
+                }
+            }
+
+            Log.Error($"Could not connect to {Address}:{Port} - exiting");
+            return false;
+        }
+
+        private bool Host()
+        {
+            lock (mLock)
+            {
+                var args = new SoftDebuggerListenArgs(string.Empty, Address, Port)
+                {
+                    MaxConnectionAttempts = MaxConnectionAttempts,
+                    TimeBetweenConnectionAttempts = ConnectionInterval
+                };
+
+                var sessionOptions = new DebuggerSessionOptions
+                {
+                    EvaluationOptions = EvaluationOptions.DefaultOptions
+                };
+
+                var startInfo = new SoftDebuggerStartInfo(args);
+                mSession.Run(startInfo, sessionOptions);
+
+                return WaitForConnection();
+            }
         }
 
         private bool Connect()
@@ -1109,24 +1166,7 @@ namespace SGE.Debugger
                 var startInfo = new SoftDebuggerStartInfo(args);
                 mSession.Run(startInfo, sessionOptions);
 
-                for (int i = 0; i < MaxConnectionAttempts; i++)
-                {
-                    Thread.Sleep(ConnectionInterval);
-                    if (mActiveProcess != null)
-                    {
-                        Log.Info($"Successfully connected to {Address}:{Port}!");
-                        mDebuggeeRunning = true;
-                        return true;
-                    }
-
-                    if (!mSession.IsRunning)
-                    {
-                        break;
-                    }
-                }
-
-                Log.Error($"Could not connect to {Address}:{Port} - exiting");
-                return false;
+                return WaitForConnection();
             }
         }
 
@@ -1189,6 +1229,7 @@ namespace SGE.Debugger
 
         public IPAddress Address { get; }
         public int Port { get; }
+        public bool Hosting { get; }
 
         private readonly ObjectRegistry<IEnumerable<ObjectValue>> mVariableHandles;
         private readonly ObjectRegistry<StackFrame> mFrameHandles;

@@ -214,6 +214,7 @@ namespace SGE.Debugger
 
                 parser.AddOption("address", "The address to connect to.");
                 parser.AddOption("port", "The port to connect to.");
+                parser.AddOption("connect", "Whether or not to connect or host");
 
                 return parser.Parse(args, Session.Start);
             }

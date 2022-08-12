@@ -60,14 +60,29 @@ namespace sge {
 
         std::string m_class_name;
     };
+    
+    // for use internally & inside sgm
+    struct debugger_info_t {
+        std::string address = "127.0.0.1";
+        uint16_t port = 62222;
+        bool server = false;
+    };
 
     class script_engine {
     public:
         script_engine() = delete;
 
-        static void set_debugger_port(uint16_t port);
         static void init();
         static void shutdown();
+
+        static void enable_debugging();
+        static void disable_debugging();
+        static bool is_debugging_enabled();
+
+        static void set_debugger_config(const debugger_info_t& config);
+        static void set_debugger_address(const std::string& address);
+        static void set_debugger_port(uint16_t port);
+        static void set_debugger_mode(bool server);
 
         static void register_call_group(const std::string& managed_group_id,
                                         const std::function<void(function_registerer&)>& callback);

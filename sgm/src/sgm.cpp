@@ -24,6 +24,24 @@
 
 #include <random>
 
+#include <sge/asset/json.h>
+
+namespace sge {
+    void from_json(const json& data, debugger_info_t& config) {
+        if (data.find("address") != data.end()) {
+            data["address"].get_to(config.address);
+        }
+
+        if (data.find("port") != data.end()) {
+            data["port"].get_to(config.port);
+        }
+
+        if (data.find("server") != data.end()) {
+            data["server"].get_to(config.server);
+        }
+    }
+} // namespace sge
+
 namespace sgm {
     static const std::string s_sgm_title =
         "Simple Game Maker v" + application::get_engine_version();
@@ -45,8 +63,22 @@ namespace sgm {
                 throw std::runtime_error("cannot run SGM without a project!");
             }
 
-            uint16_t debugger_port = generate_debugger_port();
-            script_engine::set_debugger_port(debugger_port);
+            static const fs::path debugger_config_path =
+                fs::current_path() / "assets" / "settings" / "debugger.json";
+
+            debugger_info_t debugger_config;
+            if (fs::exists(debugger_config_path)) {
+                json data;
+
+                std::ifstream stream(debugger_config_path);
+                stream >> data;
+                stream.close();
+
+                data.get_to(debugger_config);
+            }
+
+            script_engine::enable_debugging();
+            script_engine::set_debugger_config(debugger_config);
 
             // if --launched is passed, SGM will start the proxy debugger, SGE.Debugger.exe. to
             // debug the proxy debugger, as ironic as that sounds, do not pass this flag and debug
@@ -59,7 +91,7 @@ namespace sgm {
                 debugger_configuration = "Release";
 #endif
 
-                fs::path debugger_path = fs::current_path() / "assets/assemblies" /
+                fs::path debugger_path = fs::current_path() / "assets" / "assemblies" /
                                          debugger_configuration / "SGE.Debugger.exe";
 
 #ifdef SGE_BUILD_DEBUGGER
@@ -74,17 +106,24 @@ namespace sgm {
                 p_info.cmdline = p_info.executable.string() + " \"" + debugger_path.string() + "\"";
 #endif
 
-                p_info.cmdline += " --address=127.0.0.1";
-                p_info.cmdline += " --port=" + std::to_string(debugger_port);
+                p_info.cmdline += " --address=" + debugger_config.address;
+                p_info.cmdline += " --port=" + std::to_string(debugger_config.port);
+                p_info.cmdline +=
+                    " --connect=" + std::string(debugger_config.server ? "true" : "false");
 
                 environment::run_command(p_info);
-                spdlog::info("proxy debugger listening on 127.0.0.1:{0}", debugger_port + 1);
+                spdlog::info("proxy debugger listening on 127.0.0.1:{0}", debugger_config.port + 1);
 #else
                 spdlog::error("could not launch debugger at {0} (mono executable not found)",
                               debugger_path.string());
 #endif
             } else {
-                spdlog::info("debugger agent listening on 127.0.0.1:{0}", debugger_port);
+                if (debugger_config.server) {
+                    spdlog::info("debugger agent listening on 127.0.0.1:{0}", debugger_config.port);
+                } else {
+                    spdlog::info("debugger agent connecting to 127.0.0.1:{0}",
+                                 debugger_config.port);
+                }
             }
 
             m_project_path = args[1];
