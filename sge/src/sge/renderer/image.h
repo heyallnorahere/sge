@@ -16,28 +16,21 @@
 
 #pragma once
 namespace sge {
-    enum class image_format {
-        RGB8_UNORM,
+    enum class image_format : int32_t {
+        RGB8_UNORM = 0,
         RGB8_SRGB,
 
         RGBA8_UNORM,
         RGBA8_SRGB,
     };
 
-    enum image_usage {
+    enum image_usage : uint32_t {
         image_usage_none = 0x0,
         image_usage_texture = 0x1,
         image_usage_attachment = 0x2,
         image_usage_storage = 0x4,
         image_usage_transfer = 0x8,
     };
-
-    /*enum class image_mode {
-        undefined,
-        sampled,
-        storage,
-        attachment
-    };*/
 
     class image_data {
     public:

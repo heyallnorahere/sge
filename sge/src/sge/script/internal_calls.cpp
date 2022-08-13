@@ -621,6 +621,16 @@ namespace sge {
             return address->get_filter();
         }
 
+        static void GetTextureImage(texture_2d* address, image_2d** image) {
+            auto image_ref = address->get_image();
+            auto ptr = image_ref.raw();
+
+            ref_counter<image_2d> counter(ptr);
+            counter++;
+
+            *image = ptr;
+        }
+
         static bool IsScriptEnabled(script_component* component) { return component->enabled; }
 
         static void SetScriptEnabled(script_component* component, bool enabled) {
@@ -653,6 +663,8 @@ namespace sge {
 
             component->verify_script(e);
         }
+
+        static void RemoveScript(script_component* component) { component->remove_script(); }
 
         static void* GetChangedFilePath(file_changed_event* e) {
             const auto& path = e->get_path();
@@ -719,6 +731,20 @@ namespace sge {
 
             *address = ptr;
         }
+
+        static int32_t GetImageWidth(image_2d* image) { return (int32_t)image->get_width(); }
+        static int32_t GetImageHeight(image_2d* image) { return (int32_t)image->get_height(); }
+
+        static int32_t GetImageMipLevelCount(image_2d* image) {
+            return (int32_t)image->get_mip_level_count();
+        }
+
+        static int32_t GetImageArrayLayerCount(image_2d* image) {
+            return (int32_t)image->get_array_layer_count();
+        }
+
+        static image_format GetImageFormat(image_2d* image) { return image->get_format(); }
+        static uint32_t GetImageUsage(image_2d* image) { return image->get_usage(); }
     } // namespace internal_script_calls
 
     template <typename T>
@@ -879,12 +905,14 @@ namespace sge {
             REGISTER_FUNC(LoadTexture2D);
             REGISTER_FUNC(GetWrapTexture2D);
             REGISTER_FUNC(GetFilterTexture2D);
+            REGISTER_FUNC(GetTextureImage);
 
             // script component
             REGISTER_FUNC(IsScriptEnabled);
             REGISTER_FUNC(SetScriptEnabled);
             REGISTER_FUNC(GetScript);
             REGISTER_FUNC(SetScript);
+            REGISTER_FUNC(RemoveScript);
 
             // file changed event
             REGISTER_FUNC(GetChangedFilePath);
@@ -906,6 +934,15 @@ namespace sge {
             REGISTER_REF_COUNTER(shader);
             REGISTER_FUNC(LoadShaderAuto);
             REGISTER_FUNC(LoadShaderExplicit);
+
+            // image_2d
+            REGISTER_REF_COUNTER(image_2d);
+            REGISTER_FUNC(GetImageWidth);
+            REGISTER_FUNC(GetImageHeight);
+            REGISTER_FUNC(GetImageMipLevelCount);
+            REGISTER_FUNC(GetImageArrayLayerCount);
+            REGISTER_FUNC(GetImageFormat);
+            REGISTER_FUNC(GetImageUsage);
         });
 #undef REGISTER_FUNC
 #undef REGISTER_REF_COUNTER

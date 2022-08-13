@@ -55,5 +55,19 @@ namespace SGE
 
         public TextureWrap Wrap => CoreInternalCalls.GetWrapTexture2D(mAddress);
         public TextureFilter Filter => CoreInternalCalls.GetFilterTexture2D(mAddress);
+
+        public Image2D Image
+        {
+            get
+            {
+                CoreInternalCalls.GetTextureImage(mAddress, out IntPtr image);
+                if (image == IntPtr.Zero)
+                {
+                    return null;
+                }
+
+                return new Image2D(image, false);
+            }
+        }
     }
 }

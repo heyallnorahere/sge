@@ -314,6 +314,8 @@ namespace SGE
         public static extern TextureWrap GetWrapTexture2D(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern TextureFilter GetFilterTexture2D(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetTextureImage(IntPtr address, out IntPtr image);
 
         // script component
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -324,6 +326,8 @@ namespace SGE
         public static extern Script GetScript(IntPtr address, Entity entity);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetScript(IntPtr address, Entity entity, Type scriptType);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveScript(IntPtr address);
 
         // file changed event
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -362,5 +366,23 @@ namespace SGE
         public static extern void LoadShaderAuto(string path, out IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void LoadShaderExplicit(string path, ShaderLanguage language, out IntPtr address);
+
+        // image2d
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void AddRef_image_2d(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveRef_image_2d(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetImageWidth(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetImageHeight(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetImageMipLevelCount(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetImageArrayLayerCount(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern ImageFormat GetImageFormat(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern ImageUsage GetImageUsage(IntPtr address);
     }
 }

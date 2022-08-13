@@ -230,7 +230,13 @@ namespace sge {
             remove_script(e);
         }
 
+        if (e.has_all<rigid_body_component>()) {
+            e.remove_component<rigid_body_component>();
+        }
+
+        update_physics_data(e);
         m_registry.destroy(e);
+
         recalculate_render_order();
     }
 
