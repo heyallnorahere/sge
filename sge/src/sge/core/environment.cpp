@@ -175,6 +175,12 @@ namespace sge {
 #endif
     }
 
+#ifndef SGE_PLATFORM_LINUX
+    void environment::set_thread_name(std::thread& thread, const std::string& name) {
+        spdlog::warn("no platform-specific implementation for environment::set_thread_name");
+    }
+#endif
+
     static void export_variable_bourne(const std::string& key, const std::string& value,
                                        std::stringstream& stream) {
         stream << key << "=" << std::quoted(value) << "\nexport " << key;

@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
+
 add_subdirectory("spdlog")
 add_subdirectory("SPIRV-Cross")
 add_subdirectory("stb")
 add_subdirectory("entt")
 add_subdirectory("box2d")
 add_subdirectory("json")
+
+add_library(miniaudio INTERFACE)
+target_include_directories(miniaudio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/miniaudio")
 
 if(NOT GIT_SUBMODULES_SYNCED)
     find_package(Git REQUIRED)

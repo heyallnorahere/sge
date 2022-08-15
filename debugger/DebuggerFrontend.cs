@@ -234,8 +234,7 @@ namespace SGE.Debugger
         private static readonly IReadOnlyDictionary<char, char> sScopeDeclarators;
         private static readonly Dictionary<Type, int> sConverterPositions;
         private static readonly JsonSerializerSettings sJsonSettings;
-
-        private static void AddJsonConverter<T>() where T : JsonConverter, new() => sJsonSettings.Converters.Add(new T());
+        
         static DebuggerFrontend()
         {
             sScopeDeclarators = new Dictionary<char, char>

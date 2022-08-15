@@ -17,32 +17,31 @@
 #pragma once
 #include "sge/asset/asset.h"
 #include "sge/asset/json.h"
-#include "sge/scene/scene.h"
-#include "sge/scene/entity.h"
 
 namespace sge {
-    class prefab : public asset {
+    struct sound_asset_data_t;
+    class sound : public asset {
     public:
-        static ref<prefab> from_entity(entity e, const fs::path& path = fs::path());
-        static bool serialize(ref<prefab> _prefab, const fs::path& path);
+        static void init();
+        static void shutdown();
 
-        prefab(const fs::path& path) : m_path(path) { reload(); }
-        virtual ~prefab() override = default;
+        static void play(ref<sound> _sound, bool repeat);
 
-        prefab(const prefab&) = delete;
-        prefab& operator=(const prefab&) = delete;
+        sound(const fs::path& path) : m_path(path) { reload(); }
+        virtual ~sound() override { cleanup(); }
 
-        virtual asset_type get_asset_type() override { return asset_type::prefab; }
+        sound(const sound&) = delete;
+        sound& operator=(const sound&) = delete;
+
+        virtual asset_type get_asset_type() override { return asset_type::sound; }
         virtual const fs::path& get_path() override { return m_path; }
 
         virtual bool reload() override;
 
-        entity instantiate(ref<scene> _scene);
-
     private:
-        prefab(const fs::path& path, const json& data) : m_path(path), m_data(data) {}
+        void cleanup();
 
         fs::path m_path;
-        json m_data;
+        sound_asset_data_t* m_data = nullptr;
     };
 } // namespace sge

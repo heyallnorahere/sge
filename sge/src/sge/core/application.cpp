@@ -193,6 +193,10 @@ namespace sge {
             project::shutdown();
         }
 
+        if (is_subsystem_initialized(subsystem_script_engine)) {
+            script_engine::shutdown();
+        }
+
         ImGuiIO& io = ImGui::GetIO();
         auto imgui_data = (imgui_app_data*)io.UserData;
 
@@ -200,10 +204,6 @@ namespace sge {
         delete m_imgui_layer;
         delete imgui_data;
         m_imgui_layer = nullptr;
-
-        if (is_subsystem_initialized(subsystem_script_engine)) {
-            script_engine::shutdown();
-        }
 
         m_swapchain.reset();
         renderer::shutdown();

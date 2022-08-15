@@ -14,26 +14,14 @@
    limitations under the License.
 */
 
-#pragma once
-#include "sge/core/guid.h"
+#include "sgepch.h"
+#include "sge/core/environment.h"
+
+#include <pthread.h>
+
 namespace sge {
-    enum class asset_type : int32_t { shader = 0, texture_2d, prefab, sound };
-
-    class asset : public ref_counted {
-    public:
-        guid id;
-
-        virtual ~asset() = default;
-
-        virtual asset_type get_asset_type() = 0;
-        virtual const fs::path& get_path() = 0;
-
-        virtual bool reload() = 0;
-    };
-
-    struct asset_desc {
-        std::optional<guid> id;
-        fs::path path;
-        std::optional<asset_type> type;
-    };
+    void environment::set_thread_name(std::thread& thread, const std::string& name) {
+        pthread_t id = thread.native_handle();
+        pthread_setname_np(id, name.c_str());
+    }
 } // namespace sge

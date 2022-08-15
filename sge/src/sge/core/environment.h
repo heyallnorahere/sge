@@ -30,6 +30,8 @@ namespace sge {
 
         static int32_t run_command(const process_info& info);
 
+        static void set_thread_name(std::thread& thread, const std::string& name);
+
         static bool set(const std::string& key, const std::string& value);
         static std::string get(const std::string& key);
         static bool has(const std::string& key);

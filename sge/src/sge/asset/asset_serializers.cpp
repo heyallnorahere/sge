@@ -20,6 +20,8 @@
 #include "sge/renderer/texture.h"
 #include "sge/scene/prefab.h"
 #include "sge/asset/project.h"
+#include "sge/asset/sound.h"
+
 namespace sge {
     class shader_serializer : public asset_serializer {
     protected:

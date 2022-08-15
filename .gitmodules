@@ -44,3 +44,6 @@
 	path = vendor/mono/submodules/nrefactory
 	url = https://github.com/yodasoda1219/nrefactory.git
 	branch = net472
+[submodule "vendor/miniaudio"]
+	path = vendor/miniaudio
+	url = https://github.com/mackron/miniaudio.git
