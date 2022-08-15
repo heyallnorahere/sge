@@ -17,8 +17,12 @@
 #include "sgepch.h"
 #include "sge/asset/sound.h"
 
+// todo: maybe link libvorbis if its available?
+#define MA_NO_LIBVORBIS
+
 #define MINIAUDIO_IMPLEMENTATION
 #include <miniaudio.h>
+#include <extras/miniaudio_libvorbis.h>
 
 namespace sge {
     using sound_clock = std::chrono::high_resolution_clock;

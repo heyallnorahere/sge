@@ -234,9 +234,12 @@ namespace sge {
             e.remove_component<rigid_body_component>();
         }
 
-        update_physics_data(e);
-        m_registry.destroy(e);
+        if (m_physics_data != nullptr &&
+            m_physics_data->bodies.find(e) != m_physics_data->bodies.end()) {
+            update_physics_data(e);
+        }
 
+        m_registry.destroy(e);
         recalculate_render_order();
     }
 
