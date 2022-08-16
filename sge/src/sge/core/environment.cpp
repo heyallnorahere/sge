@@ -265,17 +265,14 @@ namespace sge {
         return value;
     }
     bool environment::has(const std::string& key) {
-        return windows_hasenv(key);
         return !get(key).empty();
     }
 
     fs::path environment::get_home_directory() {
-        return windows_get_home_directory();
         return get("HOME");
     }
 
     uint64_t environment::get_process_id() {
-        return windows_get_process_id();
         return (uint64_t)getpid();
     }
 #endif
