@@ -31,7 +31,7 @@ namespace sgm::launcher {
         }
 
     protected:
-        virtual void on_init() {
+        virtual void on_init() override {
             launcher_layer::app_callbacks callbacks;
             callbacks.create_project = SGE_BIND_EVENT_FUNC(sgm_launcher::create_project);
             callbacks.open_project = SGE_BIND_EVENT_FUNC(sgm_launcher::open_project);
@@ -40,7 +40,7 @@ namespace sgm::launcher {
             push_layer(m_layer);
         }
 
-        virtual void on_shutdown() {
+        virtual void on_shutdown() override {
             pop_layer(m_layer);
             delete m_layer;
         }

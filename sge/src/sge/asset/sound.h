@@ -27,7 +27,7 @@ namespace sge {
 
         static void play(ref<sound> _sound, bool repeat);
 
-        sound(const fs::path& path) : m_path(path) { reload(); }
+        sound(const fs::path& path) : m_path(path) { load(); }
         virtual ~sound() override { cleanup(); }
 
         sound(const sound&) = delete;
@@ -39,6 +39,7 @@ namespace sge {
         virtual bool reload() override;
 
     private:
+        void load();
         void cleanup();
 
         fs::path m_path;

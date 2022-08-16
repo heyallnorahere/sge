@@ -21,12 +21,14 @@
 #include "sge/events/event.h"
 #include "sge/events/window_events.h"
 #include "sge/renderer/swapchain.h"
+
 namespace sge {
     enum subsystem : uint32_t {
-        subsystem_input = 0x1,
-        subsystem_asset = 0x2,
-        subsystem_project = 0x4,
-        subsystem_script_engine = 0x8
+        subsystem_input = 0x01,
+        subsystem_asset = 0x02,
+        subsystem_project = 0x04,
+        subsystem_script_engine = 0x08,
+        subsystem_sound = 0x10,
     };
 
     class imgui_layer;

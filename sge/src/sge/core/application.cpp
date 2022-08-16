@@ -22,6 +22,7 @@
 #include "sge/script/script_engine.h"
 #include "sge/asset/asset_serializers.h"
 #include "sge/asset/project.h"
+#include "sge/asset/sound.h"
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -180,6 +181,11 @@ namespace sge {
             m_initialized_subsystems |= subsystem_project;
         }
 
+        if ((m_disabled_subsystems & subsystem_sound) == 0) {
+            sound::init();
+            m_initialized_subsystems |= subsystem_sound;
+        }
+
         on_init();
     }
 
@@ -188,6 +194,10 @@ namespace sge {
 
         renderer::clear_render_data();
         on_shutdown();
+
+        if (is_subsystem_initialized(subsystem_sound)) {
+            sound::shutdown();
+        }
 
         if (is_subsystem_initialized(subsystem_project)) {
             project::shutdown();

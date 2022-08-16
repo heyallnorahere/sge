@@ -22,7 +22,8 @@ namespace sge {
     static const std::unordered_map<std::string, asset_type> asset_type_map = {
         { "shader", asset_type::shader },
         { "texture_2d", asset_type::texture_2d },
-        { "prefab", asset_type::prefab }
+        { "prefab", asset_type::prefab },
+        { "sound", asset_type::sound }
     };
 
     static const std::string& get_asset_type_name(asset_type type) {

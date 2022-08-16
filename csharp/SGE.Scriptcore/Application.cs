@@ -20,10 +20,11 @@ namespace SGE
 {
     public enum Subsystem : uint
     {
-        Input = 0x1,
-        Asset = 0x2,
-        Project = 0x4,
-        ScriptEngine = 0x8,
+        Input = 0x01,
+        Asset = 0x02,
+        Project = 0x04,
+        ScriptEngine = 0x08,
+        Sound = 0x10
     }
 
     public static class Application

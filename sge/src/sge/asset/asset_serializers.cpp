@@ -76,6 +76,18 @@ namespace sge {
         }
     };
 
+    class sound_serializer : public asset_serializer {
+    protected:
+        virtual bool serialize_impl(const fs::path& path, ref<asset> _asset) override {
+            return true;
+        }
+
+        virtual bool deserialize_impl(const fs::path& path, ref<asset>& _asset) override {
+            _asset = ref<sound>::create(path);
+            return true;
+        }
+    };
+
     static std::unordered_map<asset_type, std::unique_ptr<asset_serializer>> asset_serializers;
     template <typename T>
     static void add_serializer(asset_type type) {
@@ -94,6 +106,7 @@ namespace sge {
         add_serializer<shader_serializer>(asset_type::shader);
         add_serializer<texture2d_serializer>(asset_type::texture_2d);
         add_serializer<prefab_serializer>(asset_type::prefab);
+        add_serializer<sound_serializer>(asset_type::sound);
     }
 
     bool asset_serializer::serialize(ref<asset> _asset) {

@@ -24,7 +24,8 @@ namespace SGE
     {
         Shader = 0,
         Texture2D,
-        Prefab
+        Prefab,
+        Sound
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]

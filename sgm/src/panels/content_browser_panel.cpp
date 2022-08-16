@@ -535,7 +535,7 @@ namespace sgm {
 
             static std::unordered_set<fs::path, path_hasher> shader_extensions = { ".hlsl",
                                                                                    ".glsl" };
-            for (fs::path extension : shader_extensions) {
+            for (const fs::path& extension : shader_extensions) {
                 add_extension_entry(extension, data);
             }
         }
@@ -557,6 +557,22 @@ namespace sgm {
             data.type = asset_type::prefab;
 
             add_extension_entry(".sgeprefab", data);
+        }
+
+        // sounds
+        {
+            asset_extension_data_t data;
+            data.drag_drop_id = "sound";
+            data.icon_name = "file"; // for now
+            data.type = asset_type::sound;
+
+            // https://github.com/mackron/miniaudio#major-features
+            static std::unordered_set<fs::path, path_hasher> sound_extensions = { ".wav", ".flac",
+                                                                                  ".mp3", ".ogg" };
+
+            for (const fs::path& extension : sound_extensions) {
+                add_extension_entry(extension, data);
+            }
         }
     }
 
