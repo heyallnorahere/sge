@@ -29,11 +29,16 @@ namespace sge {
     using sound_timestamp = sound_clock::time_point;
 
     struct sound_asset_data_t {
-        void* decoder;
-        ma_result (*read)(void*, void*, size_t, size_t*);
-        void (*destroy)(void*);
-        void (*seekg)(void*, size_t);
-        size_t (*tellg)(void*);
+        void* decoder = nullptr;
+
+        float duration = 0.f;
+        ma_uint64 frame_count = 0;
+
+        ma_result (*read)(void*, void*, size_t, size_t*) = nullptr;
+        void (*destroy)(void*) = nullptr;
+        void (*seekg)(void*, size_t) = nullptr;
+        size_t (*tellg)(void*) = nullptr;
+        bool (*query_data)(sound_asset_data_t*) = nullptr;
     };
 
     struct playing_sound_data_t {
@@ -73,30 +78,36 @@ namespace sge {
     static std::unique_ptr<sound_data_t> s_sound_data;
     static size_t mix_frames(playing_sound_data_t& data, float* output, size_t frame_count) {
         static constexpr size_t buffer_size = 4096;
-
-        float temp_buffer[buffer_size];
         size_t temp_frame_cap = buffer_size / s_sound_data->channel_count;
+
+        float* temp_buffer = (float*)malloc(buffer_size * sizeof(float));
+        if (temp_buffer == nullptr) {
+            throw std::runtime_error("failed to allocate memory on the heap!");
+        }
 
         data.data->seekg(data.data->decoder, data.current_frame);
 
         size_t total_frames_read = 0;
         while (total_frames_read < frame_count || !data.controller->is_stopped()) {
+            data.current_frame = data.data->tellg(data.data->decoder);
+            if (data.current_frame >= data.data->frame_count) {
+                data.current_frame = 0;
+                data.data->seekg(data.data->decoder, data.current_frame);
+            }
+
             size_t total_remaining_frames = frame_count - total_frames_read;
             size_t frames_to_read = std::min(total_remaining_frames, temp_frame_cap);
+
+            if (frames_to_read == 0) {
+                break;
+            }
 
             size_t frames_read;
             auto result =
                 data.data->read(data.data->decoder, temp_buffer, frames_to_read, &frames_read);
 
-            if (result == MA_AT_END) {
-                if (data.repeat) {
-                    data.data->seekg(data.data->decoder, 0);
-                    data.current_frame = 0;
-                } else {
-                    break;
-                }
-            } else if (result != MA_SUCCESS) {
-                throw std::runtime_error("failed to read data from the decoder!");
+            if ((result != MA_SUCCESS || frames_read == 0) && !data.repeat) {
+                break;
             }
 
             for (size_t i = 0; i < frames_read * s_sound_data->channel_count; i++) {
@@ -104,17 +115,14 @@ namespace sge {
             }
 
             total_frames_read += frames_read;
-            if (frames_read < frames_to_read) {
-                if (data.repeat) {
-                    data.data->seekg(data.data->decoder, 0);
-                    data.current_frame = 0;
-                } else {
-                    break;
-                }
+            if (frames_read < frames_to_read && !data.repeat) {
+                break;
             }
         }
 
         data.current_frame = data.data->tellg(data.data->decoder);
+        free(temp_buffer);
+
         return total_frames_read;
     }
 
@@ -131,13 +139,21 @@ namespace sge {
             auto& playing_sound = *it;
 
             size_t read_frames = mix_frames(playing_sound, output_buffer, frame_count);
-            if (read_frames < frame_count) {
-                auto pos = it;
+            if (read_frames < frame_count || playing_sound.controller->is_stopped() ||
+                (!playing_sound.repeat && (playing_sound.current_frame == 0 ||
+                 playing_sound.current_frame >= playing_sound.data->frame_count))) {
+                size_t iterator_index = 0;
+                for (auto it_ = s_sound_data->playing_sounds.begin(); it_ != it; it_++) {
+                    iterator_index++;
+                }
 
-                // hack hackity hack hack
-                it++;
-                s_sound_data->playing_sounds.erase(pos);
-                it--;
+                s_sound_data->playing_sounds.erase(it);
+                if (s_sound_data->playing_sounds.empty()) {
+                    break;
+                } else {
+                    it = s_sound_data->playing_sounds.begin();
+                    std::advance(it, iterator_index);
+                }
             }
         }
     }
@@ -207,6 +223,18 @@ namespace sge {
         return false;
     }
 
+    bool sound::stop_all() {
+        mutex_lock lock(s_sound_data->sound_thread_mutex);
+
+        bool result = false;
+        for (const auto& playing_sound : s_sound_data->playing_sounds) {
+            playing_sound.controller->m_stopped = true;
+            result = true;
+        }
+
+        return result;
+    }
+
     static ma_result read_audio_decoder(void* decoder, void* output, size_t frame_count,
                                         size_t* frames_read) {
         ma_uint64 read_frame_count;
@@ -229,12 +257,32 @@ namespace sge {
     }
 
     static size_t tellg_audio_decoder(void* decoder) {
-        // i'm almost certain this is misuse of the api
-        return ((ma_decoder*)decoder)->readPointerInPCMFrames;
+        auto audio_decoder = ((ma_decoder*)decoder);
+
+        // i am almost certain this is a misuse of the api
+        return (size_t)audio_decoder->readPointerInPCMFrames;
+    }
+
+    static bool query_audio_decoder(sound_asset_data_t* data) {
+        auto decoder = (ma_decoder*)data->decoder;
+        auto data_source = decoder->pBackend;
+
+        if (ma_data_source_get_length_in_seconds(data_source, &data->duration) != MA_SUCCESS) {
+            return false;
+        }
+
+        if (ma_data_source_get_length_in_pcm_frames(data_source, &data->frame_count) !=
+            MA_SUCCESS) {
+            return false;
+        }
+
+        // todo: query for more data
+
+        return true;
     }
 
     bool sound::reload() {
-        sound_asset_data_t* data;
+        sound_asset_data_t* data = nullptr;
         if (m_path.extension() != ".ogg") {
             auto decoder = new ma_decoder;
 
@@ -247,12 +295,25 @@ namespace sge {
 
             data = new sound_asset_data_t;
             data->decoder = decoder;
+
             data->read = read_audio_decoder;
             data->destroy = destroy_audio_decoder;
+
             data->seekg = seekg_audio_decoder;
             data->tellg = tellg_audio_decoder;
+
+            data->query_data = query_audio_decoder;
         } else {
             // todo: vorbis
+            return false;
+        }
+
+        if (data == nullptr || data->query_data == nullptr || !data->query_data(data)) {
+            if (data != nullptr) {
+                data->destroy(data->decoder);
+                delete data;
+            }
+
             return false;
         }
 
@@ -261,6 +322,8 @@ namespace sge {
 
         return true;
     }
+
+    float sound::get_duration() { return m_data->duration; }
 
     void sound::load() {
         if (!reload()) {

@@ -73,7 +73,8 @@ namespace SGE
     [InternalCalls("core")]
     internal static class CoreInternalCalls
     {
-        // application
+        #region Application
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern string GetEngineVersion();
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -87,7 +88,9 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsSubsystemInitialized(Subsystem subsystem);
 
-        // window
+        #endregion
+        #region Window
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void AddRef_window(IntPtr window);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -101,7 +104,9 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern string WindowFileDialog(IntPtr window, DialogMode mode, IReadOnlyList<DialogFilter> filters);
 
-        // scene
+        #endregion
+        #region Scene
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern uint CreateEntity(string name, IntPtr scene);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -117,7 +122,9 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern string GetCollisionCategoryName(IntPtr scene, int index);
 
-        // entity
+        #endregion
+        #region Entity
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr AddComponent(Type componentType, Entity entity);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -127,17 +134,23 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetGUID(uint entityID, IntPtr scene, out GUID guid);
 
-        // guid
+        #endregion
+        #region GUID
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern GUID GenerateGUID();
 
-        // tag component
+        #endregion
+        #region TagComponent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetTag(IntPtr component, string tag);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern string GetTag(IntPtr component);
 
-        // transform component
+        #endregion
+        #region TransformComponent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetTranslation(IntPtr component, out Vector2 translation);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -155,7 +168,9 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetZLayer(IntPtr component, Entity entity, int zLayer);
 
-        // sprite renderer component
+        #endregion
+        #region SpriteRendererComponent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetColor(IntPtr component, out Vector4 color);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -169,7 +184,9 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetShader(IntPtr component, Entity entity, IntPtr shader);
 
-        // camera component
+        #endregion
+        #region CameraComponent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool GetPrimary(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -201,7 +218,9 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetPerspective(IntPtr component, float fov, CameraClips clips);
 
-        // rigid body component
+        #endregion
+        #region RigidBodyComponent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern BodyType GetBodyType(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -237,7 +256,9 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetFilterMask(IntPtr component, ushort mask);
 
-        // box collider component
+        #endregion
+        #region BoxColliderComponent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetSize(IntPtr component, out Vector2 size);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -259,7 +280,23 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetRestitutionThreashold(IntPtr component, Entity entity, float threashold);
 
-        // logger
+        #endregion
+        #region ScriptComponent
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool IsScriptEnabled(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetScriptEnabled(IntPtr address, bool enabled);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern Script GetScript(IntPtr address, Entity entity);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetScript(IntPtr address, Entity entity, Type scriptType);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveScript(IntPtr address);
+
+        #endregion
+        #region Log
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void LogDebug(string message);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -269,7 +306,9 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void LogError(string message);
 
-        // input
+        #endregion
+        #region Input
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool GetKey(KeyCode key);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -277,33 +316,99 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetMousePosition(out Vector2 position);
 
-        // events
+        #endregion
+        #region Event
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsEventHandled(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetEventHandled(IntPtr address, bool handled);
+
+        #endregion
+        #region WindowResizeEvent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetResizeWidth(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetResizeHeight(IntPtr address);
+
+        #endregion
+        #region KeyPressedEvent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetPressedEventKey(IntPtr address, out KeyCode key);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetRepeatCount(IntPtr address);
+
+        #endregion
+        #region KeyReleasedEvent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetReleasedEventKey(IntPtr address, out KeyCode key);
+
+        #endregion
+        #region KeyTypedEvent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetTypedEventKey(IntPtr address, out KeyCode key);
+
+        #endregion
+        #region MouseMovedEvent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetEventMousePosition(IntPtr address, out Vector2 position);
+
+        #endregion
+        #region MouseScrolledEvent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetScrollOffset(IntPtr address, out Vector2 offset);
+
+        #endregion
+        #region MouseButtonEvent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetEventMouseButton(IntPtr address, out MouseButton button);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool GetMouseButtonReleased(IntPtr address);
 
-        // texture2d
+        #endregion
+        #region FileChangedEvent
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetChangedFilePath(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetWatchedDirectory(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetFileStatus(IntPtr address, out FileStatus status);
+
+        #endregion
+        #region Asset
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetAssetPath(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetAssetType(IntPtr address, out AssetType type);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetAssetGUID(IntPtr address, out GUID guid);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool ReloadAsset(IntPtr address);
+
+        #endregion
+        #region Shader
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void AddRef_shader(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveRef_shader(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void LoadShaderAuto(string path, out IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void LoadShaderExplicit(string path, ShaderLanguage language, out IntPtr address);
+
+        #endregion
+        #region Texture2D
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void AddRef_texture_2d(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -317,37 +422,9 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetTextureImage(IntPtr address, out IntPtr image);
 
-        // script component
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool IsScriptEnabled(IntPtr address);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetScriptEnabled(IntPtr address, bool enabled);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern Script GetScript(IntPtr address, Entity entity);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetScript(IntPtr address, Entity entity, Type scriptType);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void RemoveScript(IntPtr address);
+        #endregion
+        #region Prefab
 
-        // file changed event
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern string GetChangedFilePath(IntPtr address);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern string GetWatchedDirectory(IntPtr address);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void GetFileStatus(IntPtr address, out FileStatus status);
-
-        // assets
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern string GetAssetPath(IntPtr address);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void GetAssetType(IntPtr address, out AssetType type);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void GetAssetGUID(IntPtr address, out GUID guid);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool ReloadAsset(IntPtr address);
-
-        // prefab
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void AddRef_prefab(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -357,17 +434,25 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern Entity InstantiatePrefab(IntPtr address, IntPtr scene);
 
-        // shader
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void AddRef_shader(IntPtr address);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void RemoveRef_shader(IntPtr address);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void LoadShaderAuto(string path, out IntPtr address);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void LoadShaderExplicit(string path, ShaderLanguage language, out IntPtr address);
+        #endregion
+        #region Sound
 
-        // image2d
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void AddRef_sound(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveRef_sound(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetSoundDuration(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void PlaySound(IntPtr address, bool repeat, out IntPtr controller);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool StopSound(IntPtr controller);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void DeleteSoundControllerPointer(IntPtr controller);
+
+        #endregion
+        #region Image2D
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void AddRef_image_2d(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -384,5 +469,7 @@ namespace SGE
         public static extern ImageFormat GetImageFormat(IntPtr address);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern ImageUsage GetImageUsage(IntPtr address);
+
+        #endregion
     }
 }

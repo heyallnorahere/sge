@@ -40,6 +40,7 @@ namespace sge {
 
         static std::weak_ptr<sound_controller> play(ref<sound> _sound, bool repeat);
         static bool stop(std::weak_ptr<sound_controller> controller);
+        static bool stop_all();
 
         sound(const fs::path& path) : m_path(path) { load(); }
         virtual ~sound() override { cleanup(); }
@@ -51,6 +52,8 @@ namespace sge {
         virtual const fs::path& get_path() override { return m_path; }
 
         virtual bool reload() override;
+
+        float get_duration();
 
     private:
         void load();

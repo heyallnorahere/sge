@@ -16,7 +16,10 @@
 
 #include "sgmpch.h"
 #include "editor_scene.h"
+
 #include <sge/renderer/renderer.h>
+#include <sge/asset/sound.h>
+
 namespace sgm {
     struct scene_data_t {
         ref<framebuffer> _framebuffer;
@@ -137,6 +140,7 @@ namespace sgm {
 
         reset_selection();
         script_helpers::set_editor_scene(scene_data->_scene);
+        sound::stop_all();
 
         scene_data->runtime_scene->on_stop();
         scene_data->runtime_scene.reset();

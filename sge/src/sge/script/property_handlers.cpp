@@ -21,6 +21,7 @@
 #include "sge/scene/scene_serializer.h"
 #include "sge/asset/project.h"
 #include "sge/imgui/imgui_extensions.h"
+#include "sge/asset/sound.h"
 
 namespace sge {
     using edit_callback_t = void (*)(void*, void*, const std::string&);
@@ -332,6 +333,18 @@ namespace sge {
             }
         } // namespace entity_
 
+        namespace shader_ {
+            static void edit(void* instance, void* property, const std::string& label) {
+                edit_asset(instance, property, label, "shader");
+            }
+
+            static void serialize(void* object, json& data) { serialize_asset(object, data); }
+
+            static void deserialize(void* instance, void* property, const json& data) {
+                deserialize_asset(instance, property, data);
+            }
+        }; // namespace shader_
+
         namespace texture_2d_ {
             static void edit(void* instance, void* property, const std::string& label) {
                 edit_asset(instance, property, label, "texture", "texture_2d");
@@ -356,9 +369,9 @@ namespace sge {
             }
         }; // namespace prefab_
 
-        namespace shader_ {
+        namespace sound_ {
             static void edit(void* instance, void* property, const std::string& label) {
-                edit_asset(instance, property, label, "shader");
+                edit_asset(instance, property, label, "sound");
             }
 
             static void serialize(void* object, json& data) { serialize_asset(object, data); }
@@ -366,7 +379,7 @@ namespace sge {
             static void deserialize(void* instance, void* property, const json& data) {
                 deserialize_asset(instance, property, data);
             }
-        }; // namespace shader_
+        }; // namespace sound_
     }      // namespace handlers
 
     void script_helpers::set_editor_scene(ref<scene> _scene) {
@@ -460,9 +473,10 @@ namespace sge {
         REGISTER_HANDLER(bool, "System.Boolean");
         REGISTER_HANDLER(string, "System.String");
         REGISTER_HANDLER(entity, "SGE.Entity");
+        REGISTER_HANDLER(shader, "SGE.Shader");
         REGISTER_HANDLER(texture_2d, "SGE.Texture2D");
         REGISTER_HANDLER(prefab, "SGE.Prefab");
-        REGISTER_HANDLER(shader, "SGE.Shader");
+        REGISTER_HANDLER(sound, "SGE.Sound");
     }
 
 #undef REGISTER_HANDLER

@@ -434,8 +434,11 @@ namespace sgm {
             return false;
         }
 
+        // we absolutely do not want to deal with temp files
         const auto& path = e.get_path();
-        fs::path asset_path = fs::relative(path, m_root);
+        if (path.string().find('~') != std::string::npos) {
+            return false;
+        }
 
         bool handled = false;
         bool tree_changed = false;
@@ -443,6 +446,7 @@ namespace sgm {
         auto& manager = project::get().get_asset_manager();
         auto& registry = manager.registry;
 
+        fs::path asset_path = fs::relative(path, m_root);
         switch (e.get_status()) {
         case file_status::created: {
             std::optional<asset_type> type;

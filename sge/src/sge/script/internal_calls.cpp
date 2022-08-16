@@ -26,6 +26,7 @@
 #include "sge/scene/prefab.h"
 #include "sge/core/input.h"
 #include "sge/renderer/shader.h"
+#include "sge/asset/sound.h"
 
 namespace sge {
     struct component_callbacks_t {
@@ -83,6 +84,8 @@ namespace sge {
     }
 
     namespace internal_script_calls {
+#pragma region Application
+
         static void* GetEngineVersion() {
             std::string version = application::get_engine_version();
             return script_engine::to_managed_string(version);
@@ -114,6 +117,9 @@ namespace sge {
             auto& app = application::get();
             return app.is_subsystem_initialized(id);
         }
+
+#pragma endregion
+#pragma region Window
 
         static void CreateWindow(void* title, uint32_t width, uint32_t height, window** _window) {
             std::string window_title = script_engine::from_managed_string(title);
@@ -165,6 +171,9 @@ namespace sge {
             return nullptr;
         }
 
+#pragma endregion
+#pragma region Scene
+
         static uint32_t CreateEntity(void* name, scene* _scene) {
             std::string native_name = script_engine::from_managed_string(name);
             return (uint32_t)_scene->create_entity(native_name);
@@ -212,6 +221,9 @@ namespace sge {
             return script_engine::to_managed_string(name);
         }
 
+#pragma endregion
+#pragma region Entity
+
         static void* AddComponent(void* componentType, void* _entity) {
             verify_component_type_validity(componentType);
             entity e = script_helpers::get_entity_from_object(_entity);
@@ -241,7 +253,13 @@ namespace sge {
             *id = e.get_guid();
         }
 
+#pragma endregion
+#pragma region GUID
+
         static guid GenerateGUID() { return guid(); }
+
+#pragma endregion
+#pragma region TagComponent
 
         static void SetTag(tag_component* component, void* tag) {
             component->tag = script_engine::from_managed_string(tag);
@@ -250,6 +268,9 @@ namespace sge {
         static void* GetTag(tag_component* component) {
             return script_engine::to_managed_string(component->tag);
         }
+
+#pragma endregion
+#pragma region TransformComponent
 
         static void GetTranslation(transform_component* component, glm::vec2* translation) {
             *translation = component->translation;
@@ -283,6 +304,9 @@ namespace sge {
             _entity.get_scene()->recalculate_render_order();
         }
 
+#pragma endregion
+#pragma region SpriteRendererComponent
+
         static void GetColor(sprite_renderer_component* component, glm::vec4* color) {
             *color = component->color;
         }
@@ -310,6 +334,9 @@ namespace sge {
             entity _entity = script_helpers::get_entity_from_object(entity_object);
             _entity.get_scene()->recalculate_render_order();
         }
+
+#pragma endregion
+#pragma region CameraComponent
 
         static bool GetPrimary(camera_component* component) { return component->primary; }
 
@@ -371,6 +398,9 @@ namespace sge {
                                    runtime_camera::clips clips) {
             component->camera.set_perspective(fov, clips.near, clips.far);
         }
+
+#pragma endregion
+#pragma region RigidBodyComponent
 
         static rigid_body_component::body_type GetBodyType(rigid_body_component* rb) {
             return rb->type;
@@ -487,6 +517,9 @@ namespace sge {
             component->filter_mask = mask;
         }
 
+#pragma endregion
+#pragma region BoxColliderComponent
+
         static void GetSize(box_collider_component* bc, glm::vec2* size) { *size = bc->size; }
 
         static void SetSize(box_collider_component* bc, void* _entity, glm::vec2 size) {
@@ -535,101 +568,8 @@ namespace sge {
             e.get_scene()->update_physics_data(e);
         }
 
-        static void LogDebug(void* message) {
-            std::string string = script_engine::from_managed_string(message);
-            spdlog::debug(string);
-        }
-
-        static void LogInfo(void* message) {
-            std::string string = script_engine::from_managed_string(message);
-            spdlog::info(string);
-        }
-
-        static void LogWarn(void* message) {
-            std::string string = script_engine::from_managed_string(message);
-            spdlog::warn(string);
-        }
-
-        static void LogError(void* message) {
-            std::string string = script_engine::from_managed_string(message);
-            spdlog::error(string);
-        }
-
-        static bool GetKey(key_code key) { return input::get_key(key); }
-        static bool GetMouseButton(mouse_button button) { return input::get_mouse_button(button); }
-
-        static void GetMousePosition(glm::vec2* position) {
-            *position = input::get_mouse_position();
-        }
-
-        static bool IsEventHandled(event* address) { return address->handled; }
-        static void SetEventHandled(event* address, bool handled) { address->handled = handled; }
-
-        static int32_t GetResizeWidth(window_resize_event* address) {
-            return (int32_t)address->get_width();
-        }
-
-        static int32_t GetResizeHeight(window_resize_event* address) {
-            return (int32_t)address->get_height();
-        }
-
-        static void GetPressedEventKey(key_pressed_event* address, key_code* key) {
-            *key = address->get_key();
-        }
-
-        static int32_t GetRepeatCount(key_pressed_event* address) {
-            return (int32_t)address->get_repeat_count();
-        }
-
-        static void GetReleasedEventKey(key_released_event* address, key_code* key) {
-            *key = address->get_key();
-        }
-
-        static void GetTypedEventKey(key_typed_event* address, key_code* key) {
-            *key = address->get_key();
-        }
-
-        static void GetEventMousePosition(mouse_moved_event* address, glm::vec2* position) {
-            *position = address->get_position();
-        }
-
-        static void GetScrollOffset(mouse_scrolled_event* address, glm::vec2* position) {
-            *position = address->get_offset();
-        }
-
-        static void GetEventMouseButton(mouse_button_event* address, mouse_button* button) {
-            *button = address->get_button();
-        }
-
-        static bool GetMouseButtonReleased(mouse_button_event* address) {
-            return address->get_released();
-        }
-
-        static void LoadTexture2D(void* path, texture_2d** address) {
-            fs::path texture_path = script_engine::from_managed_string(path);
-            auto texture = texture_2d::load(texture_path);
-
-            ref_counter counter(texture.raw());
-            counter++;
-
-            *address = texture.raw();
-        }
-
-        static texture_wrap GetWrapTexture2D(texture_2d* address) { return address->get_wrap(); }
-
-        static texture_filter GetFilterTexture2D(texture_2d* address) {
-            return address->get_filter();
-        }
-
-        static void GetTextureImage(texture_2d* address, image_2d** image) {
-            auto image_ref = address->get_image();
-            auto ptr = image_ref.raw();
-
-            ref_counter<image_2d> counter(ptr);
-            counter++;
-
-            *image = ptr;
-        }
+#pragma endregion
+#pragma region ScriptComponent
 
         static bool IsScriptEnabled(script_component* component) { return component->enabled; }
 
@@ -666,6 +606,109 @@ namespace sge {
 
         static void RemoveScript(script_component* component) { component->remove_script(); }
 
+#pragma endregion
+#pragma region Log
+
+        static void LogDebug(void* message) {
+            std::string string = script_engine::from_managed_string(message);
+            spdlog::debug(string);
+        }
+
+        static void LogInfo(void* message) {
+            std::string string = script_engine::from_managed_string(message);
+            spdlog::info(string);
+        }
+
+        static void LogWarn(void* message) {
+            std::string string = script_engine::from_managed_string(message);
+            spdlog::warn(string);
+        }
+
+        static void LogError(void* message) {
+            std::string string = script_engine::from_managed_string(message);
+            spdlog::error(string);
+        }
+
+#pragma endregion
+#pragma region Input
+
+        static bool GetKey(key_code key) { return input::get_key(key); }
+        static bool GetMouseButton(mouse_button button) { return input::get_mouse_button(button); }
+
+        static void GetMousePosition(glm::vec2* position) {
+            *position = input::get_mouse_position();
+        }
+
+#pragma endregion
+#pragma region Event
+
+        static bool IsEventHandled(event* address) { return address->handled; }
+        static void SetEventHandled(event* address, bool handled) { address->handled = handled; }
+
+#pragma endregion
+#pragma region WindowResizeEvent
+
+        static int32_t GetResizeWidth(window_resize_event* address) {
+            return (int32_t)address->get_width();
+        }
+
+        static int32_t GetResizeHeight(window_resize_event* address) {
+            return (int32_t)address->get_height();
+        }
+
+#pragma endregion
+#pragma region KeyPressedEvent
+
+        static void GetPressedEventKey(key_pressed_event* address, key_code* key) {
+            *key = address->get_key();
+        }
+
+        static int32_t GetRepeatCount(key_pressed_event* address) {
+            return (int32_t)address->get_repeat_count();
+        }
+
+#pragma endregion
+#pragma region KeyReleasedEvent
+
+        static void GetReleasedEventKey(key_released_event* address, key_code* key) {
+            *key = address->get_key();
+        }
+
+#pragma endregion
+#pragma region KeyTypedEvent
+
+        static void GetTypedEventKey(key_typed_event* address, key_code* key) {
+            *key = address->get_key();
+        }
+
+#pragma endregion
+#pragma region MouseMovedEvent
+
+        static void GetEventMousePosition(mouse_moved_event* address, glm::vec2* position) {
+            *position = address->get_position();
+        }
+
+#pragma endregion
+#pragma region MouseScrolledEvent
+
+        static void GetScrollOffset(mouse_scrolled_event* address, glm::vec2* position) {
+            *position = address->get_offset();
+        }
+
+#pragma endregion
+#pragma region MouseButtonEvent
+
+        static void GetEventMouseButton(mouse_button_event* address, mouse_button* button) {
+            *button = address->get_button();
+        }
+
+        static bool GetMouseButtonReleased(mouse_button_event* address) {
+            return address->get_released();
+        }
+
+#pragma endregion
+#pragma region FileChangedEvent
+
         static void* GetChangedFilePath(file_changed_event* e) {
             const auto& path = e->get_path();
             return script_engine::to_managed_string(path.string());
@@ -680,6 +723,9 @@ namespace sge {
             *status = e->get_status();
         }
 
+#pragma endregion
+#pragma region Asset
+
         static void* GetAssetPath(asset* a) {
             const auto& path = a->get_path();
             return script_engine::to_managed_string(path.string());
@@ -690,21 +736,8 @@ namespace sge {
 
         static bool ReloadAsset(asset* a) { return a->reload(); }
 
-        static void CreatePrefab(void* entity_object, prefab** result) {
-            entity e = script_helpers::get_entity_from_object(entity_object);
-            auto _prefab = prefab::from_entity(e);
-
-            prefab* ptr = _prefab.raw();
-            ref_counter<prefab> counter(ptr);
-            counter++;
-
-            *result = ptr;
-        }
-
-        static void* InstantiatePrefab(prefab* _prefab, scene* _scene) {
-            entity e = _prefab->instantiate(_scene);
-            return script_helpers::create_entity_object(e);
-        }
+#pragma endregion
+#pragma region Shader
 
         static void LoadShaderAuto(void* path, shader** address) {
             fs::path shader_path = script_engine::from_managed_string(path);
@@ -732,6 +765,76 @@ namespace sge {
             *address = ptr;
         }
 
+#pragma endregion
+#pragma region Texture2D
+
+        static void LoadTexture2D(void* path, texture_2d** address) {
+            fs::path texture_path = script_engine::from_managed_string(path);
+            auto texture = texture_2d::load(texture_path);
+
+            ref_counter counter(texture.raw());
+            counter++;
+
+            *address = texture.raw();
+        }
+
+        static texture_wrap GetWrapTexture2D(texture_2d* address) { return address->get_wrap(); }
+
+        static texture_filter GetFilterTexture2D(texture_2d* address) {
+            return address->get_filter();
+        }
+
+        static void GetTextureImage(texture_2d* address, image_2d** image) {
+            auto image_ref = address->get_image();
+            auto ptr = image_ref.raw();
+
+            ref_counter<image_2d> counter(ptr);
+            counter++;
+
+            *image = ptr;
+        }
+
+#pragma endregion
+#pragma region Prefab
+
+        static void CreatePrefab(void* entity_object, prefab** result) {
+            entity e = script_helpers::get_entity_from_object(entity_object);
+            auto _prefab = prefab::from_entity(e);
+
+            prefab* ptr = _prefab.raw();
+            ref_counter<prefab> counter(ptr);
+            counter++;
+
+            *result = ptr;
+        }
+
+        static void* InstantiatePrefab(prefab* _prefab, scene* _scene) {
+            entity e = _prefab->instantiate(_scene);
+            return script_helpers::create_entity_object(e);
+        }
+
+#pragma endregion
+#pragma region Sound
+
+        static float GetSoundDuration(sound* _sound) { return _sound->get_duration(); }
+
+        static void PlaySound(sound* _sound, bool repeat,
+                              std::weak_ptr<sound_controller>** controller) {
+            auto ptr = sound::play(_sound, repeat);
+            *controller = new std::weak_ptr<sound_controller>(ptr);
+        }
+
+        static bool StopSound(std::weak_ptr<sound_controller>* controller) {
+            return sound::stop(*controller);
+        }
+
+        static void DeleteSoundControllerPointer(std::weak_ptr<sound_controller>* controller) {
+            delete controller;
+        }
+
+#pragma endregion
+#pragma region Image2D
+
         static int32_t GetImageWidth(image_2d* image) { return (int32_t)image->get_width(); }
         static int32_t GetImageHeight(image_2d* image) { return (int32_t)image->get_height(); }
 
@@ -745,6 +848,8 @@ namespace sge {
 
         static image_format GetImageFormat(image_2d* image) { return image->get_format(); }
         static uint32_t GetImageUsage(image_2d* image) { return image->get_usage(); }
+
+#pragma endregion
     } // namespace internal_script_calls
 
     template <typename T>
@@ -768,7 +873,7 @@ namespace sge {
     registerer("RemoveRef_" #type, remove_ref<type>)
 
         register_call_group("core", [](const function_registerer& registerer) {
-            // application
+#pragma region Application
             REGISTER_FUNC(GetEngineVersion);
             REGISTER_FUNC(QuitApplication);
             REGISTER_FUNC(GetApplicationTitle);
@@ -776,14 +881,18 @@ namespace sge {
             REGISTER_FUNC(IsApplicationEditor);
             REGISTER_FUNC(IsSubsystemInitialized);
 
-            // window
+#pragma endregion
+#pragma region Window
+
             REGISTER_REF_COUNTER(window);
             REGISTER_FUNC(CreateWindow);
             REGISTER_FUNC(GetWindowWidth);
             REGISTER_FUNC(GetWindowHeight);
             REGISTER_FUNC(WindowFileDialog);
 
-            // scene
+#pragma endregion
+#pragma region Scene
+
             REGISTER_FUNC(CreateEntity);
             REGISTER_FUNC(CreateEntityWithGUID);
             REGISTER_FUNC(CloneEntity);
@@ -792,20 +901,28 @@ namespace sge {
             REGISTER_FUNC(ForEach);
             REGISTER_FUNC(GetCollisionCategoryName);
 
-            // entity
+#pragma endregion
+#pragma region Entity
+
             REGISTER_FUNC(AddComponent);
             REGISTER_FUNC(HasComponent);
             REGISTER_FUNC(GetComponent);
             REGISTER_FUNC(GetGUID);
 
-            // guid
+#pragma endregion
+#pragma region GUID
+
             REGISTER_FUNC(GenerateGUID);
 
-            // tag component
+#pragma endregion
+#pragma region TagComponent
+
             REGISTER_FUNC(SetTag);
             REGISTER_FUNC(GetTag);
 
-            // transform component
+#pragma endregion
+#pragma region TransformComponent
+
             REGISTER_FUNC(GetTranslation);
             REGISTER_FUNC(SetTranslation);
             REGISTER_FUNC(GetRotation);
@@ -815,7 +932,9 @@ namespace sge {
             REGISTER_FUNC(GetZLayer);
             REGISTER_FUNC(SetZLayer);
 
-            // sprite renderer component
+#pragma endregion
+#pragma region SpriteRendererComponent
+
             REGISTER_FUNC(GetColor);
             REGISTER_FUNC(SetColor);
             REGISTER_FUNC(GetTexture);
@@ -823,7 +942,9 @@ namespace sge {
             REGISTER_FUNC(GetShader);
             REGISTER_FUNC(SetShader);
 
-            // camera component
+#pragma endregion
+#pragma region CameraComponent
+
             REGISTER_FUNC(GetPrimary);
             REGISTER_FUNC(SetPrimary);
             REGISTER_FUNC(GetProjectionType);
@@ -840,7 +961,9 @@ namespace sge {
             REGISTER_FUNC(SetOrthographic);
             REGISTER_FUNC(SetPerspective);
 
-            // rigid body component
+#pragma endregion
+#pragma region RigidBodyComponent
+
             REGISTER_FUNC(GetBodyType);
             REGISTER_FUNC(SetBodyType);
             REGISTER_FUNC(GetFixedRotation);
@@ -859,7 +982,9 @@ namespace sge {
             REGISTER_FUNC(GetFilterMask);
             REGISTER_FUNC(SetFilterMask);
 
-            // box collider component
+#pragma endregion
+#pragma region BoxColliderComponent
+
             REGISTER_FUNC(GetSize);
             REGISTER_FUNC(SetSize);
             REGISTER_FUNC(GetDensity);
@@ -871,71 +996,124 @@ namespace sge {
             REGISTER_FUNC(GetRestitutionThreashold);
             REGISTER_FUNC(SetRestitutionThreashold);
 
-            // logger
-            REGISTER_FUNC(LogDebug);
-            REGISTER_FUNC(LogInfo);
-            REGISTER_FUNC(LogWarn);
-            REGISTER_FUNC(LogError);
+#pragma endregion
+#pragma region ScriptComponent
 
-            // input
-            REGISTER_FUNC(GetKey);
-            REGISTER_FUNC(GetMouseButton);
-            REGISTER_FUNC(GetMousePosition);
-
-            // event
-            REGISTER_FUNC(IsEventHandled);
-            REGISTER_FUNC(SetEventHandled);
-
-            // window events
-            REGISTER_FUNC(GetResizeWidth);
-            REGISTER_FUNC(GetResizeHeight);
-
-            // input events
-            REGISTER_FUNC(GetPressedEventKey);
-            REGISTER_FUNC(GetRepeatCount);
-            REGISTER_FUNC(GetReleasedEventKey);
-            REGISTER_FUNC(GetTypedEventKey);
-            REGISTER_FUNC(GetEventMousePosition);
-            REGISTER_FUNC(GetScrollOffset);
-            REGISTER_FUNC(GetEventMouseButton);
-            REGISTER_FUNC(GetMouseButtonReleased);
-
-            // texture_2d
-            REGISTER_REF_COUNTER(texture_2d);
-            REGISTER_FUNC(LoadTexture2D);
-            REGISTER_FUNC(GetWrapTexture2D);
-            REGISTER_FUNC(GetFilterTexture2D);
-            REGISTER_FUNC(GetTextureImage);
-
-            // script component
             REGISTER_FUNC(IsScriptEnabled);
             REGISTER_FUNC(SetScriptEnabled);
             REGISTER_FUNC(GetScript);
             REGISTER_FUNC(SetScript);
             REGISTER_FUNC(RemoveScript);
 
-            // file changed event
+#pragma endregion
+#pragma region Log
+
+            REGISTER_FUNC(LogDebug);
+            REGISTER_FUNC(LogInfo);
+            REGISTER_FUNC(LogWarn);
+            REGISTER_FUNC(LogError);
+
+#pragma endregion
+#pragma region Input
+
+            REGISTER_FUNC(GetKey);
+            REGISTER_FUNC(GetMouseButton);
+            REGISTER_FUNC(GetMousePosition);
+
+#pragma endregion
+#pragma region Event
+
+            REGISTER_FUNC(IsEventHandled);
+            REGISTER_FUNC(SetEventHandled);
+
+#pragma endregion
+#pragma region WindowResizeEvent
+
+            REGISTER_FUNC(GetResizeWidth);
+            REGISTER_FUNC(GetResizeHeight);
+
+#pragma endregion
+#pragma region KeyPressedEvent
+
+            REGISTER_FUNC(GetPressedEventKey);
+            REGISTER_FUNC(GetRepeatCount);
+
+#pragma endregion
+#pragma region KeyReleasedEvent
+
+            REGISTER_FUNC(GetReleasedEventKey);
+
+#pragma endregion
+#pragma region KeyTypedEvent
+
+            REGISTER_FUNC(GetTypedEventKey);
+
+#pragma endregion
+#pragma region MouseMovedEvent
+
+            REGISTER_FUNC(GetEventMousePosition);
+
+#pragma endregion
+#pragma region MouseScrolledEvent
+
+            REGISTER_FUNC(GetScrollOffset);
+
+#pragma endregion
+#pragma region MouseButtonEvent
+
+            REGISTER_FUNC(GetEventMouseButton);
+            REGISTER_FUNC(GetMouseButtonReleased);
+
+#pragma endregion
+#pragma region FileChangedEvent
+
             REGISTER_FUNC(GetChangedFilePath);
             REGISTER_FUNC(GetWatchedDirectory);
             REGISTER_FUNC(GetFileStatus);
 
-            // assets
+#pragma endregion
+#pragma region Asset
+
             REGISTER_FUNC(GetAssetPath);
             REGISTER_FUNC(GetAssetType);
             REGISTER_FUNC(GetAssetGUID);
             REGISTER_FUNC(ReloadAsset);
 
-            // prefab
-            REGISTER_REF_COUNTER(prefab);
-            REGISTER_FUNC(CreatePrefab);
-            REGISTER_FUNC(InstantiatePrefab);
+#pragma endregion
+#pragma region Shader
 
-            // shader
             REGISTER_REF_COUNTER(shader);
             REGISTER_FUNC(LoadShaderAuto);
             REGISTER_FUNC(LoadShaderExplicit);
 
-            // image_2d
+#pragma endregion
+#pragma region Texture2D
+
+            REGISTER_REF_COUNTER(texture_2d);
+            REGISTER_FUNC(LoadTexture2D);
+            REGISTER_FUNC(GetWrapTexture2D);
+            REGISTER_FUNC(GetFilterTexture2D);
+            REGISTER_FUNC(GetTextureImage);
+
+#pragma endregion
+#pragma region Prefab
+
+            REGISTER_REF_COUNTER(prefab);
+            REGISTER_FUNC(CreatePrefab);
+            REGISTER_FUNC(InstantiatePrefab);
+
+#pragma endregion
+#pragma region Sound
+
+            REGISTER_REF_COUNTER(sound);
+            REGISTER_FUNC(GetSoundDuration);
+            REGISTER_FUNC(PlaySound);
+            REGISTER_FUNC(StopSound);
+            REGISTER_FUNC(DeleteSoundControllerPointer);
+
+#pragma endregion
+#pragma region Image2D
+
             REGISTER_REF_COUNTER(image_2d);
             REGISTER_FUNC(GetImageWidth);
             REGISTER_FUNC(GetImageHeight);
@@ -943,6 +1121,8 @@ namespace sge {
             REGISTER_FUNC(GetImageArrayLayerCount);
             REGISTER_FUNC(GetImageFormat);
             REGISTER_FUNC(GetImageUsage);
+
+#pragma endregion
         });
 #undef REGISTER_FUNC
 #undef REGISTER_REF_COUNTER
