@@ -17,6 +17,10 @@
 #pragma once
 #include "sge_config.h"
 
+#ifdef SGE_PLATFORM_WINDOWS
+#define NOMINMAX
+#endif
+
 #include <cstdint>
 #include <stddef.h>
 

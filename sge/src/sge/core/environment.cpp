@@ -18,20 +18,20 @@
 #include "sge/core/environment.h"
 #include <iostream>
 
-#ifdef SGE_PLATFORM_WINDOWS
-#include "sge/platform/windows/windows_environment.h"
-#else
+#ifndef SGE_PLATFORM_WINDOWS
 #include <errno.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #ifdef SGE_PLATFORM_LINUX
 #define getenv secure_getenv
 #endif
 #endif
 
 namespace sge {
+#ifndef SGE_PLATFORM_WINDOWS
     int32_t environment::run_command(const process_info& info) {
         if (!info.output_file.empty()) {
             fs::path directory = info.output_file.parent_path();
@@ -43,9 +43,6 @@ namespace sge {
             }
         }
 
-#ifdef SGE_PLATFORM_WINDOWS
-        return windows_run_command(info);
-#else
         if (info.detach) {
             // shamelessly stolen from stack overflow
             // https://stackoverflow.com/questions/17954432/creating-a-daemon-in-linux
@@ -172,15 +169,16 @@ namespace sge {
         }
 
         return pclose(pipe);
-#endif
     }
+#endif
 
-#ifndef SGE_PLATFORM_LINUX
+#if !defined(SGE_PLATFORM_LINUX) && !defined(SGE_PLATFORM_WINDOWS)
     void environment::set_thread_name(std::thread& thread, const std::string& name) {
         spdlog::warn("no platform-specific implementation for environment::set_thread_name");
     }
 #endif
 
+#ifndef SGE_PLATFORM_WINDOWS
     static void export_variable_bourne(const std::string& key, const std::string& value,
                                        std::stringstream& stream) {
         stream << key << "=" << std::quoted(value) << "\nexport " << key;
@@ -192,9 +190,6 @@ namespace sge {
     }
 
     bool environment::set(const std::string& key, const std::string& value) {
-#ifdef SGE_PLATFORM_WINDOWS
-        return windows_setenv(key, value);
-#else
         fs::path shell_path = get("SHELL");
         if (!shell_path.empty()) {
             std::string shell = shell_path.filename();
@@ -257,45 +252,31 @@ namespace sge {
         }
 
         return setenv(key.c_str(), value.c_str(), 1) == 0;
-#endif
     }
 
     std::string environment::get(const std::string& key) {
         std::string value;
 
-#ifdef SGE_PLATFORM_WINDOWS
-        value = windows_getenv(key);
-#else
         char* data = getenv(key.c_str());
         if (data != nullptr) {
             value = data;
         }
-#endif
 
         return value;
     }
-
     bool environment::has(const std::string& key) {
-#ifdef SGE_PLATFORM_WINDOWS
         return windows_hasenv(key);
-#else
         return !get(key).empty();
-#endif
     }
 
     fs::path environment::get_home_directory() {
-#ifdef SGE_PLATFORM_WINDOWS
         return windows_get_home_directory();
-#else
         return get("HOME");
-#endif
     }
 
     uint64_t environment::get_process_id() {
-#ifdef SGE_PLATFORM_WINDOWS
         return windows_get_process_id();
-#else
         return (uint64_t)getpid();
-#endif
     }
+#endif
 } // namespace sge

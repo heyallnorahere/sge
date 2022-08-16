@@ -19,13 +19,27 @@
 #include "sge/asset/json.h"
 
 namespace sge {
+    class sound_controller {
+    public:
+        ~sound_controller() = default;
+
+        bool is_stopped() const { return m_stopped; }
+
+    private:
+        sound_controller() = default;
+
+        bool m_stopped = false;
+        friend class sound;
+    };
+
     struct sound_asset_data_t;
     class sound : public asset {
     public:
         static void init();
         static void shutdown();
 
-        static void play(ref<sound> _sound, bool repeat);
+        static std::weak_ptr<sound_controller> play(ref<sound> _sound, bool repeat);
+        static bool stop(std::weak_ptr<sound_controller> controller);
 
         sound(const fs::path& path) : m_path(path) { load(); }
         virtual ~sound() override { cleanup(); }

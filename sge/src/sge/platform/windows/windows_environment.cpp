@@ -15,14 +15,13 @@
 */
 
 #include "sgepch.h"
-#include "sge/platform/windows/windows_environment.h"
+#include "sge/core/environment.h"
 
-#define NOMINMAX
 #include <Windows.h>
 #include <ShlObj.h>
 
 namespace sge {
-    int32_t windows_run_command(const process_info& info) {
+    int32_t environment::run_command(const process_info& info) {
         size_t buffer_size = (info.cmdline.length() + 1) * sizeof(char);
         char* buffer = (char*)malloc(buffer_size);
         memcpy(buffer, info.cmdline.c_str(), buffer_size);
@@ -110,6 +109,24 @@ namespace sge {
         return exit_code;
     }
 
+    void environment::set_thread_name(std::thread& thread, const std::string& name) {
+        std::wstring description;
+        for (char c : name) {
+            static constexpr size_t count = 1;
+            wchar_t destination;
+
+            // why is this the name of a standard c function
+            // its so goddamn ambiguous, like what does it mean
+            if (std::mbstowcs(&destination, &c, count) != count) {
+                throw std::runtime_error("failed to convert to wide characters!");
+            }
+
+            description.push_back(destination);
+        }
+
+        SetThreadDescription(thread.native_handle(), description.c_str());
+    }
+
     struct hkey_data {
         HKEY key = (HKEY)INVALID_HANDLE_VALUE;
         std::string path;
@@ -135,7 +152,7 @@ namespace sge {
         return result;
     }
 
-    bool windows_setenv(const std::string& key, const std::string& value) {
+    bool environment::set(const std::string& key, const std::string& value) {
         auto hkey = create_environment_hkey();
         if (hkey.has_value()) {
             LSTATUS status = ::RegSetValueExA(hkey->key, key.c_str(), 0, REG_SZ,
@@ -153,7 +170,7 @@ namespace sge {
         return false;
     }
 
-    std::string windows_getenv(const std::string& key) {
+    std::string environment::get(const std::string& key) {
         std::string result;
 
         auto hkey = create_environment_hkey();
@@ -176,7 +193,7 @@ namespace sge {
         return result;
     }
 
-    bool windows_hasenv(const std::string& key) {
+    bool environment::has(const std::string& key) {
         bool has_variable = false;
 
         auto hkey = create_environment_hkey();
@@ -191,7 +208,7 @@ namespace sge {
         return has_variable;
     }
 
-    fs::path windows_get_home_directory() {
+    fs::path environment::get_home_directory() {
         fs::path result;
 
         wchar_t path[MAX_PATH];
@@ -202,5 +219,5 @@ namespace sge {
         return result;
     }
 
-    uint64_t windows_get_process_id() { return (uint64_t)::GetCurrentProcessId(); }
+    uint64_t environment::get_process_id() { return (uint64_t)::GetCurrentProcessId(); }
 } // namespace sge
