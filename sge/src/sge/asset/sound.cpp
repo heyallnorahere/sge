@@ -139,9 +139,14 @@ namespace sge {
             auto& playing_sound = *it;
 
             size_t read_frames = mix_frames(playing_sound, output_buffer, frame_count);
-            if (read_frames < frame_count || playing_sound.controller->is_stopped() ||
-                (!playing_sound.repeat && (playing_sound.current_frame == 0 ||
-                 playing_sound.current_frame >= playing_sound.data->frame_count))) {
+            bool invalid_current_frame = playing_sound.current_frame == 0 ||
+                 playing_sound.current_frame >= playing_sound.data->frame_count;
+
+            bool stopped = read_frames < frame_count;
+            stopped |= playing_sound.controller->is_stopped();
+            stopped |= !playing_sound.repeat && invalid_current_frame;
+
+            if (stopped) {
                 size_t iterator_index = 0;
                 for (auto it_ = s_sound_data->playing_sounds.begin(); it_ != it; it_++) {
                     iterator_index++;
