@@ -155,7 +155,16 @@ namespace sge {
         script_engine_data = std::make_unique<script_engine_data_t>();
         script_engine_data->debug_enabled = false;
 
-        std::string assembly_path = (fs::current_path() / "assets").string();
+        std::string platform_name;
+#ifdef SGE_PLATFORM_WINDOWS
+        platform_name = "windows";
+#else
+        platform_name = "unix";
+#endif
+
+        std::string assembly_path =
+            (fs::current_path() / "assets" / "mono" / platform_name).string();
+            
         mono_set_assemblies_path(assembly_path.c_str());
         mono_config_parse(nullptr);
 
