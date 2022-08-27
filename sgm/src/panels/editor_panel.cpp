@@ -18,14 +18,15 @@
 #include "panels/panels.h"
 #include "editor_scene.h"
 #include "texture_cache.h"
+
 #include <sge/renderer/renderer.h>
 #include <imgui_internal.h>
+
 namespace sgm {
     editor_panel::editor_panel(const std::function<void(const std::string&)>& popup_callback) {
         m_popup_callback = popup_callback;
-        m_callback_index = script_engine::add_on_reload_callback([this]() mutable {
-            clear_section_header_cache();
-        });
+        m_callback_index = script_engine::add_on_reload_callback(
+            [this]() mutable { clear_section_header_cache(); });
     }
 
     editor_panel::~editor_panel() { script_engine::remove_on_reload_callback(m_callback_index); }
@@ -189,7 +190,6 @@ namespace sgm {
             "Sprite renderer", selection, [this, selection](sprite_renderer_component& component) {
                 ImGui::ColorEdit4("Color", &component.color.x);
 
-
                 ref<asset> _asset = component.texture;
                 if (ImGui::InputAsset("Texture", &_asset, "texture", "texture_2d")) {
                     component.texture = _asset.as<texture_2d>();
@@ -203,15 +203,22 @@ namespace sgm {
                 }
             });
 
+        bool running = editor_scene::running();
         draw_component<
-            rigid_body_component>("Rigid body", selection, [this](rigid_body_component& component) {
+            rigid_body_component>("Rigid body", selection, [&](rigid_body_component& component) {
             static const std::vector<const char*> type_names = { "Static", "Kinematic", "Dynamic" };
             int32_t type_index = (int32_t)component.type;
+
+            bool update = false;
             if (ImGui::Combo("Body type", &type_index, type_names.data(), type_names.size())) {
                 component.type = (rigid_body_component::body_type)type_index;
+                update = true;
             }
 
-            ImGui::Checkbox("Fixed rotation", &component.fixed_rotation);
+            update |= ImGui::Checkbox("Fixed rotation", &component.fixed_rotation);
+            if (update && running) {
+                selection.get_scene()->update_physics_data(selection);
+            }
 
             if (ImGui::CollapsingHeader("Collision filter")) {
                 ImGui::Indent();
@@ -242,12 +249,20 @@ namespace sgm {
         });
 
         draw_component<box_collider_component>(
-            "Box collider", selection, [this](box_collider_component& component) {
-                ImGui::DragFloat("Density", &component.density, 0.1f);
-                ImGui::DragFloat("Friction", &component.friction, 0.1f);
-                ImGui::DragFloat("Restitution", &component.restitution, 0.1f);
-                ImGui::DragFloat("Restitution threashold", &component.restitution_threashold, 0.1f);
-                ImGui::DragFloat2("Size", &component.size.x, 0.01f);
+            "Box collider", selection, [&](box_collider_component& component) {
+                bool update = false;
+
+                update |= ImGui::Checkbox("Sensor", &component.sensor);
+                update |= ImGui::DragFloat("Density", &component.density, 0.1f);
+                update |= ImGui::DragFloat("Friction", &component.friction, 0.1f);
+                update |= ImGui::DragFloat("Restitution", &component.restitution, 0.1f);
+                update |= ImGui::DragFloat("Restitution threshold",
+                                           &component.restitution_threshold, 0.1f);
+
+                update |= ImGui::DragFloat2("Size", &component.size.x, 0.01f);
+                if (update && running) {
+                    selection.get_scene()->update_physics_data(selection);
+                }
             });
 
         draw_component<script_component>(

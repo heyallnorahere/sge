@@ -214,7 +214,9 @@ namespace sge {
         float density = 1.f;
         float friction = 0.5f;
         float restitution = 0.f;
-        float restitution_threashold = 0.5f;
+        float restitution_threshold = 0.5f;
+
+        bool sensor = false;
 
         box_collider_component() = default;
         box_collider_component(const box_collider_component&) = default;

@@ -50,10 +50,16 @@ namespace SGE.Components
             set => CoreInternalCalls.SetRestitution(mAddress, mParent, value);
         }
 
-        public float RestitutionThreashold
+        public float RestitutionThreshold
         {
-            get => CoreInternalCalls.GetRestitutionThreashold(mAddress);
-            set => CoreInternalCalls.SetRestitutionThreashold(mAddress, mParent, value);
+            get => CoreInternalCalls.GetRestitutionThreshold(mAddress);
+            set => CoreInternalCalls.SetRestitutionThreshold(mAddress, mParent, value);
+        }
+
+        public bool IsSensor
+        {
+            get => CoreInternalCalls.IsBoxColliderSensor(mAddress);
+            set => CoreInternalCalls.SetIsBoxColliderSensor(mAddress, mParent, value);
         }
     }
 }

@@ -276,9 +276,13 @@ namespace SGE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetRestitution(IntPtr component, Entity entity, float restitution);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float GetRestitutionThreashold(IntPtr component);
+        public static extern float GetRestitutionThreshold(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetRestitutionThreashold(IntPtr component, Entity entity, float threashold);
+        public static extern void SetRestitutionThreshold(IntPtr component, Entity entity, float threshold);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool IsBoxColliderSensor(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetIsBoxColliderSensor(IntPtr component, Entity entity, bool isSensor);
 
         #endregion
         #region ScriptComponent

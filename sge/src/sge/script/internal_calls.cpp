@@ -556,13 +556,23 @@ namespace sge {
             e.get_scene()->update_physics_data(e);
         }
 
-        static float GetRestitutionThreashold(box_collider_component* bc) {
-            return bc->restitution_threashold;
+        static float GetRestitutionThreshold(box_collider_component* bc) {
+            return bc->restitution_threshold;
         }
 
-        static void SetRestitutionThreashold(box_collider_component* bc, void* _entity,
-                                             float threashold) {
-            bc->restitution_threashold = threashold;
+        static void SetRestitutionThreshold(box_collider_component* bc, void* _entity,
+                                            float threshold) {
+            bc->restitution_threshold = threshold;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
+
+        static bool IsBoxColliderSensor(box_collider_component* bc) { return bc->sensor; }
+
+        static void SetIsBoxColliderSensor(box_collider_component* bc, void* _entity,
+                                           bool isSensor) {
+            bc->sensor = isSensor;
 
             entity e = script_helpers::get_entity_from_object(_entity);
             e.get_scene()->update_physics_data(e);
@@ -993,8 +1003,10 @@ namespace sge {
             REGISTER_FUNC(SetFriction);
             REGISTER_FUNC(GetRestitution);
             REGISTER_FUNC(SetRestitution);
-            REGISTER_FUNC(GetRestitutionThreashold);
-            REGISTER_FUNC(SetRestitutionThreashold);
+            REGISTER_FUNC(GetRestitutionThreshold);
+            REGISTER_FUNC(SetRestitutionThreshold);
+            REGISTER_FUNC(IsBoxColliderSensor);
+            REGISTER_FUNC(SetIsBoxColliderSensor);
 
 #pragma endregion
 #pragma region ScriptComponent

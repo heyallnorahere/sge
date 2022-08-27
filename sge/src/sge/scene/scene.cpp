@@ -353,7 +353,8 @@ namespace sge {
                         fixture_def.density = bc.density;
                         fixture_def.friction = bc.friction;
                         fixture_def.restitution = bc.restitution;
-                        fixture_def.restitutionThreshold = bc.restitution_threashold;
+                        fixture_def.restitutionThreshold = bc.restitution_threshold;
+                        fixture_def.isSensor = bc.sensor;
                         fixture_def.filter.categoryBits = rb.filter_category;
                         fixture_def.filter.maskBits = rb.filter_mask;
                         fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
@@ -369,7 +370,8 @@ namespace sge {
 
                         data.fixture->SetFriction(bc.friction);
                         data.fixture->SetRestitution(bc.restitution);
-                        data.fixture->SetRestitutionThreshold(bc.restitution_threashold);
+                        data.fixture->SetRestitutionThreshold(bc.restitution_threshold);
+                        data.fixture->SetSensor(bc.sensor);
 
                         b2Filter filter;
                         filter.categoryBits = rb.filter_category;

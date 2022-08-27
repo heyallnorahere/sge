@@ -195,7 +195,7 @@ namespace sge {
         data["density"] = bc.density;
         data["friction"] = bc.friction;
         data["restitution"] = bc.restitution;
-        data["restitution_threashold"] = bc.restitution_threashold;
+        data["restitution_threshold"] = bc.restitution_threshold;
         data["size"] = bc.size;
     }
 
@@ -203,7 +203,7 @@ namespace sge {
         bc.density = data["density"].get<float>();
         bc.friction = data["friction"].get<float>();
         bc.restitution = data["restitution"].get<float>();
-        bc.restitution_threashold = data["restitution_threashold"].get<float>();
+        bc.restitution_threshold = data["restitution_threshold"].get<float>();
         bc.size = data["size"].get<glm::vec2>();
     }
 

@@ -39,7 +39,7 @@
                 "density": 1.0,
                 "friction": 0.0,
                 "restitution": 0.0,
-                "restitution_threashold": 0.5,
+                "restitution_threshold": 0.5,
                 "size": [
                     0.5,
                     0.5
@@ -89,7 +89,7 @@
                 "density": 1.0,
                 "friction": 0.5,
                 "restitution": 0.0,
-                "restitution_threashold": 0.5,
+                "restitution_threshold": 0.5,
                 "size": [
                     0.5,
                     0.5
@@ -133,7 +133,7 @@
                 "density": 1.0,
                 "friction": 0.5,
                 "restitution": 0.0,
-                "restitution_threashold": 0.5,
+                "restitution_threshold": 0.5,
                 "size": [
                     0.5,
                     0.5
@@ -175,7 +175,7 @@
                 "density": 1.0,
                 "friction": 0.5,
                 "restitution": 0.0,
-                "restitution_threashold": 0.5,
+                "restitution_threshold": 0.5,
                 "size": [
                     0.5,
                     0.5
