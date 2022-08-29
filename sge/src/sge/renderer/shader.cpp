@@ -27,10 +27,11 @@ namespace sge {
         { "pixel", shader_stage::fragment },
     };
 
-    void shader::parse_source(const fs::path& path, std::map<shader_stage, std::string>& source) {
+    bool shader::parse_source(const fs::path& path, std::map<shader_stage, std::string>& source) {
         std::ifstream file(path);
         if (!file.is_open()) {
-            throw std::runtime_error("could not read shader: " + path.string());
+            spdlog::error("could not read shader: {}", path.string());
+            return false;
         }
 
         std::string line;
@@ -43,13 +44,13 @@ namespace sge {
 
                 auto it = stage_map.find(stage);
                 if (it == stage_map.end()) {
-                    throw std::runtime_error("invalid stage name: " + stage);
+                    spdlog::error("invalid stage name: {}", stage);
                 }
 
                 current_stage = it->second;
             } else {
                 if (!current_stage.has_value()) {
-                    spdlog::warn("{0}: no stage specified, assuming vertex", path.string());
+                    spdlog::warn("{}: no stage specified, assuming vertex", path.string());
                     current_stage = shader_stage::vertex;
                 }
 
@@ -61,6 +62,8 @@ namespace sge {
         for (const auto& [stage, stream] : streams) {
             source[stage] = stream.str();
         }
+
+        return true;
     }
 
     ref<shader> shader::create(const fs::path& path, shader_language language) {

@@ -30,7 +30,7 @@ namespace sge {
         virtual asset_type get_asset_type() override { return asset_type::shader; }
 
     protected:
-        static void parse_source(const fs::path& path,
+        static bool parse_source(const fs::path& path,
                                  std::map<shader_stage, std::string>& output_source);
     };
 

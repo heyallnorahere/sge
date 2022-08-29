@@ -34,7 +34,10 @@ namespace sge {
         static ref<texture_2d> load(const fs::path& path);
         static void serialize_settings(ref<texture_2d> texture, const fs::path& path);
 
-        virtual ~texture_2d() = default;
+        texture_2d() = default;
+        virtual ~texture_2d() override = default;
+
+        virtual bool reload() override;
 
         virtual ref<image_2d> get_image() = 0;
         virtual texture_wrap get_wrap() = 0;
@@ -43,5 +46,8 @@ namespace sge {
         virtual ImTextureID get_imgui_id() = 0;
 
         virtual asset_type get_asset_type() override { return asset_type::texture_2d; }
+
+    protected:
+        virtual bool recreate(ref<image_2d> image, texture_wrap wrap, texture_filter filter) = 0;
     };
 } // namespace sge

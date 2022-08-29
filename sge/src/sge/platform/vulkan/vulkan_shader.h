@@ -55,11 +55,16 @@ namespace sge {
         const reflection_data& get_reflection_data() { return m_reflection_data; }
 
     private:
-        void create();
+        bool create(std::vector<VkPipelineShaderStageCreateInfo>& pipeline_info,
+                    reflection_data& ref_data);
+
         void destroy();
 
-        VkShaderModule compile(shader_stage stage, const std::string& source);
-        void reflect(const std::vector<uint32_t>& spirv, shader_stage stage);
+        VkShaderModule compile(shader_stage stage, const std::string& source,
+                               reflection_data& ref_data);
+
+        bool reflect(const std::vector<uint32_t>& spirv, shader_stage stage,
+                     reflection_data& ref_data);
 
         fs::path m_path;
         shader_language m_language;

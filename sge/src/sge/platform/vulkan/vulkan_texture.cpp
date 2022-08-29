@@ -21,11 +21,12 @@
 #include <backends/imgui_impl_vulkan.h>
 namespace sge {
     vulkan_texture_2d::vulkan_texture_2d(const texture_spec& spec) {
-        m_imgui_id = (ImTextureID)nullptr;
+        m_imgui_id = (ImTextureID) nullptr;
         m_wrap = spec.wrap;
         m_filter = spec.filter;
         m_image = spec.image.as<vulkan_image_2d>();
         m_path = spec.path;
+        m_sampler = nullptr;
 
         VkImageLayout optimal_layout;
         if (m_image->get_usage() & ~image_usage_texture) {
@@ -38,7 +39,9 @@ namespace sge {
             m_image->set_layout(optimal_layout);
         }
 
-        create_sampler();
+        if (!create_sampler()) {
+            throw std::runtime_error("failed to create sampler!");
+        }
 
         m_image->m_dependents.insert(this);
         m_descriptor_info = vk_init<VkDescriptorImageInfo>();
@@ -48,7 +51,7 @@ namespace sge {
     }
 
     vulkan_texture_2d::~vulkan_texture_2d() {
-        if (m_imgui_id != (ImTextureID)nullptr) {
+        if (m_imgui_id != (ImTextureID) nullptr) {
             ImGui_ImplVulkan_RemoveTexture(m_imgui_id);
         }
 
@@ -59,18 +62,50 @@ namespace sge {
     }
 
     ImTextureID vulkan_texture_2d::get_imgui_id() {
-        if (m_imgui_id == (ImTextureID)nullptr) {
+        if (m_imgui_id == (ImTextureID) nullptr) {
             VkImageView view = m_image->get_view();
             VkImageLayout layout = m_image->get_layout();
+
             m_imgui_id = ImGui_ImplVulkan_AddTexture(m_sampler, view, layout);
         }
 
         return m_imgui_id;
     }
 
-    void vulkan_texture_2d::create_sampler() {
+    bool vulkan_texture_2d::recreate(ref<image_2d> image, texture_wrap wrap,
+                                     texture_filter filter) {
+        VkSampler old_sampler = m_sampler;
+        texture_wrap old_wrap = m_wrap;
+        texture_filter old_filter = m_filter;
+
+        m_wrap = wrap;
+        m_filter = filter;
+
+        if (!create_sampler()) {
+            m_wrap = old_wrap;
+            m_filter = old_filter;
+
+            return false;
+        }
+
+        if (m_imgui_id != (ImTextureID) nullptr) {
+            VkImageView view = m_image->get_view();
+            VkImageLayout layout = m_image->get_layout();
+
+            ImGui_ImplVulkan_UpdateTextureInfo(m_imgui_id, m_sampler, view, layout);
+        }
+
+        if (old_sampler != nullptr) {
+            auto& device = vulkan_context::get().get_device();
+            vkDestroySampler(device.get(), old_sampler, nullptr);
+        }
+
+        return true;
+    }
+
+    bool vulkan_texture_2d::create_sampler() {
         auto create_info = vk_init<VkSamplerCreateInfo>(VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
-        
+
         VkSamplerAddressMode wrap;
         switch (m_wrap) {
         case texture_wrap::clamp:
@@ -124,22 +159,27 @@ namespace sge {
 
         create_info.compareEnable = false;
         create_info.compareOp = VK_COMPARE_OP_ALWAYS;
-        
+
         create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         create_info.mipLodBias = 0.f;
 
         create_info.minLod = 0.f;
         create_info.maxLod = 0.f;
 
-        VkResult result = vkCreateSampler(device.get(), &create_info, nullptr, &m_sampler);
-        check_vk_result(result);
+        VkSampler sampler = nullptr;
+        if (vkCreateSampler(device.get(), &create_info, nullptr, &sampler) != VK_SUCCESS) {
+            return false;
+        }
+
+        m_sampler = sampler;
+        return true;
     }
 
     void vulkan_texture_2d::on_layout_transition() {
         VkImageLayout layout = m_image->get_layout();
         m_descriptor_info.imageLayout = layout;
 
-        if (m_imgui_id != (ImTextureID)nullptr) {
+        if (m_imgui_id != (ImTextureID) nullptr) {
             VkImageView view = m_image->get_view();
             ImGui_ImplVulkan_UpdateTextureInfo(m_imgui_id, m_sampler, view, layout);
         }

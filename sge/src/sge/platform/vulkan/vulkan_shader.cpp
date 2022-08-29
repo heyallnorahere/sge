@@ -93,22 +93,35 @@ namespace sge {
         m_path = path;
         m_language = language;
 
-        create();
+        if (!create(m_pipeline_info, m_reflection_data)) {
+            throw std::runtime_error("failed to load shader!");
+        }
     }
 
     vulkan_shader::~vulkan_shader() { destroy(); }
 
     bool vulkan_shader::reload() {
+        std::vector<VkPipelineShaderStageCreateInfo> pipeline_info;
+        reflection_data ref_data;
+
+        if (!create(pipeline_info, ref_data)) {
+            return false;
+        }
+
         destroy();
-        create();
+        m_pipeline_info = pipeline_info;
+        m_reflection_data = ref_data;
 
         renderer::on_shader_reloaded(id);
         return true;
     }
 
-    void vulkan_shader::create() {
+    bool vulkan_shader::create(std::vector<VkPipelineShaderStageCreateInfo>& pipeline_info,
+                               reflection_data& ref_data) {
         std::map<shader_stage, std::string> sources;
-        parse_source(m_path, sources);
+        if (!parse_source(m_path, sources)) {
+            return false;
+        }
 
         for (const auto& [stage, source] : sources) {
             auto stage_info = vk_init<VkPipelineShaderStageCreateInfo>(
@@ -116,19 +129,23 @@ namespace sge {
 
             stage_info.pName = "main";
             stage_info.stage = get_shader_stage_flags(stage);
-            stage_info.module = compile(stage, source);
 
-            m_pipeline_info.push_back(stage_info);
+            stage_info.module = compile(stage, source, ref_data);
+            if (stage_info.module == nullptr) {
+                return false;
+            }
+
+            pipeline_info.push_back(stage_info);
         }
 
-        { 
+        {
             size_t ubo_count = 0;
             size_t ssbo_count = 0;
             size_t image_count = 0;
             size_t sampler_count = 0;
             size_t combined_image_sampler_count = 0;
 
-            for (const auto& [name, data] : m_reflection_data.resources) {
+            for (const auto& [name, data] : ref_data.resources) {
                 switch (data.type) {
                 case resource_type::uniform_buffer:
                     ubo_count++;
@@ -146,42 +163,35 @@ namespace sge {
                     combined_image_sampler_count++;
                     break;
                 default:
-                    throw std::runtime_error("invalid resource type!");
+                    spdlog::warn("invalid resource type!");
                 }
             }
 
-            /* not needed
-            spdlog::info("{0} reflection results:", m_path.string());
-            spdlog::info("{0} uniform buffer(s)", ubo_count);
-            spdlog::info("{0} storage buffer(s)", ssbo_count);
-            spdlog::info("{0} separate image set(s)", image_count);
-            spdlog::info("{0} separate sampler set(s)", sampler_count);
-            spdlog::info("{0} combined image sampler set(s)", combined_image_sampler_count);
-            */
+            spdlog::info("{} reflection results:", m_path.string());
+            spdlog::info("\t{} uniform buffer(s)", ubo_count);
+            spdlog::info("\t{} storage buffer(s)", ssbo_count);
+            spdlog::info("\t{} separate image set(s)", image_count);
+            spdlog::info("\t{} separate sampler set(s)", sampler_count);
+            spdlog::info("\t{} combined image sampler set(s)", combined_image_sampler_count);
         }
     }
 
     void vulkan_shader::destroy() {
         VkDevice device = vulkan_context::get().get_device().get();
-
         for (const auto& stage_info : m_pipeline_info) {
             vkDestroyShaderModule(device, stage_info.module, nullptr);
         }
-        m_pipeline_info.clear();
 
+        m_pipeline_info.clear();
         m_reflection_data.resources.clear();
         m_reflection_data.push_constant_buffer = push_constant_range();
     }
 
-    static void compile_shader(shader_stage stage, const std::string& source,
+    static bool compile_shader(shader_stage stage, const std::string& source,
                                shader_language language, const fs::path& path,
                                std::vector<uint32_t>& spirv) {
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
-
-        // maybe change for dist builds
-        options.SetOptimizationLevel(shaderc_optimization_level_zero);
-        options.SetGenerateDebugInfo();
 
         shaderc_source_language source_language;
         switch (language) {
@@ -192,14 +202,19 @@ namespace sge {
             source_language = shaderc_source_language_hlsl;
             break;
         default:
-            throw std::runtime_error("invalid shader language!");
+            spdlog::error("invalid shader language!");
+            return false;
         }
-        options.SetSourceLanguage(source_language);
 
         uint32_t vulkan_version = vulkan_context::get().get_vulkan_version();
-        options.SetTargetEnvironment(shaderc_target_env_vulkan, vulkan_version);
-
         std::unique_ptr<shaderc::CompileOptions::IncluderInterface> includer(new file_finder);
+
+        // maybe change for dist builds
+        options.SetOptimizationLevel(shaderc_optimization_level_zero);
+        options.SetGenerateDebugInfo();
+
+        options.SetSourceLanguage(source_language);
+        options.SetTargetEnvironment(shaderc_target_env_vulkan, vulkan_version);
         options.SetIncluder(std::move(includer));
 
         shaderc_shader_kind kind;
@@ -214,24 +229,30 @@ namespace sge {
             stage_name = "fragment";
             break;
         default:
-            throw std::runtime_error("invalid shader stage!");
+            spdlog::error("invalid shader stage!");
+            return false;
         }
 
         std::string string_path = path.string();
         auto result = compiler.CompileGlslToSpv(source, kind, string_path.c_str(), "main", options);
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-            throw std::runtime_error("could not compile " + stage_name + " shader " + string_path +
-                                     ": " + result.GetErrorMessage());
+            spdlog::error("could not compile " + stage_name + " shader " + string_path + ": " +
+                          result.GetErrorMessage());
+
+            return false;
         }
 
         spirv = std::vector<uint32_t>(result.cbegin(), result.cend());
     }
 
-    VkShaderModule vulkan_shader::compile(shader_stage stage, const std::string& source) {
+    VkShaderModule vulkan_shader::compile(shader_stage stage, const std::string& source,
+                                          reflection_data& ref_data) {
         std::vector<uint32_t> spirv;
-        compile_shader(stage, source, m_language, m_path, spirv);
-        reflect(spirv, stage);
+        if (!compile_shader(stage, source, m_language, m_path, spirv) ||
+            !reflect(spirv, stage, ref_data)) {
+            return nullptr;
+        }
 
         auto create_info =
             vk_init<VkShaderModuleCreateInfo>(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
@@ -241,8 +262,10 @@ namespace sge {
 
         VkDevice device = vulkan_context::get().get_device().get();
         VkShaderModule module;
-        VkResult result = vkCreateShaderModule(device, &create_info, nullptr, &module);
-        check_vk_result(result);
+        if (vkCreateShaderModule(device, &create_info, nullptr, &module) != VK_SUCCESS) {
+            return nullptr;
+        }
+
         return module;
     }
 
@@ -271,32 +294,41 @@ namespace sge {
             if (reflection_data.resources.find(name) != reflection_data.resources.end()) {
                 throw std::runtime_error("a resource named " + name + " has already been defined!");
             }
+
             reflection_data.resources.insert(std::make_pair(name, data));
         }
     }
 
-    void vulkan_shader::reflect(const std::vector<uint32_t>& spirv, shader_stage stage) {
+    bool vulkan_shader::reflect(const std::vector<uint32_t>& spirv, shader_stage stage,
+                                reflection_data& ref_data) {
         spirv_cross::Compiler compiler(std::move(spirv));
         auto resources = compiler.get_shader_resources();
 
-        map_resources(resources.uniform_buffers, m_reflection_data, stage,
-                      resource_type::uniform_buffer, compiler);
-        map_resources(resources.storage_buffers, m_reflection_data, stage,
-                      resource_type::storage_buffer, compiler);
-        map_resources(resources.sampled_images, m_reflection_data, stage,
-                      resource_type::sampled_image, compiler);
-        map_resources(resources.separate_images, m_reflection_data, stage,
-                      resource_type::image, compiler);
-        map_resources(resources.separate_samplers, m_reflection_data, stage,
-                      resource_type::sampler, compiler);
+        try {
+            map_resources(resources.uniform_buffers, ref_data, stage, resource_type::uniform_buffer,
+                          compiler);
+            map_resources(resources.storage_buffers, ref_data, stage, resource_type::storage_buffer,
+                          compiler);
+            map_resources(resources.sampled_images, ref_data, stage, resource_type::sampled_image,
+                          compiler);
+            map_resources(resources.separate_images, ref_data, stage, resource_type::image,
+                          compiler);
+            map_resources(resources.separate_samplers, ref_data, stage, resource_type::sampler,
+                          compiler);
+        } catch (const std::runtime_error& exc) {
+            spdlog::error(exc.what());
+            return false;
+        }
 
         for (const auto& spirv_resource : resources.push_constant_buffers) {
             const auto& spirv_type = compiler.get_type(spirv_resource.type_id);
             size_t size = compiler.get_declared_struct_size(spirv_type);
-            m_reflection_data.push_constant_buffer.size += size;
+            ref_data.push_constant_buffer.size += size;
 
             VkShaderStageFlagBits stage_flags = get_shader_stage_flags(stage);
-            m_reflection_data.push_constant_buffer.stage |= stage_flags;
+            ref_data.push_constant_buffer.stage |= stage_flags;
         }
+
+        return true;
     }
 } // namespace sge

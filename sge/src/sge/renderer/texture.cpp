@@ -22,6 +22,11 @@
 #include "sge/platform/vulkan/vulkan_texture.h"
 #endif
 namespace sge {
+    struct sampler_settings {
+        texture_wrap wrap = texture_wrap::repeat;
+        texture_filter filter = texture_filter::linear;
+    };
+
     ref<texture_2d> texture_2d::create(const texture_spec& spec) {
         if (!spec.image) {
             throw std::runtime_error("cannot create a texture from nullptr!");
@@ -34,6 +39,43 @@ namespace sge {
 #endif
 
         return nullptr;
+    }
+
+    static bool load_sampler_settings(const fs::path& path, sampler_settings& settings) {
+        fs::path settings_path = path.string() + ".sgetexture";
+        if (!fs::exists(settings_path)) {
+            return false;
+        }
+
+        json data;
+
+        std::ifstream stream(settings_path);
+        stream >> data;
+        stream.close();
+
+        json wrap_data = data["wrap"];
+        if (!wrap_data.is_null()) {
+            std::string wrap_string = wrap_data.get<std::string>();
+
+            if (wrap_string == "clamp") {
+                settings.wrap = texture_wrap::clamp;
+            } else if (wrap_string == "repeat") {
+                settings.wrap = texture_wrap::repeat;
+            }
+        }
+
+        json filter_data = data["filter"];
+        if (!filter_data.is_null()) {
+            std::string filter_string = filter_data.get<std::string>();
+
+            if (filter_string == "linear") {
+                settings.filter = texture_filter::linear;
+            } else if (filter_string == "repeat") {
+                settings.filter = texture_filter::nearest;
+            }
+        }
+
+        return true;
     }
 
     ref<texture_2d> texture_2d::load(const fs::path& path) {
@@ -50,39 +92,10 @@ namespace sge {
         spec.path = path;
         spec.image = image_2d::create(img_data, image_usage_texture);
 
-        fs::path settings_path = path.string() + ".sgetexture";
-        if (fs::exists(settings_path)) {
-            json data;
-
-            std::ifstream stream(settings_path);
-            stream >> data;
-            stream.close();
-
-            json wrap_data = data["wrap"];
-            if (!wrap_data.is_null()) {
-                std::string wrap_string = wrap_data.get<std::string>();
-
-                if (wrap_string == "clamp") {
-                    spec.wrap = texture_wrap::clamp;
-                } else if (wrap_string == "repeat") {
-                    spec.wrap = texture_wrap::repeat;
-                } else {
-                    throw std::runtime_error("invalid wrap: " + wrap_string);
-                }
-            }
-
-            json filter_data = data["filter"];
-            if (!filter_data.is_null()) {
-                std::string filter_string = filter_data.get<std::string>();
-
-                if (filter_string == "linear") {
-                    spec.filter = texture_filter::linear;
-                } else if (filter_string == "repeat") {
-                    spec.filter = texture_filter::nearest;
-                } else {
-                    throw std::runtime_error("invalid filter: " + filter_string);
-                }
-            }
+        sampler_settings settings;
+        if (load_sampler_settings(path, settings)) {
+            spec.wrap = settings.wrap;
+            spec.filter = settings.filter;
         }
 
         return create(spec);
@@ -95,8 +108,8 @@ namespace sge {
         }
 
         json data;
+        std::string wrap_string, filter_string;
 
-        std::string wrap_string;
         switch (texture->get_wrap()) {
         case texture_wrap::clamp:
             wrap_string = "clamp";
@@ -107,9 +120,7 @@ namespace sge {
         default:
             throw std::runtime_error("invalid texture wrap!");
         }
-        data["wrap"] = wrap_string;
 
-        std::string filter_string;
         switch (texture->get_filter()) {
         case texture_filter::linear:
             filter_string = "linear";
@@ -120,11 +131,41 @@ namespace sge {
         default:
             throw std::runtime_error("invalid texture filter!");
         }
+
+        data["wrap"] = wrap_string;
         data["filter"] = filter_string;
 
         fs::path settings_path = path.string() + ".sgetexture";
         std::ofstream stream(settings_path);
         stream << data.dump(4) << std::flush;
         stream.close();
+    }
+
+    bool texture_2d::reload() {
+        const auto& path = get_path();
+        if (path.empty() || !fs::exists(path)) {
+            return false;
+        }
+
+        ref<image_2d> image;
+        try {
+            auto data = image_data::load(path);
+            if (data) {
+                image = image_2d::create(data, image_usage_texture);
+            } else {
+                image = nullptr;
+            }
+        } catch (const std::exception&) {
+            image = nullptr;
+        }
+
+        if (!image) {
+            return false;
+        }
+
+        sampler_settings settings;
+        load_sampler_settings(path, settings);
+
+        return recreate(image, settings.wrap, settings.filter);
     }
 } // namespace sge
