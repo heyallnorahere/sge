@@ -89,8 +89,11 @@ namespace sgm {
             std::vector<section_header_t> subheaders;
         };
 
+        bool edit_entity(entity target);
+        bool edit_asset(const fs::path& path);
+
         void cache_script_class(void* _class);
-        void draw_property_controls();
+        void draw_property_controls(entity target);
         void render_header(void* script_object, const section_header_t& header);
 
         std::unordered_map<void*, std::vector<section_header_t>> m_section_header_cache;

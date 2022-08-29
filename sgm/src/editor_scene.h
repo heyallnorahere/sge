@@ -17,6 +17,65 @@
 #pragma once
 #include <sge/renderer/framebuffer.h>
 namespace sgm {
+    enum class selection_type { entity_selection, asset_selection };
+    class editor_selection : public ref_counted {
+    public:
+        virtual ~editor_selection() = default;
+
+        template <typename T>
+        bool is_target(const T& target) {
+            return false;
+        }
+
+        virtual selection_type get_type() = 0;
+    };
+
+    class entity_selection : public editor_selection {
+    public:
+        entity_selection(entity target) : m_target(target) {}
+        virtual ~entity_selection() override = default;
+
+        virtual selection_type get_type() override { return selection_type::entity_selection; }
+
+        entity get_target() { return m_target; }
+
+    private:
+        entity m_target;
+    };
+
+    class asset_selection : public editor_selection {
+    public:
+        asset_selection(const fs::path& target) : m_target(target) {}
+        virtual ~asset_selection() override = default;
+
+        virtual selection_type get_type() override { return selection_type::asset_selection; }
+
+        const fs::path& get_target() { return m_target; }
+
+    private:
+        fs::path m_target;
+    };
+
+    template <>
+    inline bool editor_selection::is_target(const entity& target) {
+        if (get_type() != selection_type::entity_selection) {
+            return false;
+        }
+
+        auto selection = (entity_selection*)this;
+        return selection->get_target() == target;
+    }
+
+    template <>
+    inline bool editor_selection::is_target(const fs::path& target) {
+        if (get_type() != selection_type::asset_selection) {
+            return false;
+        }
+
+        auto selection = (asset_selection*)this;
+        return selection->get_target() == target;
+    }
+
     class editor_scene {
     public:
         editor_scene() = delete;
@@ -29,7 +88,7 @@ namespace sgm {
 
         static void set_viewport_size(uint32_t width, uint32_t height);
 
-        static entity& get_selection();
+        static ref<editor_selection>& get_selection();
         static void reset_selection();
 
         static void enable_input();

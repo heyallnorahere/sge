@@ -25,18 +25,18 @@ namespace sgm {
         ref<framebuffer> _framebuffer;
 
         ref<scene> _scene, runtime_scene;
-        entity selection;
+        ref<editor_selection> selection;
         editor_camera camera;
     };
-    static std::unique_ptr<scene_data_t> scene_data;
 
+    static std::unique_ptr<scene_data_t> s_scene_data;
     void editor_scene::create() {
         static constexpr uint32_t initial_size = 500;
 
-        scene_data = std::make_unique<scene_data_t>();
-        scene_data->_scene = ref<scene>::create();
-        scene_data->_scene->set_viewport_size(initial_size, initial_size);
-        scene_data->camera.update_viewport_size(initial_size, initial_size);
+        s_scene_data = std::make_unique<scene_data_t>();
+        s_scene_data->_scene = ref<scene>::create();
+        s_scene_data->_scene->set_viewport_size(initial_size, initial_size);
+        s_scene_data->camera.update_viewport_size(initial_size, initial_size);
 
         {
             framebuffer_attachment_spec attachment;
@@ -51,26 +51,26 @@ namespace sgm {
             spec.blend_mode = framebuffer_blend_mode::src_alpha_one_minus_src_alpha;
             spec.attachments.push_back(attachment);
 
-            scene_data->_framebuffer = framebuffer::create(spec);
+            s_scene_data->_framebuffer = framebuffer::create(spec);
         }
 
-        script_helpers::set_editor_scene(scene_data->_scene);
+        script_helpers::set_editor_scene(s_scene_data->_scene);
     }
 
     void editor_scene::destroy() {
         script_helpers::set_editor_scene(nullptr);
-        scene_data.reset();
+        s_scene_data.reset();
     }
 
     void editor_scene::on_update(timestep ts) {
-        auto pass = scene_data->_framebuffer->get_render_pass();
+        auto pass = s_scene_data->_framebuffer->get_render_pass();
         renderer::push_render_pass(pass, glm::vec4(0.3f, 0.3f, 0.3f, 1.f));
 
-        if (scene_data->runtime_scene) {
-            scene_data->runtime_scene->on_runtime_update(ts);
+        if (s_scene_data->runtime_scene) {
+            s_scene_data->runtime_scene->on_runtime_update(ts);
         } else {
-            scene_data->camera.on_update(ts);
-            scene_data->_scene->on_editor_update(ts, scene_data->camera);
+            s_scene_data->camera.on_update(ts);
+            s_scene_data->_scene->on_editor_update(ts, s_scene_data->camera);
         }
 
         if (renderer::pop_render_pass() != pass) {
@@ -79,81 +79,81 @@ namespace sgm {
     }
 
     void editor_scene::on_event(event& e) {
-        if (scene_data->runtime_scene) {
-            scene_data->runtime_scene->on_event(e);
+        if (s_scene_data->runtime_scene) {
+            s_scene_data->runtime_scene->on_event(e);
         } else {
-            scene_data->camera.on_event(e);
+            s_scene_data->camera.on_event(e);
         }
     }
 
     void editor_scene::set_viewport_size(uint32_t width, uint32_t height) {
-        scene_data->_framebuffer->resize(width, height);
-        scene_data->camera.update_viewport_size(width, height);
+        s_scene_data->_framebuffer->resize(width, height);
+        s_scene_data->camera.update_viewport_size(width, height);
 
-        scene_data->_scene->set_viewport_size(width, height);
-        if (scene_data->runtime_scene) {
-            scene_data->runtime_scene->set_viewport_size(width, height);
+        s_scene_data->_scene->set_viewport_size(width, height);
+        if (s_scene_data->runtime_scene) {
+            s_scene_data->runtime_scene->set_viewport_size(width, height);
         }
     }
 
-    entity& editor_scene::get_selection() { return scene_data->selection; }
-    void editor_scene::reset_selection() { scene_data->selection = entity(); }
+    ref<editor_selection>& editor_scene::get_selection() { return s_scene_data->selection; }
+    void editor_scene::reset_selection() { s_scene_data->selection.reset(); }
 
-    void editor_scene::enable_input() { scene_data->camera.enable_input(); }
-    void editor_scene::disable_input() { scene_data->camera.disable_input(); }
+    void editor_scene::enable_input() { s_scene_data->camera.enable_input(); }
+    void editor_scene::disable_input() { s_scene_data->camera.disable_input(); }
 
     void editor_scene::load(const fs::path& path) {
-        if (scene_data->runtime_scene) {
+        if (s_scene_data->runtime_scene) {
             stop();
         }
 
         reset_selection();
 
-        scene_serializer serializer(scene_data->_scene);
+        scene_serializer serializer(s_scene_data->_scene);
         serializer.deserialize(path);
     }
 
     void editor_scene::save(const fs::path& path) {
-        scene_serializer serializer(scene_data->_scene);
+        scene_serializer serializer(s_scene_data->_scene);
         serializer.serialize(path);
     }
 
-    bool editor_scene::running() { return scene_data->runtime_scene; }
+    bool editor_scene::running() { return s_scene_data->runtime_scene; }
 
     void editor_scene::play() {
-        if (scene_data->runtime_scene) {
+        if (s_scene_data->runtime_scene) {
             return;
         }
 
         reset_selection();
 
-        scene_data->runtime_scene = scene_data->_scene->copy();
-        scene_data->runtime_scene->on_start();
+        s_scene_data->runtime_scene = s_scene_data->_scene->copy();
+        s_scene_data->runtime_scene->on_start();
 
-        script_helpers::set_editor_scene(scene_data->runtime_scene);
+        script_helpers::set_editor_scene(s_scene_data->runtime_scene);
     }
 
     void editor_scene::stop() {
-        if (!scene_data->runtime_scene) {
+        if (!s_scene_data->runtime_scene) {
             return;
         }
 
         reset_selection();
-        script_helpers::set_editor_scene(scene_data->_scene);
+        script_helpers::set_editor_scene(s_scene_data->_scene);
         sound::stop_all();
 
-        scene_data->runtime_scene->on_stop();
-        scene_data->runtime_scene.reset();
+        s_scene_data->runtime_scene->on_stop();
+        s_scene_data->runtime_scene.reset();
     }
 
     ref<scene> editor_scene::get_scene() {
-        if (scene_data->runtime_scene) {
-            return scene_data->runtime_scene;
+        if (s_scene_data->runtime_scene) {
+            return s_scene_data->runtime_scene;
         } else {
-            return scene_data->_scene;
+            return s_scene_data->_scene;
         }
     }
 
-    ref<framebuffer> editor_scene::get_framebuffer() { return scene_data->_framebuffer; }
-    editor_camera& editor_scene::get_camera() { return scene_data->camera; }
+    ref<framebuffer> editor_scene::get_framebuffer() { return s_scene_data->_framebuffer; }
+    editor_camera& editor_scene::get_camera() { return s_scene_data->camera; }
 } // namespace sgm

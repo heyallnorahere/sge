@@ -19,7 +19,7 @@
 #include "editor_scene.h"
 namespace sgm {
     void scene_hierarchy_panel::render() {
-        entity& selection = editor_scene::get_selection();
+        auto& selection = editor_scene::get_selection();
         auto _scene = editor_scene::get_scene();
 
         size_t index = 0;
@@ -33,10 +33,14 @@ namespace sgm {
             ImGuiID id = ImGui::GetID(node_id.c_str());
             ImGui::PushID(id);
 
+            bool selected = false;
+            if (selection) {
+                selected = selection->is_target(current);
+            }
+
             auto& tag = current.get_component<tag_component>();
-            bool selected = current == selection;
             if (ImGui::Selectable(tag.tag.c_str(), &selected)) {
-                selection = current;
+                selection = ref<entity_selection>::create(current);
             }
 
             if (ImGui::BeginDragDropSource()) {
@@ -48,8 +52,14 @@ namespace sgm {
                 ImGui::EndDragDropSource();
             }
 
+            bool clone_entity = false;
             bool delete_entity = false;
+
             if (ImGui::BeginPopupContextItem()) {
+                if (ImGui::MenuItem("Clone Entity")) {
+                    clone_entity = true;
+                }
+
                 if (ImGui::MenuItem("Delete Entity")) {
                     delete_entity = true;
                 }
@@ -58,9 +68,13 @@ namespace sgm {
             }
 
             ImGui::PopID();
+            if (clone_entity) {
+                auto new_entity = _scene->clone_entity(current);
+                selection = ref<entity_selection>::create(new_entity);
+            }
 
             if (delete_entity) {
-                if (current == selection) {
+                if (selection && selection->is_target(current)) {
                     editor_scene::reset_selection();
                 }
 
@@ -70,7 +84,13 @@ namespace sgm {
             index++;
         });
 
-        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowHovered()) {
+        bool is_entity_selection = false;
+        if (selection) {
+            is_entity_selection = selection->get_type() == selection_type::entity_selection;
+        }
+
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowHovered() &&
+            is_entity_selection) {
             editor_scene::reset_selection();
         }
 
