@@ -153,6 +153,7 @@ namespace sgm {
         m_remove_watcher = app.watch_directory(m_root);
 
         m_prefab_override_params = nullptr;
+        m_show_irrelevant_assets = false;
     }
 
     content_browser_panel::~content_browser_panel() {
@@ -258,6 +259,7 @@ namespace sgm {
 
         const auto& current_path = m_history->get();
         ImGui::BeginChild("directory-items");
+        bool item_hovered = false;
 
         float cell_size = m_padding + m_icon_size;
         float panel_width = ImGui::GetContentRegionAvail().x;
@@ -288,7 +290,7 @@ namespace sgm {
                     (directory_data.files.find(filename) == directory_data.files.end());
             }
 
-            if (irrelevant_asset) {
+            if (irrelevant_asset && !m_show_irrelevant_assets) {
                 continue;
             }
 
@@ -320,6 +322,14 @@ namespace sgm {
             }
 
             if (ImGui::BeginPopupContextItem()) {
+                if (irrelevant_asset) {
+                    if (ImGui::MenuItem("Import asset")) {
+                        // todo: import asset
+                    }
+
+                    ImGui::Separator();
+                }
+
                 bool is_reloadable = false;
                 if (registry.contains(asset_path)) {
                     is_reloadable = registry[asset_path].type.has_value();
@@ -341,12 +351,20 @@ namespace sgm {
             }
 
             ImGui::PopStyleColor();
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-                if (entry.is_directory()) {
-                    m_history->push(path);
-                } else {
-                    // todo(nora): maybe some kind of open function?
+            if (ImGui::IsItemHovered()) {
+                item_hovered = true;
+
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                    if (entry.is_directory()) {
+                        m_history->push(path);
+                    } else {
+                        // todo(nora): maybe some kind of open function?
+                    }
                 }
+            }
+
+            if (irrelevant_asset) {
+                ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
             }
 
             // todo(nora): fix filename display
@@ -367,6 +385,10 @@ namespace sgm {
                 ImGui::Unindent(indentation);
             }
 
+            if (irrelevant_asset) {
+                ImGui::PopStyleColor();
+            }
+
             ImGui::PopID();
             ImGui::NextColumn();
         }
@@ -374,15 +396,20 @@ namespace sgm {
         ImGui::Columns(1);
         ImGui::EndChild();
 
-        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsItemHovered()) {
-            editor_scene::reset_selection();
-        }
+        if (!item_hovered) {
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+                editor_scene::reset_selection();
+            }
 
-        if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
-            ImGui::OpenPopup("item-context");
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+                ImGui::OpenPopup("item-context");
+            }
         }
 
         if (ImGui::BeginPopup("item-context")) {
+            ImGui::MenuItem("Show all files", nullptr, &m_show_irrelevant_assets);
+            ImGui::Separator();
+
             // todo: add items
 
             ImGui::EndPopup();
@@ -610,13 +637,16 @@ namespace sgm {
 
     ref<texture_2d> content_browser_panel::get_icon(const fs::path& path) {
         std::string icon_name = "file";
+
         if (fs::is_directory(path)) {
             icon_name = "directory";
         } else {
             if (path.has_extension()) {
                 fs::path extension = path.extension();
+
                 if (m_extension_data.find(extension) != m_extension_data.end()) {
                     const auto& data = m_extension_data[extension];
+
                     if (data.icon_name == "image") {
                         auto asset_path = path.lexically_relative(m_root);
                         auto _asset = project::get().get_asset_manager().get_asset(asset_path);

@@ -147,6 +147,7 @@ namespace sgm {
         const asset_directory_data_t& get_directory_data(const fs::path& path);
 
         std::unordered_set<fs::path, path_hasher> m_reloaded_assets;
+        bool m_show_irrelevant_assets;
 
         fs::path m_root;
         browser_history* m_history;
