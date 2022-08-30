@@ -77,8 +77,11 @@ namespace sge {
                 umask(0);
                 if (!info.workdir.empty()) {
                     fs::path workdir = fs::absolute(info.workdir);
-                    spdlog::info("changing to directory: {0}", workdir.string());
-                    chdir(workdir.c_str());
+
+                    if (chdir(workdir.c_str()) != 0) {
+                        // don't want to mess with stderr
+                        exit(EXIT_FAILURE);
+                    }
                 }
 
                 // close all file descriptors
@@ -95,12 +98,14 @@ namespace sge {
                         fd_path = info.output_file;
                     }
 
-                    fopen(fd_path.c_str(), mode.c_str());
+                    if (fopen(fd_path.c_str(), mode.c_str()) == nullptr) {
+                        // still don't want to mess with stderr - we don't even know if it's even
+                        // open yet
+                        exit(EXIT_FAILURE);
+                    }
                 }
 
-                std::vector<std::string> args = {
-                    "sh", "-c", info.cmdline
-                };
+                std::vector<std::string> args = { "sh", "-c", info.cmdline };
 
                 std::vector<char> data;
                 std::vector<size_t> indices;
@@ -192,7 +197,7 @@ namespace sge {
     bool environment::set(const std::string& key, const std::string& value) {
         fs::path shell_path = get("SHELL");
         if (!shell_path.empty()) {
-            std::string shell = shell_path.filename();
+            std::string shell = shell_path.filename().string();
 
             if (shell == "fish") {
                 std::stringstream command;
@@ -264,16 +269,10 @@ namespace sge {
 
         return value;
     }
-    bool environment::has(const std::string& key) {
-        return !get(key).empty();
-    }
+    bool environment::has(const std::string& key) { return !get(key).empty(); }
 
-    fs::path environment::get_home_directory() {
-        return get("HOME");
-    }
+    fs::path environment::get_home_directory() { return get("HOME"); }
 
-    uint64_t environment::get_process_id() {
-        return (uint64_t)getpid();
-    }
+    uint64_t environment::get_process_id() { return (uint64_t)getpid(); }
 #endif
 } // namespace sge

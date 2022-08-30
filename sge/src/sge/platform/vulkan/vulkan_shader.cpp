@@ -174,6 +174,8 @@ namespace sge {
             spdlog::info("\t{} separate sampler set(s)", sampler_count);
             spdlog::info("\t{} combined image sampler set(s)", combined_image_sampler_count);
         }
+
+        return true;
     }
 
     void vulkan_shader::destroy() {
@@ -244,6 +246,7 @@ namespace sge {
         }
 
         spirv = std::vector<uint32_t>(result.cbegin(), result.cend());
+        return true;
     }
 
     VkShaderModule vulkan_shader::compile(shader_stage stage, const std::string& source,
