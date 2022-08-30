@@ -223,6 +223,7 @@ namespace sgm {
 
     void content_browser_panel::render() {
         ImGuiStyle& style = ImGui::GetStyle();
+        auto& selection = editor_scene::get_selection();
 
         {
             auto arrow = icon_directory::get("arrow");
@@ -291,12 +292,20 @@ namespace sgm {
                 continue;
             }
 
+            ImVec4 button_color(0.f, 0.f, 0.f, 0.f);
+            if (selection && selection->is_target(asset_path)) {
+                button_color = style.Colors[ImGuiCol_HeaderActive];
+            }
+
             std::string filename_string = filename.string();
             ImGui::PushID(filename_string.c_str());
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+            ImGui::PushStyleColor(ImGuiCol_Button, button_color);
 
             auto icon = get_icon(path);
-            ImGui::ImageButton(icon->get_imgui_id(), ImVec2(m_icon_size, m_icon_size));
+            if (ImGui::ImageButton(icon->get_imgui_id(), ImVec2(m_icon_size, m_icon_size)) &&
+                !entry.is_directory()) {
+                selection = ref<asset_selection>::create(asset_path);
+            }
 
             if (ImGui::BeginDragDropSource()) {
                 std::string payload_path = asset_path.string();
@@ -364,6 +373,10 @@ namespace sgm {
 
         ImGui::Columns(1);
         ImGui::EndChild();
+
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsItemHovered()) {
+            editor_scene::reset_selection();
+        }
 
         if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
             ImGui::OpenPopup("item-context");

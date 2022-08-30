@@ -84,13 +84,7 @@ namespace sgm {
             index++;
         });
 
-        bool is_entity_selection = false;
-        if (selection) {
-            is_entity_selection = selection->get_type() == selection_type::entity_selection;
-        }
-
-        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowHovered() &&
-            is_entity_selection) {
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowHovered()) {
             editor_scene::reset_selection();
         }
 
