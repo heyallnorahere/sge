@@ -88,6 +88,7 @@ namespace sge {
             return false;
         }
 
+        m_descriptor_info.sampler = m_sampler;
         if (m_imgui_id != (ImTextureID) nullptr) {
             VkImageView view = m_image->get_view();
             VkImageLayout layout = m_image->get_layout();

@@ -126,7 +126,7 @@ namespace sge {
     void asset_registry::save() {
         m_mutex.lock();
 
-        json data = "[]"_json;
+        json data;
         for (const auto& [path, desc] : m_assets) {
             data.push_back(desc);
         }
@@ -233,6 +233,7 @@ namespace sge {
         if (callback) {
             callback(registry_action::remove, asset_path);
         }
+
         return true;
     }
 

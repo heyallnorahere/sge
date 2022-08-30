@@ -71,14 +71,20 @@ namespace sge {
             return false;
         }
 
-        std::ifstream stream(m_path);
-        stream >> m_data;
-        stream.close();
+        json data;
+        try {
+            std::ifstream stream(m_path);
+            stream >> data;
+            stream.close();
+        } catch (const std::exception&) {
+            return false;
+        }
 
+        m_data = data;
         return true;
     }
 
     entity prefab::instantiate(ref<scene> _scene) {
         return s_prefab_serializer.deserialize(m_data, _scene);
     }
-}
+} // namespace sge

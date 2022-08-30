@@ -164,25 +164,24 @@ namespace sgm {
     }
 
     void content_browser_panel::update(timestep ts) {
-        if (m_modified_files.empty()) {
+        if (m_reloaded_assets.empty()) {
             return;
         }
 
         renderer::wait();
+
         auto& manager = project::get().get_asset_manager();
-        for (const auto& path : m_modified_files) {
+        for (const auto& path : m_reloaded_assets) {
             if (manager.is_asset_loaded(path)) {
                 auto _asset = manager.get_asset(path);
 
-                if (_asset->reload()) {
-                    continue;
+                if (!_asset->reload()) {
+                    spdlog::error("failed to reload asset: {0}", path.string());
                 }
             }
-
-            manager.clear_cache_entry(path);
         }
 
-        m_modified_files.clear();
+        m_reloaded_assets.clear();
     }
 
     void content_browser_panel::on_event(event& e) {
@@ -267,6 +266,9 @@ namespace sgm {
             column_count = 1;
         }
 
+        auto& manager = project::get().get_asset_manager();
+        auto& registry = manager.registry;
+
         std::unordered_set<fs::path, path_hasher> to_delete;
         ImGui::Columns(column_count, nullptr, false);
         for (const auto& entry : fs::directory_iterator(current_path)) {
@@ -309,6 +311,19 @@ namespace sgm {
             }
 
             if (ImGui::BeginPopupContextItem()) {
+                bool is_reloadable = false;
+                if (registry.contains(asset_path)) {
+                    is_reloadable = registry[asset_path].type.has_value();
+                }
+
+                ImGui::BeginDisabled(!is_reloadable);
+                if (ImGui::MenuItem("Reload")) {
+                    if (manager.is_asset_loaded(asset_path)) {
+                        m_reloaded_assets.insert(asset_path);
+                    }
+                }
+
+                ImGui::EndDisabled();
                 if (ImGui::MenuItem("Delete")) {
                     to_delete.insert(path);
                 }
@@ -321,11 +336,11 @@ namespace sgm {
                 if (entry.is_directory()) {
                     m_history->push(path);
                 } else {
-                    // maybe some kind of open function?
+                    // todo(nora): maybe some kind of open function?
                 }
             }
 
-            // todo: fix filename display
+            // todo(nora): fix filename display
             {
                 float text_width = ImGui::CalcTextSize(filename_string.c_str()).x;
 
@@ -473,8 +488,8 @@ namespace sgm {
             }
         } break;
         case file_status::deleted:
-            if (m_modified_files.find(asset_path) != m_modified_files.end()) {
-                m_modified_files.erase(asset_path);
+            if (m_reloaded_assets.find(asset_path) != m_reloaded_assets.end()) {
+                m_reloaded_assets.erase(asset_path);
             }
 
             handled = true;
@@ -482,8 +497,8 @@ namespace sgm {
 
             break;
         case file_status::modified:
-            if (m_modified_files.find(asset_path) == m_modified_files.end()) {
-                m_modified_files.insert(asset_path);
+            if (m_reloaded_assets.find(asset_path) == m_reloaded_assets.end()) {
+                m_reloaded_assets.insert(asset_path);
             }
 
             break;

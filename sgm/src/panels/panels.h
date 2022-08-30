@@ -146,7 +146,7 @@ namespace sgm {
         void build_directory_data(const fs::path& path, asset_directory_data_t& data);
         const asset_directory_data_t& get_directory_data(const fs::path& path);
 
-        std::unordered_set<fs::path, path_hasher> m_modified_files;
+        std::unordered_set<fs::path, path_hasher> m_reloaded_assets;
 
         fs::path m_root;
         browser_history* m_history;

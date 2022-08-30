@@ -56,7 +56,6 @@ namespace sge {
 
             if (pid == 0) {
                 if (setsid() < 0) {
-                    spdlog::error("could not set session ID");
                     exit(EXIT_FAILURE);
                 }
 
@@ -66,7 +65,6 @@ namespace sge {
                 // second fork
                 pid = fork();
                 if (pid < 0) {
-                    spdlog::error("could not perform second fork");
                     exit(EXIT_FAILURE);
                 }
 
