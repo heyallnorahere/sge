@@ -51,7 +51,7 @@ namespace sge {
     private:
         enum class registry_action { add, remove, clear };
 
-        using on_changed_callback = std::function<void(registry_action, fs::path)>;
+        using on_changed_callback = std::function<void(registry_action, const fs::path&, ref<asset>)>;
 
         void set_path(const fs::path& path);
         void set_on_changed_callback(on_changed_callback callback);

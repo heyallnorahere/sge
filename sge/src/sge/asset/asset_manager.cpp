@@ -19,32 +19,36 @@
 #include "sge/asset/asset_serializers.h"
 namespace sge {
     asset_manager::asset_manager() {
-        registry.set_on_changed_callback(
-            [this](asset_registry::registry_action action, const fs::path& path) mutable {
-                switch (action) {
-                case asset_registry::registry_action::add:
-                    // nothing
-                    break;
-                case asset_registry::registry_action::remove:
-                    if (m_path_cache.find(path) != m_path_cache.end()) {
-                        auto _asset = m_path_cache[path];
-                        if (_asset && m_guid_cache.find(_asset->id) != m_guid_cache.end()) {
-                            m_guid_cache.erase(_asset->id);
-                        }
+        registry.set_on_changed_callback([this](asset_registry::registry_action action,
+                                                const fs::path& path, ref<asset> _asset) mutable {
+            switch (action) {
+            case asset_registry::registry_action::add:
+                if (_asset) {
+                    m_path_cache.insert(std::make_pair(path, _asset));
+                    m_guid_cache.insert(std::make_pair(_asset->id, _asset));
+                }
 
-                        m_path_cache.erase(path);
+                break;
+            case asset_registry::registry_action::remove:
+                if (m_path_cache.find(path) != m_path_cache.end()) {
+                    auto _asset = m_path_cache[path];
+                    if (_asset && m_guid_cache.find(_asset->id) != m_guid_cache.end()) {
+                        m_guid_cache.erase(_asset->id);
                     }
 
-                    break;
-                case asset_registry::registry_action::clear:
-                    m_path_cache.clear();
-                    m_guid_cache.clear();
-
-                    break;
-                default:
-                    throw std::runtime_error("invalid registry action!");
+                    m_path_cache.erase(path);
                 }
-            });
+
+                break;
+            case asset_registry::registry_action::clear:
+                m_path_cache.clear();
+                m_guid_cache.clear();
+
+                break;
+            default:
+                throw std::runtime_error("invalid registry action!");
+            }
+        });
     }
 
     ref<asset> asset_manager::get_asset(const fs::path& path) {
@@ -103,7 +107,7 @@ namespace sge {
         if (m_path_cache.find(path) != m_path_cache.end()) {
             auto _asset = m_path_cache[path];
             if (_asset && m_guid_cache.find(_asset->id) != m_guid_cache.end()) {
-                m_guid_cache.erase(_asset->id);                
+                m_guid_cache.erase(_asset->id);
             }
 
             m_path_cache.erase(path);
@@ -118,7 +122,7 @@ namespace sge {
             auto _asset = m_guid_cache[id];
             if (_asset) {
                 const auto& path = _asset->get_path();
-                
+
                 if (m_path_cache.find(path) != m_path_cache.end()) {
                     m_path_cache.erase(path);
                 }

@@ -137,6 +137,8 @@ namespace sgm {
         };
 
         bool on_file_changed(file_changed_event& e);
+        bool import_asset(const fs::path& path);
+        bool remove_asset(const fs::path& path);
 
         void build_extension_data();
         ref<texture_2d> get_icon(const fs::path& path);

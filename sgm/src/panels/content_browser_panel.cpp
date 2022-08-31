@@ -322,13 +322,28 @@ namespace sgm {
             }
 
             if (ImGui::BeginPopupContextItem()) {
+                bool tree_changed = false;
                 if (irrelevant_asset) {
                     if (ImGui::MenuItem("Import asset")) {
-                        // todo: import asset
+                        tree_changed |= import_asset(asset_path);
                     }
 
-                    ImGui::Separator();
+                    ImGui::BeginDisabled();
                 }
+
+                if (ImGui::MenuItem("Remove asset")) {
+                    tree_changed |= remove_asset(asset_path);
+                }
+
+                if (tree_changed) {
+                    rebuild_directory_data();
+                }
+
+                if (irrelevant_asset) {
+                    ImGui::EndDisabled();
+                }
+
+                ImGui::Separator();
 
                 bool is_reloadable = false;
                 if (registry.contains(asset_path)) {
@@ -407,7 +422,7 @@ namespace sgm {
         }
 
         if (ImGui::BeginPopup("item-context")) {
-            ImGui::MenuItem("Show all files", nullptr, &m_show_irrelevant_assets);
+            ImGui::MenuItem("Show hidden files", nullptr, &m_show_irrelevant_assets);
             ImGui::Separator();
 
             // todo: add items
@@ -498,42 +513,14 @@ namespace sgm {
         bool handled = false;
         bool tree_changed = false;
 
-        auto& manager = project::get().get_asset_manager();
-        auto& registry = manager.registry;
-
         fs::path asset_path = fs::relative(path, m_root);
         switch (e.get_status()) {
-        case file_status::created: {
-            std::optional<asset_type> type;
-            if (path.has_extension()) {
-                fs::path extension = path.extension();
-
-                if (m_extension_data.find(extension) != m_extension_data.end()) {
-                    type = m_extension_data.at(extension).type;
-                }
-            }
-
-            if (type.has_value()) {
-                asset_desc desc;
-                desc.id = guid();
-                desc.path = path;
-                desc.type = type;
-
-                ref<asset> loaded;
-                if (asset_serializer::deserialize(desc, loaded)) {
-                    tree_changed |= registry.register_asset(loaded);
-                }
-            } else {
-                tree_changed |= registry.register_asset(path);
-            }
-        } break;
+        case file_status::created:
+            tree_changed |= import_asset(asset_path);
+            break;
         case file_status::deleted:
-            if (m_reloaded_assets.find(asset_path) != m_reloaded_assets.end()) {
-                m_reloaded_assets.erase(asset_path);
-            }
-
             handled = true;
-            tree_changed |= registry.remove_asset(asset_path);
+            tree_changed |= remove_asset(asset_path);
 
             break;
         case file_status::modified:
@@ -550,6 +537,75 @@ namespace sgm {
 
         // dump_assets(manager);
         return handled;
+    }
+
+    bool content_browser_panel::import_asset(const fs::path& path) {
+        auto& _project = project::get();
+        auto& manager = _project.get_asset_manager();
+        auto& registry = manager.registry;
+
+        std::optional<asset_type> type;
+        if (path.has_extension()) {
+            fs::path extension = path.extension();
+
+            if (m_extension_data.find(extension) != m_extension_data.end()) {
+                type = m_extension_data.at(extension).type;
+            }
+        }
+
+        fs::path printed_path = path;
+        if (printed_path.is_relative()) {
+            printed_path = m_root / printed_path;
+        }
+
+        bool succeeded = false;
+        spdlog::info("attempting to load asset: {0}", printed_path.string());
+
+        if (type.has_value()) {
+            asset_desc desc;
+            desc.id = guid();
+            desc.path = path;
+            desc.type = type;
+
+            ref<asset> loaded;
+            if (asset_serializer::deserialize(desc, loaded)) {
+                succeeded = registry.register_asset(loaded);
+            }
+        } else {
+            succeeded = registry.register_asset(path);
+        }
+
+        if (succeeded) {
+            spdlog::info("successfully loaded asset: {0}", printed_path.string());
+            return true;
+        } else {
+            spdlog::error("failed to load asset: {0}", printed_path.string());
+            return false;
+        }
+    }
+
+    bool content_browser_panel::remove_asset(const fs::path& path) {
+        fs::path asset_path = path;
+        if (asset_path.is_absolute()) {
+            asset_path = fs::relative(asset_path, m_root);
+        }
+
+        if (m_reloaded_assets.find(asset_path) != m_reloaded_assets.end()) {
+            m_reloaded_assets.erase(asset_path);
+        }
+
+        auto& _project = project::get();
+        auto& manager = _project.get_asset_manager();
+        auto& registry = manager.registry;
+
+        spdlog::info("attempting to remove asset: {0}", asset_path.string());
+        if (registry.remove_asset(asset_path)) {
+            spdlog::info("successfully removed asset: {0}", asset_path.string());
+            return true;
+        } else {
+            spdlog::error("failed to remove asset: {0}", asset_path.string());
+            return false;
+        }
     }
 
     void content_browser_panel::build_extension_data() {

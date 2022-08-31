@@ -119,7 +119,7 @@ namespace sge {
 
         m_mutex.unlock();
         if (callback) {
-            callback(registry_action::clear, m_path);
+            callback(registry_action::clear, m_path, nullptr);
         }
     }
 
@@ -139,7 +139,9 @@ namespace sge {
     }
 
     bool asset_registry::register_asset(ref<asset> _asset) {
-        m_mutex.lock();
+        if (!_asset) {
+            return false;
+        }
 
         fs::path path = _asset->get_path();
         if (path.is_absolute()) {
@@ -147,6 +149,7 @@ namespace sge {
             path = path.lexically_relative(asset_dir);
         }
 
+        m_mutex.lock();
         if (path.empty() || (m_assets.find(path) != m_assets.end())) {
             m_mutex.unlock();
             return false;
@@ -167,7 +170,7 @@ namespace sge {
         save();
 
         if (callback) {
-            callback(registry_action::add, path);
+            callback(registry_action::add, path, _asset);
         }
 
         return true;
@@ -200,7 +203,7 @@ namespace sge {
         save();
 
         if (callback) {
-            callback(registry_action::add, asset_path);
+            callback(registry_action::add, asset_path, nullptr);
         }
 
         return true;
@@ -231,7 +234,7 @@ namespace sge {
         save();
 
         if (callback) {
-            callback(registry_action::remove, asset_path);
+            callback(registry_action::remove, asset_path, nullptr);
         }
 
         return true;
@@ -250,7 +253,7 @@ namespace sge {
         save();
 
         if (callback) {
-            callback(registry_action::clear, m_path);
+            callback(registry_action::clear, m_path, nullptr);
         }
     }
 
