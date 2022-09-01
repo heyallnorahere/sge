@@ -94,6 +94,7 @@ namespace sge {
     void vulkan_swapchain::new_frame() {
         VkDevice device = vulkan_context::get().get_device().get();
         VkFence fence = m_sync_objects[m_current_frame].fence;
+        
         static constexpr size_t uint64_max = std::numeric_limits<uint64_t>::max();
         vkWaitForFences(device, 1, &fence, true, uint64_max);
 
@@ -104,8 +105,8 @@ namespace sge {
         if (m_image_fences[m_current_image_index] != nullptr) {
             vkWaitForFences(device, 1, &m_image_fences[m_current_image_index], true, uint64_max);
         }
-        m_image_fences[m_current_image_index] = fence;
 
+        m_image_fences[m_current_image_index] = fence;
         vkResetFences(device, 1, &fence);
 
         auto& cmdlist = *m_command_buffers[m_current_image_index];

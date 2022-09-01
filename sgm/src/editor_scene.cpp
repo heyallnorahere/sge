@@ -19,6 +19,7 @@
 
 #include <sge/renderer/renderer.h>
 #include <sge/asset/sound.h>
+#include <sge/script/garbage_collector.h>
 
 namespace sgm {
     struct scene_data_t {
@@ -140,7 +141,9 @@ namespace sgm {
 
         reset_selection();
         script_helpers::set_editor_scene(s_scene_data->_scene);
+
         sound::stop_all();
+        garbage_collector::collect(false);
 
         s_scene_data->runtime_scene->on_stop();
         s_scene_data->runtime_scene.reset();
