@@ -287,7 +287,6 @@ namespace sge {
     }
 
     bool sound::reload() {
-        // todo(nora): destructive on fail, please fix
         sound_asset_data_t* data = nullptr;
         if (m_path.extension() != ".ogg") {
             auto decoder = new ma_decoder;

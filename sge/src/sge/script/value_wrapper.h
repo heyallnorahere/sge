@@ -42,6 +42,8 @@ namespace sge {
         template <typename T>
         value_wrapper(const T& value) : value_wrapper(&value, sizeof(T)) {}
 
+        ~value_wrapper() { reset(); }
+
         value_wrapper& operator=(const value_wrapper& other) {
             reset();
 
