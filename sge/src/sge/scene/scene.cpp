@@ -672,6 +672,7 @@ namespace sge {
     ref<scene> scene::copy() {
         auto new_scene = ref<scene>::create();
         new_scene->m_collision_category_names = m_collision_category_names;
+        new_scene->m_render_colliders = m_render_colliders;
 
         // Map from the entt entity id in the old scene to the new scene
         std::unordered_map<entt::entity, entt::entity> entity_map;
@@ -887,7 +888,10 @@ namespace sge {
             renderer::begin_scene(view_projection);
             render();
 
-            m_physics_data->world->DebugDraw();
+            if (m_render_colliders) {
+                m_physics_data->world->DebugDraw();
+            }
+
             renderer::end_scene();
         }
     }

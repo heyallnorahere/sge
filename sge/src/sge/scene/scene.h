@@ -53,6 +53,7 @@ namespace sge {
 
         void update_physics_data(entity e);
         void recalculate_render_order();
+        bool& colliders_rendered() { return m_render_colliders; }
 
         bool apply_force(entity e, glm::vec2 force, glm::vec2 point, bool wake = true);
         bool apply_force(entity e, glm::vec2 force, bool wake = true);
@@ -114,6 +115,7 @@ namespace sge {
 
         scene_physics_data* m_physics_data = nullptr;
         std::array<std::string, collision_category_count> m_collision_category_names;
+        bool m_render_colliders = false;
 
         friend class entity;
         friend class box2d_contact_listener;

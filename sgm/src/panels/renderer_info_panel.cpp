@@ -17,7 +17,9 @@
 #include "sgmpch.h"
 #include "panels/panels.h"
 #include "editor_scene.h"
+
 #include <sge/renderer/renderer.h>
+
 namespace sgm {
     void renderer_info_panel::update(timestep ts) {
         if (m_reload_shaders) {
@@ -33,6 +35,11 @@ namespace sgm {
     void renderer_info_panel::render() {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Text("%f FPS", io.Framerate);
+
+        ImGui::BeginDisabled(!editor_scene::running());
+        auto _scene = editor_scene::get_scene();
+        ImGui::Checkbox("Render colliders", &_scene->colliders_rendered());
+        ImGui::EndDisabled();
 
         if (ImGui::Button("Reload library shaders")) {
             m_reload_shaders = true;
