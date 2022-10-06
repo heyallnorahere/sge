@@ -164,7 +164,7 @@ namespace sge {
 
         std::string assembly_path =
             (fs::current_path() / "assets" / "mono" / platform_name).string();
-            
+
         mono_set_assemblies_path(assembly_path.c_str());
         mono_config_parse(nullptr);
 
@@ -855,7 +855,10 @@ namespace sge {
         auto mono_desc = mono_method_desc_new(method_desc.c_str(), false);
 
         auto mono_class = (MonoClass*)_class;
-        return mono_method_desc_search_in_class(mono_desc, mono_class);
+        auto method = mono_method_desc_search_in_class(mono_desc, mono_class);
+
+        mono_method_desc_free(mono_desc);
+        return method;
     }
 
     std::string script_engine::get_method_name(void* method) {
