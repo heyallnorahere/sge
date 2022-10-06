@@ -36,10 +36,8 @@ namespace sgm {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Text("%f FPS", io.Framerate);
 
-        ImGui::BeginDisabled(!editor_scene::running());
         auto _scene = editor_scene::get_scene();
         ImGui::Checkbox("Render colliders", &_scene->colliders_rendered());
-        ImGui::EndDisabled();
 
         if (ImGui::Button("Reload library shaders")) {
             m_reload_shaders = true;

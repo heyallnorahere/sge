@@ -680,6 +680,11 @@ namespace sge {
                               ref<texture_2d> texture) {
         auto& batch = *renderer_data.current_scene->current_batch;
 
+        if (indices.size() % 3 != 0) {
+            throw std::runtime_error(
+                "the passed list of indices does not describe a set of triangles!");
+        }
+
         shape_t shape;
         shape.type = shape_type::vertices;
         shape.vertices = vertices;

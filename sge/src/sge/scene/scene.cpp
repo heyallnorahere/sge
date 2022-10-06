@@ -37,6 +37,15 @@ namespace sge {
         box,
     };
 
+    static std::optional<collider_type> get_collider_type(entity e) {
+        std::optional<collider_type> type;
+        if (e.has_all<box_collider_component>()) {
+            type = collider_type::box;
+        }
+
+        return type;
+    }
+
     struct entity_physics_data {
         std::optional<collider_type> _collider_type;
         std::optional<glm::vec2> current_box_size;
@@ -50,66 +59,6 @@ namespace sge {
 
         b2World* world;
         std::unique_ptr<b2ContactListener> listener;
-        std::unique_ptr<b2Draw> debug_draw;
-    };
-
-    class box2d_debug_draw : public b2Draw {
-    public:
-        static std::unique_ptr<b2Draw> create() {
-            auto instance = new box2d_debug_draw;
-            return std::unique_ptr<b2Draw>(instance);
-        }
-
-        virtual void DrawPolygon(const b2Vec2* vertices, int32 vertexCount,
-                                 const b2Color& color) override {
-            // not implemented
-        }
-
-        virtual void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount,
-                                      const b2Color& color) override {
-            auto shader = renderer::get_shader_library().get("default");
-            renderer::set_shader(shader);
-
-            std::vector<glm::vec2> triangle_vertices;
-            for (int32_t i = vertexCount - 1; i >= 0; i--) {
-                auto vertex = vertices[i];
-                triangle_vertices.push_back(glm::vec2(vertex.x, vertex.y));
-            }
-
-            std::vector<uint32_t> indices;
-            for (int32_t i = 1; i < vertexCount - 1; i++) {
-                indices.insert(indices.end(),
-                               { (uint32_t)(i - 1), (uint32_t)i, (uint32_t)(vertexCount - 1) });
-            }
-
-            glm::vec4 triangle_color = glm::vec4(color.r, color.g, color.b, 1.f) * 0.5f;
-            renderer::draw_shape(triangle_vertices, indices, triangle_color);
-        }
-
-        virtual void DrawCircle(const b2Vec2& center, float radius, const b2Color& color) override {
-            // not implemented
-        }
-
-        virtual void DrawSolidCircle(const b2Vec2& center, float radius, const b2Vec2& axis,
-                                     const b2Color& color) override {
-            // not implemented
-        }
-
-        virtual void DrawSegment(const b2Vec2& p1, const b2Vec2& p2,
-                                 const b2Color& color) override {
-            // not implemented
-        }
-
-        virtual void DrawTransform(const b2Transform& xf) override {
-            // not implemented
-        }
-
-        virtual void DrawPoint(const b2Vec2& p, float size, const b2Color& color) override {
-            // not implemented
-        }
-
-    private:
-        box2d_debug_draw() { SetFlags(e_shapeBit); }
     };
 
     class box2d_contact_listener : public b2ContactListener {
@@ -383,11 +332,7 @@ namespace sge {
                 data.body->SetType(rigid_body_type_to_box2d_body(rb.type));
             }
 
-            std::optional<collider_type> type;
-            if (e.has_all<box_collider_component>()) {
-                type = collider_type::box;
-            }
-
+            auto type = get_collider_type(e);
             if (type.has_value()) {
                 switch (type.value()) {
                 case collider_type::box: {
@@ -726,10 +671,7 @@ namespace sge {
             m_physics_data->world = new b2World(b2Vec2(0.f, -9.8f));
 
             m_physics_data->listener = box2d_contact_listener::create(this);
-            m_physics_data->debug_draw = box2d_debug_draw::create();
-
             m_physics_data->world->SetContactListener(m_physics_data->listener.get());
-            m_physics_data->world->SetDebugDraw(m_physics_data->debug_draw.get());
         }
 
         // Call OnStart method, if it exists
@@ -887,11 +829,6 @@ namespace sge {
 
             renderer::begin_scene(view_projection);
             render();
-
-            if (m_render_colliders) {
-                m_physics_data->world->DebugDraw();
-            }
-
             renderer::end_scene();
         }
     }
@@ -1016,14 +953,16 @@ namespace sge {
     }
 
     void scene::render() {
+        auto& library = renderer::get_shader_library();
+        auto default_shader = library.get("default");
+
         for (auto _entity : m_render_order) {
             const auto& transform = _entity.get_component<transform_component>();
             const auto& sprite = _entity.get_component<sprite_renderer_component>();
 
             auto _shader = sprite._shader;
             if (!_shader) {
-                auto& library = renderer::get_shader_library();
-                _shader = library.get("default");
+                _shader = default_shader;
             }
 
             renderer::set_shader(_shader);
@@ -1034,6 +973,47 @@ namespace sge {
                 renderer::draw_rotated_quad(transform.translation, transform.rotation,
                                             transform.scale, sprite.color);
             }
+        }
+
+        if (m_render_colliders) {
+            renderer::set_shader(default_shader);
+            for_each([](const entity& e) {
+                auto type = get_collider_type(e);
+                if (!type.has_value() || !e.has_all<rigid_body_component, transform_component>()) {
+                    return;
+                }
+
+                auto& transform = e.get_component<transform_component>();
+                auto& rb = e.get_component<rigid_body_component>();
+
+                glm::vec3 collider_color;
+                switch (rb.type) {
+                case rigid_body_component::body_type::static_:
+                    collider_color = glm::vec3(0.f, 1.f, 0.f);
+                    break;
+                case rigid_body_component::body_type::dynamic:
+                    collider_color = glm::vec3(1.f, 0.f, 0.f);
+                    break;
+                case rigid_body_component::body_type::kinematic:
+                    collider_color = glm::vec3(0.f, 0.f, 1.f);
+                    break;
+                default:
+                    throw std::runtime_error("invalid body type!");
+                }
+
+                glm::vec4 color = glm::vec4(collider_color, 1.f) * 0.5f;
+                switch (type.value()) {
+                case collider_type::box: {
+                    auto& bc = e.get_component<box_collider_component>();
+                    glm::vec2 size = transform.scale * bc.size * 2.f;
+
+                    renderer::draw_rotated_quad(transform.translation, transform.rotation, size,
+                                                color);
+                } break;
+                default:
+                    throw std::runtime_error("invalid collider type!");
+                }
+            });
         }
     }
 
