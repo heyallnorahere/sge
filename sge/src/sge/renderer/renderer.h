@@ -32,6 +32,10 @@ namespace sge {
         ref<pipeline> _pipeline;
     };
 
+    struct mapped_vertex {
+        glm::vec2 position, uv;
+    };
+
     struct device_info {
         std::string name;
         std::string graphics_api;
@@ -91,25 +95,31 @@ namespace sge {
 
         // Draw a quad centered on position and of size size.  If texture is specified then that
         // texture is used for the quad.
-        static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color);
-        static void draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color,
+        static void draw_quad(glm::vec2 position, glm::vec2 size, const glm::vec4& color);
+        static void draw_quad(glm::vec2 position, glm::vec2 size, const glm::vec4& color,
                               ref<texture_2d> texture);
 
         static void draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
-                                      glm::vec4 color);
+                                      const glm::vec4& color);
         static void draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
-                                      glm::vec4 color, ref<texture_2d> texture);
+                                      const glm::vec4& color, ref<texture_2d> texture);
+
+        static void draw_shape(const std::vector<glm::vec2>& vertices,
+                               const std::vector<uint32_t>& indices, const glm::vec4& color);
+        static void draw_shape(const std::vector<mapped_vertex>& vertices,
+                               const std::vector<uint32_t>& indices, const glm::vec4& color,
+                               ref<texture_2d> texture);
 
         struct stats {
             uint32_t draw_calls;
-            uint32_t quad_count;
+            uint32_t shape_count;
 
             uint32_t vertex_count;
             uint32_t index_count;
 
             void reset() {
                 draw_calls = 0;
-                quad_count = 0;
+                shape_count = 0;
 
                 vertex_count = 0;
                 index_count = 0;

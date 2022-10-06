@@ -42,7 +42,7 @@ namespace sgm {
             renderer::stats stats = renderer::get_stats();
 
             ImGui::Text("Draw calls: %u", stats.draw_calls);
-            ImGui::Text("Quads: %u", stats.quad_count);
+            ImGui::Text("Shapes: %u", stats.shape_count);
             ImGui::Text("Vertices: %u", stats.vertex_count);
             ImGui::Text("Indices: %u", stats.index_count);
         }

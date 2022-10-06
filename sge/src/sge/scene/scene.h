@@ -116,7 +116,7 @@ namespace sge {
         std::array<std::string, collision_category_count> m_collision_category_names;
 
         friend class entity;
-        friend class scene_contact_listener;
+        friend class box2d_contact_listener;
         friend class scene_serializer;
         friend struct script_deserializer;
 

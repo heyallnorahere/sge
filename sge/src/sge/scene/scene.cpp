@@ -30,6 +30,7 @@
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_circle_shape.h>
 #include <box2d/b2_contact.h>
+#include <box2d/b2_draw.h>
 
 namespace sge {
     enum class collider_type {
@@ -49,12 +50,72 @@ namespace sge {
 
         b2World* world;
         std::unique_ptr<b2ContactListener> listener;
+        std::unique_ptr<b2Draw> debug_draw;
     };
 
-    class scene_contact_listener : public b2ContactListener {
+    class box2d_debug_draw : public b2Draw {
+    public:
+        static std::unique_ptr<b2Draw> create() {
+            auto instance = new box2d_debug_draw;
+            return std::unique_ptr<b2Draw>(instance);
+        }
+
+        virtual void DrawPolygon(const b2Vec2* vertices, int32 vertexCount,
+                                 const b2Color& color) override {
+            // not implemented
+        }
+
+        virtual void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount,
+                                      const b2Color& color) override {
+            auto shader = renderer::get_shader_library().get("default");
+            renderer::set_shader(shader);
+
+            std::vector<glm::vec2> triangle_vertices;
+            for (int32_t i = vertexCount - 1; i >= 0; i--) {
+                auto vertex = vertices[i];
+                triangle_vertices.push_back(glm::vec2(vertex.x, vertex.y));
+            }
+
+            std::vector<uint32_t> indices;
+            for (int32_t i = 1; i < vertexCount - 1; i++) {
+                indices.insert(indices.end(),
+                               { (uint32_t)(i - 1), (uint32_t)i, (uint32_t)(vertexCount - 1) });
+            }
+
+            glm::vec4 triangle_color = glm::vec4(color.r, color.g, color.b, 1.f) * 0.5f;
+            renderer::draw_shape(triangle_vertices, indices, triangle_color);
+        }
+
+        virtual void DrawCircle(const b2Vec2& center, float radius, const b2Color& color) override {
+            // not implemented
+        }
+
+        virtual void DrawSolidCircle(const b2Vec2& center, float radius, const b2Vec2& axis,
+                                     const b2Color& color) override {
+            // not implemented
+        }
+
+        virtual void DrawSegment(const b2Vec2& p1, const b2Vec2& p2,
+                                 const b2Color& color) override {
+            // not implemented
+        }
+
+        virtual void DrawTransform(const b2Transform& xf) override {
+            // not implemented
+        }
+
+        virtual void DrawPoint(const b2Vec2& p, float size, const b2Color& color) override {
+            // not implemented
+        }
+
+    private:
+        box2d_debug_draw() { SetFlags(e_shapeBit); }
+    };
+
+    class box2d_contact_listener : public b2ContactListener {
     public:
         static std::unique_ptr<b2ContactListener> create(ref<scene> _scene) {
-            auto instance = new scene_contact_listener(_scene.raw());
+            auto instance = new box2d_contact_listener(_scene.raw());
             return std::unique_ptr<b2ContactListener>(instance);
         }
 
@@ -118,7 +179,7 @@ namespace sge {
         }
 
     private:
-        scene_contact_listener(scene* _scene) { m_scene = _scene; }
+        box2d_contact_listener(scene* _scene) { m_scene = _scene; }
 
         scene* m_scene;
     };
@@ -662,8 +723,12 @@ namespace sge {
         {
             m_physics_data = new scene_physics_data;
             m_physics_data->world = new b2World(b2Vec2(0.f, -9.8f));
-            m_physics_data->listener = scene_contact_listener::create(this);
+
+            m_physics_data->listener = box2d_contact_listener::create(this);
+            m_physics_data->debug_draw = box2d_debug_draw::create();
+
             m_physics_data->world->SetContactListener(m_physics_data->listener.get());
+            m_physics_data->world->SetDebugDraw(m_physics_data->debug_draw.get());
         }
 
         // Call OnStart method, if it exists
@@ -821,6 +886,8 @@ namespace sge {
 
             renderer::begin_scene(view_projection);
             render();
+
+            m_physics_data->world->DebugDraw();
             renderer::end_scene();
         }
     }

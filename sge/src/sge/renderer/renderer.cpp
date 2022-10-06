@@ -29,16 +29,24 @@ namespace sge {
         int32_t texture_index;
     };
 
-    struct quad_t {
-        glm::vec2 position, size;
-        float rotation;
+    enum class shape_type { quad, vertices };
+    struct shape_t {
+        shape_type type;
+
         glm::vec4 color;
         size_t texture_index;
+
+        std::vector<mapped_vertex> vertices;
+        std::vector<uint32_t> indices;
+
+        glm::vec2 position, size;
+        float rotation;
     };
 
     struct batch_t {
+        std::vector<shape_t> shapes;
+
         ref<shader> _shader;
-        std::vector<quad_t> quads;
         const editor_camera* grid_camera = nullptr;
         std::vector<ref<texture_2d>> textures;
     };
@@ -340,7 +348,7 @@ namespace sge {
         begin_render_pass();
         auto pass = renderer_data.render_passes.top().pass;
 
-        if (!batch->quads.empty() || batch->grid_camera != nullptr) {
+        if (!batch->shapes.empty() || batch->grid_camera != nullptr) {
             if (renderer_data.cmdlist == nullptr) {
                 throw std::runtime_error("cannot add commands to an empty command list!");
             }
@@ -426,50 +434,69 @@ namespace sge {
                 vertices.push_back(v);
             }
 
-            for (const auto& quad : batch->quads) {
-                add_quad_indices();
+            for (const auto& shape : batch->shapes) {
+                switch (shape.type) {
+                case shape_type::quad: {
+                    add_quad_indices();
 
-                auto rot_rad = glm::radians(quad.rotation);
-                auto cos_rot = glm::cos(rot_rad);
-                auto sin_rot = glm::sin(rot_rad);
+                    auto rot_rad = glm::radians(shape.rotation);
+                    auto cos_rot = glm::cos(rot_rad);
+                    auto sin_rot = glm::sin(rot_rad);
 
-                glm::vec2 half_size = quad.size / 2.f;
+                    glm::vec2 half_size = shape.size / 2.f;
 
-                // top right
-                auto v = &vertices.emplace_back();
-                v->position.x = half_size.x * cos_rot - half_size.y * sin_rot;
-                v->position.y = half_size.x * sin_rot + half_size.y * cos_rot;
-                v->position = quad.position + v->position;
-                v->color = quad.color;
-                v->uv = glm::vec2(1.f, 0.f);
-                v->texture_index = (int32_t)quad.texture_index;
+                    // top right
+                    auto v = &vertices.emplace_back();
+                    v->position.x = half_size.x * cos_rot - half_size.y * sin_rot;
+                    v->position.y = half_size.x * sin_rot + half_size.y * cos_rot;
+                    v->position += shape.position;
+                    v->color = shape.color;
+                    v->uv = glm::vec2(1.f, 0.f);
+                    v->texture_index = (int32_t)shape.texture_index;
 
-                // bottom right
-                v = &vertices.emplace_back();
-                v->position.x = half_size.x * cos_rot - -half_size.y * sin_rot;
-                v->position.y = half_size.x * sin_rot + -half_size.y * cos_rot;
-                v->position = quad.position + v->position;
-                v->color = quad.color;
-                v->uv = glm::vec2(1.f, 1.f);
-                v->texture_index = (int32_t)quad.texture_index;
+                    // bottom right
+                    v = &vertices.emplace_back();
+                    v->position.x = half_size.x * cos_rot - -half_size.y * sin_rot;
+                    v->position.y = half_size.x * sin_rot + -half_size.y * cos_rot;
+                    v->position += shape.position;
+                    v->color = shape.color;
+                    v->uv = glm::vec2(1.f, 1.f);
+                    v->texture_index = (int32_t)shape.texture_index;
 
-                // bottom left
-                v = &vertices.emplace_back();
-                v->position.x = -half_size.x * cos_rot - -half_size.y * sin_rot;
-                v->position.y = -half_size.x * sin_rot + -half_size.y * cos_rot;
-                v->position = quad.position + v->position;
-                v->color = quad.color;
-                v->uv = glm::vec2(0.f, 1.f);
-                v->texture_index = (int32_t)quad.texture_index;
+                    // bottom left
+                    v = &vertices.emplace_back();
+                    v->position.x = -half_size.x * cos_rot - -half_size.y * sin_rot;
+                    v->position.y = -half_size.x * sin_rot + -half_size.y * cos_rot;
+                    v->position += shape.position;
+                    v->color = shape.color;
+                    v->uv = glm::vec2(0.f, 1.f);
+                    v->texture_index = (int32_t)shape.texture_index;
 
-                // top left
-                v = &vertices.emplace_back();
-                v->position.x = -half_size.x * cos_rot - half_size.y * sin_rot;
-                v->position.y = -half_size.x * sin_rot + half_size.y * cos_rot;
-                v->position = quad.position + v->position;
-                v->color = quad.color;
-                v->uv = glm::vec2(0.f, 0.f);
-                v->texture_index = (int32_t)quad.texture_index;
+                    // top left
+                    v = &vertices.emplace_back();
+                    v->position.x = -half_size.x * cos_rot - half_size.y * sin_rot;
+                    v->position.y = -half_size.x * sin_rot + half_size.y * cos_rot;
+                    v->position += shape.position;
+                    v->color = shape.color;
+                    v->uv = glm::vec2(0.f, 0.f);
+                    v->texture_index = (int32_t)shape.texture_index;
+                } break;
+                case shape_type::vertices: {
+                    for (uint32_t index : shape.indices) {
+                        indices.push_back((uint32_t)(index + vertices.size()));
+                    }
+
+                    for (const auto& passed_vertex : shape.vertices) {
+                        auto& v = vertices.emplace_back();
+                        v.position = passed_vertex.position;
+                        v.color = shape.color;
+                        v.uv = passed_vertex.uv;
+                        v.texture_index = shape.texture_index;
+                    }
+                } break;
+                default:
+                    throw std::runtime_error("invalid shape type!");
+                }
             }
 
             for (size_t i = 0; i < batch->textures.size(); i++) {
@@ -492,10 +519,11 @@ namespace sge {
             if (scene.used_pipelines.find(pass) == scene.used_pipelines.end()) {
                 scene.used_pipelines.insert(std::make_pair(pass, std::vector<ref<pipeline>>()));
             }
+
             scene.used_pipelines[pass].push_back(_pipeline);
 
             renderer_data.stats.draw_calls++;
-            renderer_data.stats.quad_count += batch->quads.size();
+            renderer_data.stats.shape_count += (uint32_t)batch->shapes.size();
             renderer_data.stats.vertex_count += vertices.size();
             renderer_data.stats.index_count += indices.size();
         }
@@ -567,59 +595,99 @@ namespace sge {
         next_batch();
     }
 
-    void renderer::draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color) {
+    void renderer::draw_quad(glm::vec2 position, glm::vec2 size, const glm::vec4& color) {
         auto& batch = *renderer_data.current_scene->current_batch;
 
-        quad_t quad;
+        shape_t quad;
+        quad.type = shape_type::quad;
         quad.position = position;
         quad.size = size;
         quad.rotation = 0.f;
         quad.color = color;
         quad.texture_index = push_texture(renderer_data.white_texture);
 
-        batch.quads.push_back(quad);
+        batch.shapes.push_back(quad);
     }
 
-    void renderer::draw_quad(glm::vec2 position, glm::vec2 size, glm::vec4 color,
+    void renderer::draw_quad(glm::vec2 position, glm::vec2 size, const glm::vec4& color,
                              ref<texture_2d> texture) {
         auto& batch = *renderer_data.current_scene->current_batch;
 
-        quad_t quad;
+        shape_t quad;
+        quad.type = shape_type::quad;
         quad.position = position;
         quad.size = size;
         quad.rotation = 0.f;
         quad.color = color;
         quad.texture_index = push_texture(texture);
 
-        batch.quads.push_back(quad);
+        batch.shapes.push_back(quad);
     }
 
     void renderer::draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
-                                     glm::vec4 color) {
+                                     const glm::vec4& color) {
         auto& batch = *renderer_data.current_scene->current_batch;
 
-        quad_t quad;
+        shape_t quad;
+        quad.type = shape_type::quad;
         quad.position = position;
         quad.size = size;
         quad.rotation = rotation;
         quad.color = color;
         quad.texture_index = push_texture(renderer_data.white_texture);
 
-        batch.quads.push_back(quad);
+        batch.shapes.push_back(quad);
     }
 
     void renderer::draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
-                                     glm::vec4 color, ref<texture_2d> texture) {
+                                     const glm::vec4& color, ref<texture_2d> texture) {
         auto& batch = *renderer_data.current_scene->current_batch;
 
-        quad_t quad;
+        shape_t quad;
+        quad.type = shape_type::quad;
         quad.position = position;
         quad.size = size;
         quad.rotation = rotation;
         quad.color = color;
         quad.texture_index = push_texture(texture);
 
-        batch.quads.push_back(quad);
+        batch.shapes.push_back(quad);
+    }
+
+    void renderer::draw_shape(const std::vector<glm::vec2>& vertices,
+                              const std::vector<uint32_t>& indices, const glm::vec4& color) {
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        shape_t shape;
+        shape.type = shape_type::vertices;
+        shape.indices = indices;
+        shape.color = color;
+        shape.texture_index = push_texture(renderer_data.white_texture);
+
+        for (const auto& vertex : vertices) {
+            mapped_vertex v;
+            v.position = vertex;
+            v.uv = glm::vec2(0.f);
+
+            shape.vertices.push_back(v);
+        }
+
+        batch.shapes.push_back(shape);
+    }
+
+    void renderer::draw_shape(const std::vector<mapped_vertex>& vertices,
+                              const std::vector<uint32_t>& indices, const glm::vec4& color,
+                              ref<texture_2d> texture) {
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        shape_t shape;
+        shape.type = shape_type::vertices;
+        shape.vertices = vertices;
+        shape.indices = indices;
+        shape.color = color;
+        shape.texture_index = push_texture(texture);
+
+        batch.shapes.push_back(shape);
     }
 
     renderer::stats renderer::get_stats() { return renderer_data.stats; }
