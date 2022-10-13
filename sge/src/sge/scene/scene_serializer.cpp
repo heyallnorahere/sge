@@ -191,20 +191,42 @@ namespace sge {
         }
     }
 
+    static void serialize_collider(json& data, const collider_data& collider) {
+        data["density"] = collider.density;
+        data["friction"] = collider.friction;
+        data["restitution"] = collider.restitution;
+        data["restitution_threshold"] = collider.restitution_threshold;
+    }
+
+    static void deserialize_collider(const json& data, collider_data& collider) {
+        collider.density = data["density"].get<float>();
+        collider.friction = data["friction"].get<float>();
+        collider.restitution = data["restitution"].get<float>();
+        collider.restitution_threshold = data["restitution_threshold"].get<float>();
+    }
+
     void to_json(json& data, const box_collider_component& bc) {
-        data["density"] = bc.density;
-        data["friction"] = bc.friction;
-        data["restitution"] = bc.restitution;
-        data["restitution_threshold"] = bc.restitution_threshold;
         data["size"] = bc.size;
+
+        serialize_collider(data, bc);
     }
 
     void from_json(const json& data, box_collider_component& bc) {
-        bc.density = data["density"].get<float>();
-        bc.friction = data["friction"].get<float>();
-        bc.restitution = data["restitution"].get<float>();
-        bc.restitution_threshold = data["restitution_threshold"].get<float>();
         bc.size = data["size"].get<glm::vec2>();
+
+        deserialize_collider(data, bc);
+    }
+
+    void to_json(json& data, const circle_collider_component& cc) {
+        data["radius"] = cc.radius;
+
+        serialize_collider(data, cc);
+    }
+
+    void from_json(const json& data, circle_collider_component& cc) {
+        cc.radius = data["radius"].get<float>();
+
+        deserialize_collider(data, cc);
     }
 
     void to_json(json& data, const script_component& component) {
@@ -331,6 +353,7 @@ namespace sge {
         serialize_component<sprite_renderer_component>(current, "sprite", data);
         serialize_component<rigid_body_component>(current, "rigid_body", data);
         serialize_component<box_collider_component>(current, "box_collider", data);
+        serialize_component<circle_collider_component>(current, "circle_collider", data);
         serialize_component<script_component>(current, "script", data);
     }
 
@@ -348,6 +371,7 @@ namespace sge {
         deserialize_component<sprite_renderer_component>(e, "sprite", data);
         deserialize_component<rigid_body_component>(e, "rigid_body", data);
         deserialize_component<box_collider_component>(e, "box_collider", data);
+        deserialize_component<circle_collider_component>(e, "circle_collider", data);
         deserialize_component<script_component>(e, "script", data);
 
         return e;

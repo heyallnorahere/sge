@@ -192,10 +192,6 @@ namespace sge {
             return dst.add_component<rigid_body_component>(src_rb);
         }
 
-        static rigid_body_component& do_cast(void* data) {
-            return *reinterpret_cast<rigid_body_component*>(data);
-        }
-
         static void meta_register() {
             using namespace entt::literals;
             entt::meta<rigid_body_component>()
@@ -204,19 +200,21 @@ namespace sge {
         }
     };
 
-    struct box_collider_component {
-        // This is the size from the origin in all directions.  This defines a unit box centered on
-        // the origin (relative to the coordinate space of the entity.)  The size/transformation of
-        // the entity is applied to this size. As such, this is the right default values for a box
-        // that is the same size as the sprite that is drawn.
-        glm::vec2 size = { 0.5f, 0.5f };
-
+    struct collider_data {
         float density = 1.f;
         float friction = 0.5f;
         float restitution = 0.f;
         float restitution_threshold = 0.5f;
 
         bool sensor = false;
+    };
+
+    struct box_collider_component : public collider_data {
+        // This is the size from the origin in all directions.  This defines a unit box centered on
+        // the origin (relative to the coordinate space of the entity.)  The size/transformation of
+        // the entity is applied to this size. As such, this is the right default values for a box
+        // that is the same size as the sprite that is drawn.
+        glm::vec2 size = { 0.5f, 0.5f };
 
         box_collider_component() = default;
         box_collider_component(const box_collider_component&) = default;
@@ -227,15 +225,33 @@ namespace sge {
             return dst.add_component<box_collider_component>(src_bc);
         }
 
-        static box_collider_component& do_cast(void* data) {
-            return *reinterpret_cast<box_collider_component*>(data);
-        }
-
         static void meta_register() {
             using namespace entt::literals;
             entt::meta<box_collider_component>()
                 .type("box_collider_component"_hs)
                 .func<box_collider_component::clone>("clone"_hs);
+        }
+    };
+
+    struct circle_collider_component : public collider_data {
+        // default value for a circle the size of the sprite drawn. note that this value is ABSOLUTE
+        // and will not scale with the object's transform
+        float radius = 0.5f;
+
+        circle_collider_component() = default;
+        circle_collider_component(const circle_collider_component&) = default;
+        circle_collider_component& operator=(const circle_collider_component&) = default;
+
+        static circle_collider_component& clone(const entity& src, const entity& dst, void* srcc) {
+            auto& src_cc = *reinterpret_cast<circle_collider_component*>(srcc);
+            return dst.add_component<circle_collider_component>(src_cc);
+        }
+
+        static void meta_register() {
+            using namespace entt::literals;
+            entt::meta<circle_collider_component>()
+                .type("circle_collider_component"_hs)
+                .func<circle_collider_component::clone>("clone"_hs);
         }
     };
 
@@ -263,7 +279,7 @@ namespace sge {
         }
     };
 
-    //=== scene::on_component_added/on_component_removed ====
+    //=== scene::on_component_added/on_component_removed ===
     template <>
     inline void scene::on_component_added<transform_component>(const entity& e,
                                                                transform_component& component) {
@@ -291,12 +307,12 @@ namespace sge {
 
     template <>
     inline void scene::on_component_removed<transform_component>(const entity& e,
-        transform_component& component) {
+                                                                 transform_component& component) {
         if (e.has_all<sprite_renderer_component>()) {
             recalculate_render_order();
         }
     }
-    
+
     template <>
     inline void scene::on_component_removed<sprite_renderer_component>(
         const entity& e, sprite_renderer_component& component) {

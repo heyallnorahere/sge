@@ -16,22 +16,8 @@
 
 namespace SGE.Components
 {
-    /// <summary>
-    /// A box collider component gives its parent entity a rectangular collider.
-    /// </summary>
-    public sealed class BoxColliderComponent : Component<BoxColliderComponent>
+    public abstract class Collider<T> : Component<T> where T : Collider<T>, new()
     {
-        public Vector2 Size
-        {
-            get
-            {
-                Vector2 size;
-                CoreInternalCalls.GetSize(mAddress, out size);
-                return size;
-            }
-            set => CoreInternalCalls.SetSize(mAddress, mParent, value);
-        }
-
         public float Density
         {
             get => CoreInternalCalls.GetDensity(mAddress);
@@ -58,8 +44,34 @@ namespace SGE.Components
 
         public bool IsSensor
         {
-            get => CoreInternalCalls.IsBoxColliderSensor(mAddress);
-            set => CoreInternalCalls.SetIsBoxColliderSensor(mAddress, mParent, value);
+            get => CoreInternalCalls.IsColliderSensor(mAddress);
+            set => CoreInternalCalls.SetIsColliderSensor(mAddress, mParent, value);
+        }
+    }
+
+    /// <summary>
+    /// A box collider component gives its parent entity a rectangular collider.
+    /// </summary>
+    public sealed class BoxColliderComponent : Collider<BoxColliderComponent>
+    {
+        public Vector2 Size
+        {
+            get
+            {
+                Vector2 size;
+                CoreInternalCalls.GetBoxSize(mAddress, out size);
+                return size;
+            }
+            set => CoreInternalCalls.SetBoxSize(mAddress, mParent, value);
+        }
+    }
+
+    public sealed class CircleColliderComponent : Collider<CircleColliderComponent>
+    {
+        public float Radius
+        {
+            get => CoreInternalCalls.GetCircleRadius(mAddress);
+            set => CoreInternalCalls.SetCircleRadius(mAddress, mParent, value);
         }
     }
 }

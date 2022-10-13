@@ -141,6 +141,30 @@ namespace SGE
         public static extern GUID GenerateGUID();
 
         #endregion
+        #region Collider
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetDensity(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetDensity(IntPtr component, Entity entity, float density);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetFriction(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetFriction(IntPtr component, Entity entity, float friction);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetRestitution(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetRestitution(IntPtr component, Entity entity, float restitution);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetRestitutionThreshold(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetRestitutionThreshold(IntPtr component, Entity entity, float threshold);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool IsColliderSensor(IntPtr component);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetIsColliderSensor(IntPtr component, Entity entity, bool isSensor);
+
+        #endregion
         #region TagComponent
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -260,29 +284,17 @@ namespace SGE
         #region BoxColliderComponent
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void GetSize(IntPtr component, out Vector2 size);
+        public static extern void GetBoxSize(IntPtr component, out Vector2 size);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetSize(IntPtr component, Entity entity, Vector2 size);
+        public static extern void SetBoxSize(IntPtr component, Entity entity, Vector2 size);
+
+        #endregion
+        #region CircleColliderComponent
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float GetDensity(IntPtr component);
+        public static extern float GetCircleRadius(IntPtr component);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetDensity(IntPtr component, Entity entity, float density);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float GetFriction(IntPtr component);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetFriction(IntPtr component, Entity entity, float friction);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float GetRestitution(IntPtr component);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetRestitution(IntPtr component, Entity entity, float restitution);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float GetRestitutionThreshold(IntPtr component);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetRestitutionThreshold(IntPtr component, Entity entity, float threshold);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool IsBoxColliderSensor(IntPtr component);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetIsBoxColliderSensor(IntPtr component, Entity entity, bool isSensor);
+        public static extern void SetCircleRadius(IntPtr component, Entity entity, float size);
 
         #endregion
         #region ScriptComponent

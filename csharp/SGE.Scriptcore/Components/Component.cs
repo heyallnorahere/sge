@@ -20,6 +20,12 @@ namespace SGE.Components
 {
     public abstract class Component<T> where T : Component<T>, new()
     {
+        internal Component()
+        {
+            mAddress = IntPtr.Zero;
+            mParent = null;
+        }
+
         internal IntPtr Address
         {
             get => mAddress;
@@ -32,7 +38,7 @@ namespace SGE.Components
             set => mParent = value;
         }
 
-        protected IntPtr mAddress = IntPtr.Zero;
-        protected Entity mParent = null;
+        protected IntPtr mAddress;
+        protected Entity mParent;
     }
 }

@@ -259,6 +259,56 @@ namespace sge {
         static guid GenerateGUID() { return guid(); }
 
 #pragma endregion
+#pragma region Collider
+
+        static float GetDensity(collider_data* data) { return data->density; }
+
+        static void SetDensity(collider_data* data, void* _entity, float density) {
+            data->density = density;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
+
+        static float GetFriction(collider_data* data) { return data->friction; }
+
+        static void SetFriction(collider_data* data, void* _entity, float friction) {
+            data->friction = friction;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
+
+        static float GetRestitution(collider_data* data) { return data->restitution; }
+
+        static void SetRestitution(collider_data* data, void* _entity, float restitution) {
+            data->restitution = restitution;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
+
+        static float GetRestitutionThreshold(collider_data* data) {
+            return data->restitution_threshold;
+        }
+
+        static void SetRestitutionThreshold(collider_data* data, void* _entity, float threshold) {
+            data->restitution_threshold = threshold;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
+
+        static bool IsColliderSensor(collider_data* data) { return data->sensor; }
+
+        static void SetIsColliderSensor(collider_data* data, void* _entity, bool isSensor) {
+            data->sensor = isSensor;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
+
+#pragma endregion
 #pragma region TagComponent
 
         static void SetTag(tag_component* component, void* tag) {
@@ -520,59 +570,22 @@ namespace sge {
 #pragma endregion
 #pragma region BoxColliderComponent
 
-        static void GetSize(box_collider_component* bc, glm::vec2* size) { *size = bc->size; }
+        static void GetBoxSize(box_collider_component* bc, glm::vec2* size) { *size = bc->size; }
 
-        static void SetSize(box_collider_component* bc, void* _entity, glm::vec2 size) {
+        static void SetBoxSize(box_collider_component* bc, void* _entity, glm::vec2 size) {
             bc->size = size;
 
             entity e = script_helpers::get_entity_from_object(_entity);
             e.get_scene()->update_physics_data(e);
         }
 
-        static float GetDensity(box_collider_component* bc) { return bc->density; }
+#pragma endregion
+#pragma region CircleColliderComponent
 
-        static void SetDensity(box_collider_component* bc, void* _entity, float density) {
-            bc->density = density;
+        static float GetCircleRadius(circle_collider_component* cc) { return cc->radius; }
 
-            entity e = script_helpers::get_entity_from_object(_entity);
-            e.get_scene()->update_physics_data(e);
-        }
-
-        static float GetFriction(box_collider_component* bc) { return bc->friction; }
-
-        static void SetFriction(box_collider_component* bc, void* _entity, float friction) {
-            bc->friction = friction;
-
-            entity e = script_helpers::get_entity_from_object(_entity);
-            e.get_scene()->update_physics_data(e);
-        }
-
-        static float GetRestitution(box_collider_component* bc) { return bc->restitution; }
-
-        static void SetRestitution(box_collider_component* bc, void* _entity, float restitution) {
-            bc->restitution = restitution;
-
-            entity e = script_helpers::get_entity_from_object(_entity);
-            e.get_scene()->update_physics_data(e);
-        }
-
-        static float GetRestitutionThreshold(box_collider_component* bc) {
-            return bc->restitution_threshold;
-        }
-
-        static void SetRestitutionThreshold(box_collider_component* bc, void* _entity,
-                                            float threshold) {
-            bc->restitution_threshold = threshold;
-
-            entity e = script_helpers::get_entity_from_object(_entity);
-            e.get_scene()->update_physics_data(e);
-        }
-
-        static bool IsBoxColliderSensor(box_collider_component* bc) { return bc->sensor; }
-
-        static void SetIsBoxColliderSensor(box_collider_component* bc, void* _entity,
-                                           bool isSensor) {
-            bc->sensor = isSensor;
+        static void SetCircleRadius(circle_collider_component* cc, void* _entity, float radius) {
+            cc->radius = radius;
 
             entity e = script_helpers::get_entity_from_object(_entity);
             e.get_scene()->update_physics_data(e);
@@ -925,6 +938,20 @@ namespace sge {
             REGISTER_FUNC(GenerateGUID);
 
 #pragma endregion
+#pragma region Collider
+
+            REGISTER_FUNC(GetDensity);
+            REGISTER_FUNC(SetDensity);
+            REGISTER_FUNC(GetFriction);
+            REGISTER_FUNC(SetFriction);
+            REGISTER_FUNC(GetRestitution);
+            REGISTER_FUNC(SetRestitution);
+            REGISTER_FUNC(GetRestitutionThreshold);
+            REGISTER_FUNC(SetRestitutionThreshold);
+            REGISTER_FUNC(IsColliderSensor);
+            REGISTER_FUNC(SetIsColliderSensor);
+
+#pragma endregion
 #pragma region TagComponent
 
             REGISTER_FUNC(SetTag);
@@ -995,18 +1022,14 @@ namespace sge {
 #pragma endregion
 #pragma region BoxColliderComponent
 
-            REGISTER_FUNC(GetSize);
-            REGISTER_FUNC(SetSize);
-            REGISTER_FUNC(GetDensity);
-            REGISTER_FUNC(SetDensity);
-            REGISTER_FUNC(GetFriction);
-            REGISTER_FUNC(SetFriction);
-            REGISTER_FUNC(GetRestitution);
-            REGISTER_FUNC(SetRestitution);
-            REGISTER_FUNC(GetRestitutionThreshold);
-            REGISTER_FUNC(SetRestitutionThreshold);
-            REGISTER_FUNC(IsBoxColliderSensor);
-            REGISTER_FUNC(SetIsBoxColliderSensor);
+            REGISTER_FUNC(GetBoxSize);
+            REGISTER_FUNC(SetBoxSize);
+
+#pragma endregion
+#pragma region CircleColliderComponent
+
+            REGISTER_FUNC(GetCircleRadius);
+            REGISTER_FUNC(SetCircleRadius);
 
 #pragma endregion
 #pragma region ScriptComponent

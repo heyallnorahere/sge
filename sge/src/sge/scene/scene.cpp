@@ -33,14 +33,24 @@
 #include <box2d/b2_draw.h>
 
 namespace sge {
-    enum class collider_type {
-        box,
-    };
+    enum class collider_type { box, circle };
 
     static std::optional<collider_type> get_collider_type(entity e) {
         std::optional<collider_type> type;
+        auto verify_empty = [&]() {
+            if (type.has_value()) {
+                throw std::runtime_error("more than one type of collider attached to this entity");
+            }
+        };
+
         if (e.has_all<box_collider_component>()) {
+            verify_empty();
             type = collider_type::box;
+        }
+
+        if (e.has_all<circle_collider_component>()) {
+            verify_empty();
+            type = collider_type::circle;
         }
 
         return type;
@@ -49,6 +59,7 @@ namespace sge {
     struct entity_physics_data {
         std::optional<collider_type> _collider_type;
         std::optional<glm::vec2> current_box_size;
+        std::optional<float> current_circle_radius;
 
         b2Fixture* fixture;
         b2Body* body;
@@ -334,60 +345,89 @@ namespace sge {
 
             auto type = get_collider_type(e);
             if (type.has_value()) {
+                b2Shape* shape = nullptr;
+                collider_data* collider = nullptr;
+                bool create_fixture =
+                    (data.fixture == nullptr) || (data._collider_type != collider_type::box);
+
                 switch (type.value()) {
                 case collider_type::box: {
                     auto& bc = e.get_component<box_collider_component>();
-                    glm::vec2 collider_size = bc.size * transform.scale;
+                    collider = &bc;
 
-                    bool create_fixture =
-                        (data.fixture == nullptr) || (data._collider_type != collider_type::box);
+                    glm::vec2 collider_size = bc.size * transform.scale;
                     if (data.current_box_size.has_value()) {
                         create_fixture |=
                             (glm::length(data.current_box_size.value() - collider_size) > 0.0001f);
                     }
 
                     if (create_fixture) {
-                        if (data.fixture != nullptr) {
-                            data.body->DestroyFixture(data.fixture);
-                        }
+                        auto polygon = new b2PolygonShape;
+                        polygon->SetAsBox(collider_size.x, collider_size.y);
+                        shape = polygon;
 
-                        b2PolygonShape shape;
-                        shape.SetAsBox(collider_size.x, collider_size.y);
-
-                        b2FixtureDef fixture_def;
-                        fixture_def.shape = &shape;
-                        fixture_def.density = bc.density;
-                        fixture_def.friction = bc.friction;
-                        fixture_def.restitution = bc.restitution;
-                        fixture_def.restitutionThreshold = bc.restitution_threshold;
-                        fixture_def.isSensor = bc.sensor;
-                        fixture_def.filter.categoryBits = rb.filter_category;
-                        fixture_def.filter.maskBits = rb.filter_mask;
-                        fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
-
-                        data.fixture = data.body->CreateFixture(&fixture_def);
                         data.current_box_size = collider_size;
-                        data._collider_type = collider_type::box;
-                    } else {
-                        if (fabs(data.fixture->GetDensity() - bc.density) > 0.0001f) {
-                            data.fixture->SetDensity(bc.density);
-                            data.body->ResetMassData();
-                        }
+                    }
+                } break;
+                case collider_type::circle: {
+                    auto& cc = e.get_component<circle_collider_component>();
+                    collider = &cc;
 
-                        data.fixture->SetFriction(bc.friction);
-                        data.fixture->SetRestitution(bc.restitution);
-                        data.fixture->SetRestitutionThreshold(bc.restitution_threshold);
-                        data.fixture->SetSensor(bc.sensor);
+                    if (data.current_circle_radius.has_value()) {
+                        create_fixture |=
+                            (glm::length(data.current_box_size.value() - cc.radius) > 0.0001f);
+                    }
 
-                        b2Filter filter;
-                        filter.categoryBits = rb.filter_category;
-                        filter.maskBits = rb.filter_mask;
-                        data.fixture->SetFilterData(filter);
+                    if (create_fixture) {
+                        auto circle = new b2CircleShape;
+                        circle->m_p.SetZero();
+                        circle->m_radius = cc.radius;
+
+                        shape = circle;
                     }
                 } break;
                 default:
                     throw std::runtime_error("invalid collider type!");
                 }
+
+                if (create_fixture) {
+                    if (data.fixture != nullptr) {
+                        data.body->DestroyFixture(data.fixture);
+                    }
+
+                    b2FixtureDef fixture_def;
+                    fixture_def.shape = shape;
+                    fixture_def.density = collider->density;
+                    fixture_def.friction = collider->friction;
+                    fixture_def.restitution = collider->restitution;
+                    fixture_def.restitutionThreshold = collider->restitution_threshold;
+                    fixture_def.isSensor = collider->sensor;
+                    fixture_def.filter.categoryBits = rb.filter_category;
+                    fixture_def.filter.maskBits = rb.filter_mask;
+                    fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
+
+                    data.fixture = data.body->CreateFixture(&fixture_def);
+                    data._collider_type = type;
+                } else {
+                    if (fabs(data.fixture->GetDensity() - collider->density) > 0.0001f) {
+                        data.fixture->SetDensity(collider->density);
+                        data.body->ResetMassData();
+                    }
+
+                    data.fixture->SetFriction(collider->friction);
+                    data.fixture->SetRestitution(collider->restitution);
+                    data.fixture->SetRestitutionThreshold(collider->restitution_threshold);
+                    data.fixture->SetSensor(collider->sensor);
+
+                    b2Filter filter;
+                    filter.categoryBits = rb.filter_category;
+                    filter.maskBits = rb.filter_mask;
+
+                    data.fixture->SetFilterData(filter);
+                }
+
+                // no-op if nullptr
+                delete shape;
             } else if (data.fixture != nullptr) {
                 data.body->DestroyFixture(data.fixture);
                 data.fixture = nullptr;
@@ -1009,6 +1049,10 @@ namespace sge {
 
                     renderer::draw_rotated_quad(transform.translation, transform.rotation, size,
                                                 color);
+                } break;
+                case collider_type::circle: {
+                    auto& cc = e.get_component<circle_collider_component>();
+                    // todo: render circles
                 } break;
                 default:
                     throw std::runtime_error("invalid collider type!");

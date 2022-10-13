@@ -22,6 +22,7 @@
 using namespace entt::literals;
 
 namespace sge {
+    // when you add a new component type, add its meta register call to here
     META_REGISTER {
         transform_component::meta_register();
         sprite_renderer_component::meta_register();
@@ -29,6 +30,7 @@ namespace sge {
         native_script_component::meta_register();
         rigid_body_component::meta_register();
         box_collider_component::meta_register();
+        circle_collider_component::meta_register();
         script_component::meta_register();
     }
 

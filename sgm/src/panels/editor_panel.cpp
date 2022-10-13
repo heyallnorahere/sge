@@ -204,6 +204,18 @@ namespace sgm {
         }
     }
 
+    static bool edit_collider(collider_data& data) {
+        bool update = false;
+
+        update |= ImGui::Checkbox("Sensor", &data.sensor);
+        update |= ImGui::DragFloat("Density", &data.density, 0.1f);
+        update |= ImGui::DragFloat("Friction", &data.friction, 0.1f);
+        update |= ImGui::DragFloat("Restitution", &data.restitution, 0.1f);
+        update |= ImGui::DragFloat("Restitution threshold", &data.restitution_threshold, 0.1f);
+
+        return update;
+    }
+
     bool editor_panel::edit_entity(entity target) {
         if (!target) {
             return false;
@@ -227,6 +239,7 @@ namespace sgm {
                 component_pair<sprite_renderer_component>("Sprite renderer"),
                 component_pair<rigid_body_component>("Rigid body"),
                 component_pair<box_collider_component>("Box collider"),
+                component_pair<circle_collider_component>("Circle collider"),
                 component_pair<script_component>("Script"),
             };
 
@@ -362,26 +375,35 @@ namespace sgm {
             "Box collider", target, [&](box_collider_component& component) {
                 bool update = false;
 
-                update |= ImGui::Checkbox("Sensor", &component.sensor);
-                update |= ImGui::DragFloat("Density", &component.density, 0.1f);
-                update |= ImGui::DragFloat("Friction", &component.friction, 0.1f);
-                update |= ImGui::DragFloat("Restitution", &component.restitution, 0.1f);
-                update |= ImGui::DragFloat("Restitution threshold",
-                                           &component.restitution_threshold, 0.1f);
-
+                update |= edit_collider(component);
                 update |= ImGui::DragFloat2("Size", &component.size.x, 0.01f);
+
                 if (update && running) {
                     target.get_scene()->update_physics_data(target);
                 }
             });
 
+        draw_component<circle_collider_component>(
+            "Circle collider", target, [&](circle_collider_component& component) {
+                bool update = false;
+
+                update |= edit_collider(component);
+                update |= ImGui::DragFloat("Radius", &component.radius, 0.01f);
+
+                if (update && running) {
+                    target.get_scene()->update_physics_data(target);
+                }
+            });
+
+        static const ImVec4 script_error_color = ImVec4(0.9f, 0.f, 0.f, 1.f);
         draw_component<script_component>(
             "Script", target, [this, target](script_component& component) {
                 // todo: script cache
                 std::optional<size_t> assembly_index = project::get().get_assembly_index();
                 if (!assembly_index.has_value()) {
-                    ImGui::TextColored(ImVec4(0.9, 0.f, 0.f, 1.f),
+                    ImGui::TextColored(script_error_color,
                                        "The project script assembly failed compilation.");
+
                     return;
                 }
 
@@ -395,7 +417,7 @@ namespace sgm {
                 bool invalid_name = !valid_script;
 
                 if (invalid_name) {
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.f, 0.f, 1.f));
+                    ImGui::PushStyleColor(ImGuiCol_Text, script_error_color);
                 }
 
                 if (ImGui::InputText("Script Name", &component.class_name)) {
