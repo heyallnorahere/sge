@@ -17,7 +17,13 @@
 #pragma once
 #include "sge/core/guid.h"
 namespace sge {
-    enum class asset_type : int32_t { shader = 0, texture_2d, prefab, sound };
+    enum class asset_type : int32_t {
+        shader = 0,
+        texture_2d,
+        prefab,
+        sound,
+        shape
+    };
 
     class asset : public ref_counted {
     public:

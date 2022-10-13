@@ -18,12 +18,14 @@
 #include "sge/asset/asset_registry.h"
 #include "sge/asset/json.h"
 #include "sge/asset/project.h"
+
 namespace sge {
     static const std::unordered_map<std::string, asset_type> asset_type_map = {
         { "shader", asset_type::shader },
         { "texture_2d", asset_type::texture_2d },
         { "prefab", asset_type::prefab },
-        { "sound", asset_type::sound }
+        { "sound", asset_type::sound },
+        { "shape", asset_type::shape }
     };
 
     static const std::string& get_asset_type_name(asset_type type) {

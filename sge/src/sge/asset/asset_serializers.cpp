@@ -21,6 +21,7 @@
 #include "sge/scene/prefab.h"
 #include "sge/asset/project.h"
 #include "sge/asset/sound.h"
+#include "sge/scene/shape.h"
 
 namespace sge {
     class shader_serializer : public asset_serializer {
@@ -88,6 +89,19 @@ namespace sge {
         }
     };
 
+    class shape_serializer : public asset_serializer {
+    protected:
+        virtual bool serialize_impl(const fs::path& path, ref<asset> _asset) override {
+            auto _shape = _asset.as<shape>();
+            return shape::serialize(_shape, path);
+        }
+
+        virtual bool deserialize_impl(const fs::path& path, ref<asset>& _asset) override {
+            _asset = ref<shape>::create(path);
+            return true;
+        }
+    };
+
     static std::unordered_map<asset_type, std::unique_ptr<asset_serializer>> asset_serializers;
     template <typename T>
     static void add_serializer(asset_type type) {
@@ -107,6 +121,7 @@ namespace sge {
         add_serializer<texture2d_serializer>(asset_type::texture_2d);
         add_serializer<prefab_serializer>(asset_type::prefab);
         add_serializer<sound_serializer>(asset_type::sound);
+        add_serializer<shape_serializer>(asset_type::shape);
     }
 
     bool asset_serializer::serialize(ref<asset> _asset) {

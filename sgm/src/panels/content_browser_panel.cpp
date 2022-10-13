@@ -510,6 +510,11 @@ namespace sgm {
             return false;
         }
 
+        // ...or texture settings
+        if (path.extension() == ".sgetexture") {
+            return false;
+        }
+
         bool handled = false;
         bool tree_changed = false;
 
@@ -688,6 +693,16 @@ namespace sgm {
             for (const fs::path& extension : sound_extensions) {
                 add_extension_entry(extension, data);
             }
+        }
+
+        // shapes
+        {
+            asset_extension_data_t data;
+            data.drag_drop_id = "shape";
+            data.icon_name = "file"; // for now
+            data.type = asset_type::shape;
+
+            add_extension_entry(".sgeshape", data);
         }
     }
 

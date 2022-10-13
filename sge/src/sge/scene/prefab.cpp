@@ -29,24 +29,27 @@ namespace sge {
             return nullptr;
         }
 
-        fs::path asset_path = path;
         auto& _project = project::get();
+        fs::path asset_dir = _project.get_asset_dir();
 
+        fs::path asset_path = path;
         if (!asset_path.empty() && asset_path.is_relative()) {
-            fs::path asset_dir = _project.get_asset_dir();
             asset_path = asset_dir / asset_path;
         }
 
         ref<prefab> result = new prefab(asset_path, data);
         if (!asset_path.empty()) {
-            auto& registry = _project.get_asset_manager().registry;
-            if (registry.contains(asset_path)) {
-                registry.remove_asset(asset_path);
-            }
-
-            registry.register_asset(result);
             if (!serialize(result, asset_path)) {
                 result.reset();
+            } else {
+                auto& registry = _project.get_asset_manager().registry;
+                fs::path relative_path = fs::relative(asset_path, asset_dir);
+
+                if (registry.contains(relative_path)) {
+                    registry.remove_asset(relative_path);
+                }
+
+                registry.register_asset(result);
             }
         }
 
@@ -63,6 +66,12 @@ namespace sge {
         stream.close();
 
         return true;
+    }
+
+    prefab::prefab(const fs::path& path) : m_path(path) {
+        if (!reload()) {
+            throw std::runtime_error("initial load failed!");
+        }
     }
 
     bool prefab::reload() {
