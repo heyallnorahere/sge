@@ -25,6 +25,7 @@
 #include "sge/core/meta_register.h"
 #include "sge/scene/scene.h"
 #include "sge/script/garbage_collector.h"
+#include "sge/scene/shape.h"
 
 // Components are attached to a registry via the scene object.
 //
@@ -252,6 +253,26 @@ namespace sge {
             entt::meta<circle_collider_component>()
                 .type("circle_collider_component"_hs)
                 .func<circle_collider_component::clone>("clone"_hs);
+        }
+    };
+
+    struct shape_collider_component : public collider_data {
+        ref<shape> _shape;
+
+        shape_collider_component() = default;
+        shape_collider_component(const shape_collider_component&) = default;
+        shape_collider_component& operator=(const shape_collider_component&) = default;
+
+        static shape_collider_component& clone(const entity& src, const entity& dst, void* srcc) {
+            auto& src_sc = *reinterpret_cast<shape_collider_component*>(srcc);
+            return dst.add_component<shape_collider_component>(src_sc);
+        }
+
+        static void meta_register() {
+            using namespace entt::literals;
+            entt::meta<shape_collider_component>()
+                .type("shape_collider_component"_hs)
+                .func<shape_collider_component::clone>("clone"_hs);
         }
     };
 

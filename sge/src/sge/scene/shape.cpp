@@ -19,6 +19,10 @@
 #include "sge/asset/json.h"
 #include "sge/asset/project.h"
 
+#include <box2d/b2_body.h>
+#include <box2d/b2_fixture.h>
+#include <box2d/b2_polygon_shape.h>
+
 namespace sge {
     void from_json(const json& data, shape_vertex& vertex) {
         data["position"].get_to(vertex.position);
@@ -36,6 +40,9 @@ namespace sge {
     };
 
     ref<shape> shape::create(const shape_desc& desc, const fs::path& path) {
+        // todo: add checks for if the passed vertices describe a concave polygon
+        // if so, break down into multiple convex polygons
+
         auto& _project = project::get();
         fs::path asset_dir = _project.get_asset_dir();
 
@@ -132,6 +139,50 @@ namespace sge {
         data["indices"].get_to(m_indices);
 
         return true;
+    }
+
+    void shape::create_fixtures(const b2FixtureDef& desc, const glm::vec2& scale, b2Body* body,
+                                std::vector<b2Fixture*>& fixtures) {
+        b2PolygonShape polygon;
+        b2FixtureDef def = desc;
+
+        def.shape = &polygon;
+        for (const auto& index_set : m_indices) {
+            std::vector<uint32_t> indices;
+
+            // https://box2d.org/documentation/md__d_1__git_hub_box2d_docs_collision.html
+            if (m_direction != shape_vertex_direction::counter_clockwise) {
+                indices.insert(indices.end(), index_set.rbegin(), index_set.rend());
+            } else {
+                indices.insert(indices.end(), index_set.begin(), index_set.end());
+            }
+
+            std::vector<b2Vec2> vertices;
+            for (auto index : indices) {
+                glm::vec2 position = m_vertices[index].position * scale;
+                vertices.push_back(b2Vec2(position.x, position.y));
+            }
+
+            polygon.Set(vertices.data(), (int32_t)vertices.size());
+            fixtures.push_back(body->CreateFixture(&def));
+        }
+    }
+
+    void shape::get_vertices(std::vector<shape_vertex>& vertices) {
+        vertices.clear();
+        vertices.insert(vertices.end(), m_vertices.begin(), m_vertices.end());
+    }
+
+    void shape::get_indices(std::vector<uint32_t>& indices, shape_vertex_direction direction) {
+        indices.clear();
+
+        for (const auto& index_set : m_indices) {
+            if (direction != m_direction) {
+                indices.insert(indices.end(), index_set.rbegin(), index_set.rend());
+            } else {
+                indices.insert(indices.end(), index_set.begin(), index_set.end());
+            }
+        }
     }
 
     shape::shape(const fs::path& path, bool load) : m_path(path) {

@@ -240,6 +240,7 @@ namespace sgm {
                 component_pair<rigid_body_component>("Rigid body"),
                 component_pair<box_collider_component>("Box collider"),
                 component_pair<circle_collider_component>("Circle collider"),
+                component_pair<shape_collider_component>("Shape collider"),
                 component_pair<script_component>("Script"),
             };
 
@@ -389,6 +390,21 @@ namespace sgm {
 
                 update |= edit_collider(component);
                 update |= ImGui::DragFloat("Radius", &component.radius, 0.01f);
+
+                if (update && running) {
+                    target.get_scene()->update_physics_data(target);
+                }
+            });
+
+        draw_component<shape_collider_component>(
+            "Shape collider", target, [&](shape_collider_component& component) {
+                bool update = edit_collider(component);
+
+                ref<asset> _asset = component._shape;
+                if (ImGui::InputAsset("Shape", &_asset, "shape", "shape")) {
+                    component._shape = _asset.as<shape>();
+                    update = true;
+                }
 
                 if (update && running) {
                     target.get_scene()->update_physics_data(target);

@@ -17,6 +17,10 @@
 #pragma once
 #include "sge/asset/asset.h"
 
+struct b2FixtureDef;
+class b2Fixture;
+class b2Body;
+
 namespace sge {
     struct shape_vertex {
         glm::vec2 position, uv;
@@ -44,6 +48,12 @@ namespace sge {
         virtual const fs::path& get_path() override { return m_path; }
 
         virtual bool reload() override;
+
+        void create_fixtures(const b2FixtureDef& desc, const glm::vec2& scale, b2Body* body,
+                             std::vector<b2Fixture*>& fixtures);
+
+        void get_vertices(std::vector<shape_vertex>& vertices);
+        void get_indices(std::vector<uint32_t>& indices, shape_vertex_direction direction);
 
     private:
         shape(const fs::path& path, bool load);

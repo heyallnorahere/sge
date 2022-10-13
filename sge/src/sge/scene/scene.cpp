@@ -33,7 +33,7 @@
 #include <box2d/b2_draw.h>
 
 namespace sge {
-    enum class collider_type { box, circle };
+    enum class collider_type { box, circle, shape };
 
     static std::optional<collider_type> get_collider_type(entity e) {
         std::optional<collider_type> type;
@@ -42,6 +42,14 @@ namespace sge {
                 throw std::runtime_error("more than one type of collider attached to this entity");
             }
         };
+
+        if (e.has_all<shape_collider_component>()) {
+            auto& sc = e.get_component<shape_collider_component>();
+            if (sc._shape) {
+                verify_empty();
+                type = collider_type::shape;
+            }
+        }
 
         if (e.has_all<box_collider_component>()) {
             verify_empty();
@@ -58,10 +66,14 @@ namespace sge {
 
     struct entity_physics_data {
         std::optional<collider_type> _collider_type;
+
         std::optional<glm::vec2> current_box_size;
         std::optional<float> current_circle_radius;
 
-        b2Fixture* fixture;
+        std::optional<glm::vec2> current_shape_scale;
+        ref<shape> previous_shape;
+
+        std::vector<b2Fixture*> fixtures;
         b2Body* body;
     };
 
@@ -314,6 +326,23 @@ namespace sge {
         sc.verify_script(e);
     }
 
+    static void clear_fixtures(entity_physics_data& data) {
+        if (data.body == nullptr) {
+            data.fixtures.clear();
+            return;
+        }
+
+        if (data.fixtures.empty()) {
+            return;
+        }
+
+        for (auto fixture : data.fixtures) {
+            data.body->DestroyFixture(fixture);
+        }
+
+        data.fixtures.clear();
+    }
+
     void scene::update_physics_data(entity e) {
         if (e.has_all<rigid_body_component>()) {
             if (m_physics_data->bodies.find(e) == m_physics_data->bodies.end()) {
@@ -344,11 +373,16 @@ namespace sge {
             }
 
             auto type = get_collider_type(e);
+            if (type != collider_type::shape) {
+                data.previous_shape.reset();
+            }
+
             if (type.has_value()) {
-                b2Shape* shape = nullptr;
+                b2Shape* b2_shape = nullptr;
                 collider_data* collider = nullptr;
-                bool create_fixture =
-                    (data.fixture == nullptr) || (data._collider_type != collider_type::box);
+                ref<shape> _shape;
+
+                bool create_fixture = data.fixtures.empty() || (data._collider_type != type);
 
                 switch (type.value()) {
                 case collider_type::box: {
@@ -357,16 +391,17 @@ namespace sge {
 
                     glm::vec2 collider_size = bc.size * transform.scale;
                     if (data.current_box_size.has_value()) {
-                        create_fixture |=
-                            (glm::length(data.current_box_size.value() - collider_size) > 0.0001f);
+                        if (glm::length(data.current_box_size.value() - collider_size) > 0.0001f) {
+                            create_fixture = true;
+                            data.current_box_size = collider_size;
+                        }
                     }
 
                     if (create_fixture) {
                         auto polygon = new b2PolygonShape;
                         polygon->SetAsBox(collider_size.x, collider_size.y);
 
-                        shape = polygon;
-                        data.current_box_size = collider_size;
+                        b2_shape = polygon;
                     }
                 } break;
                 case collider_type::circle: {
@@ -374,8 +409,10 @@ namespace sge {
                     collider = &cc;
 
                     if (data.current_circle_radius.has_value()) {
-                        create_fixture |=
-                            (glm::length(data.current_circle_radius.value() - cc.radius) > 0.0001f);
+                        if (data.current_circle_radius.value() - cc.radius > 0.0001f) {
+                            create_fixture = true;
+                            data.current_circle_radius = cc.radius;
+                        }
                     }
 
                     if (create_fixture) {
@@ -383,8 +420,22 @@ namespace sge {
                         circle->m_p.SetZero();
                         circle->m_radius = cc.radius;
 
-                        shape = circle;
-                        data.current_circle_radius = cc.radius;
+                        b2_shape = circle;
+                    }
+                } break;
+                case collider_type::shape: {
+                    auto& sc = e.get_component<shape_collider_component>();
+                    collider = &sc;
+
+                    _shape = sc._shape;
+                    create_fixture |= (_shape != data.previous_shape);
+
+                    if (data.current_shape_scale.has_value()) {
+                        if (glm::length(data.current_shape_scale.value() - transform.scale) >
+                            0.0001f) {
+                            data.current_shape_scale = transform.scale;
+                            create_fixture = true;
+                        }
                     }
                 } break;
                 default:
@@ -392,12 +443,9 @@ namespace sge {
                 }
 
                 if (create_fixture) {
-                    if (data.fixture != nullptr) {
-                        data.body->DestroyFixture(data.fixture);
-                    }
+                    clear_fixtures(data);
 
                     b2FixtureDef fixture_def;
-                    fixture_def.shape = shape;
                     fixture_def.density = collider->density;
                     fixture_def.friction = collider->friction;
                     fixture_def.restitution = collider->restitution;
@@ -407,31 +455,39 @@ namespace sge {
                     fixture_def.filter.maskBits = rb.filter_mask;
                     fixture_def.userData.pointer = (uintptr_t)(uint32_t)e;
 
-                    data.fixture = data.body->CreateFixture(&fixture_def);
-                    data._collider_type = type;
-                } else {
-                    if (fabs(data.fixture->GetDensity() - collider->density) > 0.0001f) {
-                        data.fixture->SetDensity(collider->density);
-                        data.body->ResetMassData();
+                    if (_shape) {
+                        _shape->create_fixtures(fixture_def, transform.scale, data.body,
+                                                data.fixtures);
+                    } else {
+                        fixture_def.shape = b2_shape;
+                        data.fixtures = { data.body->CreateFixture(&fixture_def) };
                     }
 
-                    data.fixture->SetFriction(collider->friction);
-                    data.fixture->SetRestitution(collider->restitution);
-                    data.fixture->SetRestitutionThreshold(collider->restitution_threshold);
-                    data.fixture->SetSensor(collider->sensor);
+                    data._collider_type = type;
+                } else {
+                    for (auto fixture : data.fixtures) {
+                        if (fabs(fixture->GetDensity() - collider->density) > 0.0001f) {
+                            fixture->SetDensity(collider->density);
+                            data.body->ResetMassData();
+                        }
 
-                    b2Filter filter;
-                    filter.categoryBits = rb.filter_category;
-                    filter.maskBits = rb.filter_mask;
+                        fixture->SetFriction(collider->friction);
+                        fixture->SetRestitution(collider->restitution);
+                        fixture->SetRestitutionThreshold(collider->restitution_threshold);
+                        fixture->SetSensor(collider->sensor);
 
-                    data.fixture->SetFilterData(filter);
+                        b2Filter filter;
+                        filter.categoryBits = rb.filter_category;
+                        filter.maskBits = rb.filter_mask;
+
+                        fixture->SetFilterData(filter);
+                    }
                 }
 
                 // no-op if nullptr
-                delete shape;
-            } else if (data.fixture != nullptr) {
-                data.body->DestroyFixture(data.fixture);
-                data.fixture = nullptr;
+                delete b2_shape;
+            } else if (!data.fixtures.empty()) {
+                clear_fixtures(data);
             }
         } else if (m_physics_data->bodies.find(e) != m_physics_data->bodies.end()) {
             b2Body* body = m_physics_data->bodies[e].body;
@@ -1054,6 +1110,33 @@ namespace sge {
                 case collider_type::circle: {
                     auto& cc = e.get_component<circle_collider_component>();
                     // todo: render circles
+                } break;
+                case collider_type::shape: {
+                    std::vector<shape_vertex> shape_vertices;
+                    std::vector<uint32_t> indices;
+
+                    auto& sc = e.get_component<shape_collider_component>();
+                    sc._shape->get_vertices(shape_vertices);
+
+                    // renderer uses clockwise vertices
+                    sc._shape->get_indices(indices, shape_vertex_direction::clockwise);
+
+                    float rad = glm::radians(transform.rotation);
+                    float sin_rot = glm::sin(rad);
+                    float cos_rot = glm::cos(rad);
+
+                    std::vector<glm::vec2> renderer_vertices;
+                    for (const auto& v : shape_vertices) {
+                        auto v_pos = v.position * transform.scale;
+
+                        glm::vec2 rotated_pos;
+                        rotated_pos.x = v_pos.x * cos_rot - v_pos.y * sin_rot;
+                        rotated_pos.y = v_pos.x * sin_rot + v_pos.y * cos_rot;
+
+                        renderer_vertices.push_back(rotated_pos + transform.translation);
+                    }
+
+                    renderer::draw_shape(renderer_vertices, indices, color);
                 } break;
                 default:
                     throw std::runtime_error("invalid collider type!");

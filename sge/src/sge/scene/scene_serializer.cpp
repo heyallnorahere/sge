@@ -229,6 +229,32 @@ namespace sge {
         deserialize_collider(data, cc);
     }
 
+    void to_json(json& data, const shape_collider_component& sc) {
+        json shape_identifier;
+        if (sc._shape && (uint64_t)sc._shape->id != 0) {
+            shape_identifier = sc._shape->id;
+        } else {
+            shape_identifier = nullptr;
+        }
+
+        data["shape"] = shape_identifier;
+        serialize_collider(data, sc);
+    }
+
+    void from_json(const json& data, shape_collider_component& sc) {
+        auto shape_identifier = data["shape"];
+        if (shape_identifier.is_null()) {
+            sc._shape = nullptr;
+        } else {
+            auto& _project = project::get();
+            auto& manager = _project.get_asset_manager();
+
+            sc._shape = manager.get_asset(shape_identifier.get<guid>()).as<shape>();
+        }
+
+        deserialize_collider(data, sc);
+    }
+
     void to_json(json& data, const script_component& component) {
         if (component._class == nullptr) {
             data = nullptr;
@@ -354,6 +380,7 @@ namespace sge {
         serialize_component<rigid_body_component>(current, "rigid_body", data);
         serialize_component<box_collider_component>(current, "box_collider", data);
         serialize_component<circle_collider_component>(current, "circle_collider", data);
+        serialize_component<shape_collider_component>(current, "shape_collider", data);
         serialize_component<script_component>(current, "script", data);
     }
 
@@ -372,6 +399,7 @@ namespace sge {
         deserialize_component<rigid_body_component>(e, "rigid_body", data);
         deserialize_component<box_collider_component>(e, "box_collider", data);
         deserialize_component<circle_collider_component>(e, "circle_collider", data);
+        deserialize_component<shape_collider_component>(e, "shape_collider", data);
         deserialize_component<script_component>(e, "script", data);
 
         return e;

@@ -31,6 +31,7 @@ namespace sge {
         rigid_body_component::meta_register();
         box_collider_component::meta_register();
         circle_collider_component::meta_register();
+        shape_collider_component::meta_register();
         script_component::meta_register();
     }
 
