@@ -364,8 +364,8 @@ namespace sge {
                     if (create_fixture) {
                         auto polygon = new b2PolygonShape;
                         polygon->SetAsBox(collider_size.x, collider_size.y);
-                        shape = polygon;
 
+                        shape = polygon;
                         data.current_box_size = collider_size;
                     }
                 } break;
@@ -375,7 +375,7 @@ namespace sge {
 
                     if (data.current_circle_radius.has_value()) {
                         create_fixture |=
-                            (glm::length(data.current_box_size.value() - cc.radius) > 0.0001f);
+                            (glm::length(data.current_circle_radius.value() - cc.radius) > 0.0001f);
                     }
 
                     if (create_fixture) {
@@ -384,6 +384,7 @@ namespace sge {
                         circle->m_radius = cc.radius;
 
                         shape = circle;
+                        data.current_circle_radius = cc.radius;
                     }
                 } break;
                 default:
