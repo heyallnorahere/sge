@@ -16,6 +16,7 @@
 
 #include "sgmpch.h"
 #include <sge/core/main.h>
+#include <sge/asset/json.h>
 
 #include "editor_layer.h"
 #include "editor_scene.h"
@@ -23,8 +24,6 @@
 #include "texture_cache.h"
 
 #include <random>
-
-#include <sge/asset/json.h>
 
 namespace sge {
     void from_json(const json& data, debugger_info_t& config) {

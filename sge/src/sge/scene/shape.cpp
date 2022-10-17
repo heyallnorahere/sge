@@ -40,9 +40,6 @@ namespace sge {
     };
 
     ref<shape> shape::create(const shape_desc& desc, const fs::path& path) {
-        // todo: add checks for if the passed vertices describe a concave polygon
-        // if so, break down into multiple convex polygons
-
         auto& _project = project::get();
         fs::path asset_dir = _project.get_asset_dir();
 
@@ -55,13 +52,14 @@ namespace sge {
         result->m_vertices = desc.vertices;
         result->m_direction = desc.direction;
 
-        for (const auto& index_set : desc.indices) {
+        for (const auto& index_set : desc.shape_indices) {
             if (!index_set.empty()) {
-                result->m_indices.push_back(index_set);
+                result->m_shape_indices.push_back(index_set);
             }
         }
 
-        if (result->m_vertices.empty() || result->m_indices.empty()) {
+        if (result->m_vertices.empty() || result->m_shape_indices.empty() ||
+            !result->check_convex()) {
             result.reset();
         } else if (!asset_path.empty()) {
             if (!serialize(result, asset_path)) {
@@ -78,6 +76,7 @@ namespace sge {
             }
         }
 
+        result->compute_triangle_indices();
         return result;
     }
 
@@ -99,7 +98,7 @@ namespace sge {
 
         json data;
         data["vertices"] = _shape->m_vertices;
-        data["indices"] = _shape->m_indices;
+        data["indices"] = _shape->m_shape_indices;
         data["direction"] = _shape->m_direction;
 
         std::ofstream stream(path);
@@ -136,8 +135,9 @@ namespace sge {
         }
 
         data["vertices"].get_to(m_vertices);
-        data["indices"].get_to(m_indices);
+        data["indices"].get_to(m_shape_indices);
 
+        compute_triangle_indices();
         return true;
     }
 
@@ -147,7 +147,7 @@ namespace sge {
         b2FixtureDef def = desc;
 
         def.shape = &polygon;
-        for (const auto& index_set : m_indices) {
+        for (const auto& index_set : m_shape_indices) {
             std::vector<uint32_t> indices;
 
             // https://box2d.org/documentation/md__d_1__git_hub_box2d_docs_collision.html
@@ -173,10 +173,11 @@ namespace sge {
         vertices.insert(vertices.end(), m_vertices.begin(), m_vertices.end());
     }
 
-    void shape::get_indices(std::vector<uint32_t>& indices, shape_vertex_direction direction) {
+    void shape::get_triangle_indices(std::vector<uint32_t>& indices,
+                                     shape_vertex_direction direction) {
         indices.clear();
 
-        for (const auto& index_set : m_indices) {
+        for (const auto& index_set : m_triangle_indices) {
             if (direction != m_direction) {
                 indices.insert(indices.end(), index_set.rbegin(), index_set.rend());
             } else {
@@ -190,6 +191,99 @@ namespace sge {
             if (!reload()) {
                 throw std::runtime_error("failed initial load!");
             }
+        }
+    }
+
+    struct line {
+        line(glm::vec2 v0, glm::vec2 v1) {
+            m_v0 = v0;
+            m_v1 = v1;
+
+            if (glm::abs(v0.x - v1.x) < 0.00001f) {
+                vertical = true;
+                slope = 0.f;
+                intercept = v0.x;
+            } else {
+                vertical = false;
+
+                auto diff = m_v1 - m_v0;
+                slope = diff.y / diff.y;
+                intercept = v0.y - (slope * v0.x);
+            }
+        }
+
+        int32_t calculate(glm::vec2 point) {
+            if (vertical) {
+                if (point.x < intercept) {
+                    return -1;
+                }
+
+                if (point.x > intercept) {
+                    return 1;
+                }
+
+                return 0;
+            } else {
+                float y = (point.x * slope) + intercept;
+                if (point.y < y) {
+                    return -1;
+                }
+
+                if (point.y > y) {
+                    return 1;
+                }
+
+                return 0;
+            }
+        }
+
+        glm::vec2 m_v0, m_v1;
+        bool vertical;
+        float slope, intercept;
+    };
+
+    bool shape::check_convex() {
+        for (const auto& index_set : m_shape_indices) {
+            const auto& v0 = m_vertices[index_set[0]].position;
+
+            // won't work for triangles - but they're convex by definition, so it's ok
+            for (size_t i = 2; i < index_set.size() - 1; i++) {
+                const auto& v1 = m_vertices[index_set[i]].position;
+                const auto& v2 = m_vertices[index_set[i - 1]].position;
+                const auto& v3 = m_vertices[index_set[i + 1]].position;
+
+                line l(v0, v1);
+                int32_t control = l.calculate(v2);
+                int32_t test = l.calculate(v3);
+
+                if (control == 0 || test == 0) {
+                    continue;
+                }
+
+                if (control == test) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    void shape::compute_triangle_indices() {
+        m_triangle_indices.clear();
+
+        for (const auto& index_set : m_shape_indices) {
+            std::vector<uint32_t> triangle_indices;
+
+            uint32_t v0 = index_set[0];
+            for (size_t i = 1; i < index_set.size() - 1; i++) {
+                uint32_t v1 = index_set[i];
+                uint32_t v2 = index_set[i + 1];
+
+                triangle_indices.insert(triangle_indices.end(), { v0, v1, v2 });
+            }
+
+            m_triangle_indices.push_back(triangle_indices);
         }
     }
 } // namespace sge

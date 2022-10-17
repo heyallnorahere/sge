@@ -1119,7 +1119,7 @@ namespace sge {
                     sc._shape->get_vertices(shape_vertices);
 
                     // renderer uses clockwise vertices
-                    sc._shape->get_indices(indices, shape_vertex_direction::clockwise);
+                    sc._shape->get_triangle_indices(indices, shape_vertex_direction::clockwise);
 
                     float rad = glm::radians(transform.rotation);
                     float sin_rot = glm::sin(rad);

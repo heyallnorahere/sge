@@ -29,12 +29,14 @@ namespace sge {
     enum class shape_vertex_direction { clockwise, counter_clockwise };
     struct shape_desc {
         std::vector<shape_vertex> vertices;
-        std::vector<std::vector<uint32_t>> indices;
+        std::vector<std::vector<uint32_t>> shape_indices;
         shape_vertex_direction direction = shape_vertex_direction::clockwise;
     };
 
     class shape : public asset {
     public:
+        // note: make sure to break concave polygons down into multiple convex polygons - otherwise,
+        // this function will return nullptr
         static ref<shape> create(const shape_desc& desc, const fs::path& path = fs::path());
         static bool serialize(ref<shape> _shape, const fs::path& path);
 
@@ -53,15 +55,18 @@ namespace sge {
                              std::vector<b2Fixture*>& fixtures);
 
         void get_vertices(std::vector<shape_vertex>& vertices);
-        void get_indices(std::vector<uint32_t>& indices, shape_vertex_direction direction);
+        void get_triangle_indices(std::vector<uint32_t>& indices, shape_vertex_direction direction);
 
     private:
         shape(const fs::path& path, bool load);
 
+        bool check_convex();
+        void compute_triangle_indices();
+
         fs::path m_path;
 
         std::vector<shape_vertex> m_vertices;
-        std::vector<std::vector<uint32_t>> m_indices;
+        std::vector<std::vector<uint32_t>> m_shape_indices, m_triangle_indices;
         shape_vertex_direction m_direction;
     };
 } // namespace sge
