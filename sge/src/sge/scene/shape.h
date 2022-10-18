@@ -57,6 +57,19 @@ namespace sge {
         void get_vertices(std::vector<shape_vertex>& vertices);
         void get_triangle_indices(std::vector<uint32_t>& indices, shape_vertex_direction direction);
 
+        size_t get_vertex_count() { return m_vertices.size(); }
+        size_t get_segment_count() { return m_shape_indices.size(); }
+        
+        size_t get_total_index_count() {
+            size_t count = 0;
+
+            for (const auto& index_set : m_triangle_indices) {
+                count += index_set.size();
+            }
+
+            return count;
+        }
+
     private:
         shape(const fs::path& path, bool load);
 

@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+using System;
+
 namespace SGE.Components
 {
     public abstract class Collider<T> : Component<T> where T : Collider<T>, new()
@@ -72,6 +74,27 @@ namespace SGE.Components
         {
             get => CoreInternalCalls.GetCircleRadius(mAddress);
             set => CoreInternalCalls.SetCircleRadius(mAddress, mParent, value);
+        }
+    }
+
+    public sealed class ShapeColliderComponent : Collider<ShapeColliderComponent>
+    {
+        public Shape Shape
+        {
+            get
+            {
+                CoreInternalCalls.GetShapeColliderPointer(mAddress, out IntPtr address);
+
+                if (address != IntPtr.Zero)
+                {
+                    return new Shape(address);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            set => CoreInternalCalls.SetShapeColliderPointer(mAddress, mParent, value?.mAddress ?? IntPtr.Zero);
         }
     }
 }

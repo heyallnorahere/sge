@@ -62,6 +62,8 @@ namespace sge {
         register_component_type<camera_component>("CameraComponent");
         register_component_type<rigid_body_component>("RigidBodyComponent");
         register_component_type<box_collider_component>("BoxColliderComponent");
+        register_component_type<circle_collider_component>("CircleColliderComponent");
+        register_component_type<shape_collider_component>("ShapeColliderComponent");
         register_component_type<script_component>("ScriptComponent");
     }
 
@@ -592,6 +594,20 @@ namespace sge {
         }
 
 #pragma endregion
+#pragma region ShapeColliderComponent
+
+        static void GetShapeColliderPointer(shape_collider_component* component, shape** address) {
+            *address = component->_shape.raw();
+        }
+
+        static void SetShapeColliderPointer(shape_collider_component* component, void* _entity, shape* address) {
+            component->_shape = address;
+
+            entity e = script_helpers::get_entity_from_object(_entity);
+            e.get_scene()->update_physics_data(e);
+        }
+
+#pragma endregion
 #pragma region ScriptComponent
 
         static bool IsScriptEnabled(script_component* component) { return component->enabled; }
@@ -856,6 +872,32 @@ namespace sge {
         }
 
 #pragma endregion
+#pragma region Shape
+
+        static void LoadShape(void* path, shape** address) {
+            fs::path shape_path = script_engine::from_managed_string(path);
+            auto _shape = ref<shape>::create(shape_path);
+
+            shape* ptr = _shape.raw();
+            ref_counter<shape> counter(ptr);
+            counter++;
+
+            *address = ptr;
+        }
+
+        static int32_t GetShapeVertexCount(shape* address) {
+            return (int32_t)address->get_vertex_count();
+        }
+
+        static int32_t GetShapeSegmentCount(shape* address) {
+            return (int32_t)address->get_segment_count();
+        }
+
+        static int32_t GetTotalShapeIndexCount(shape* address) {
+            return (int32_t)address->get_total_index_count();
+        }
+
+#pragma endregion
 #pragma region Image2D
 
         static int32_t GetImageWidth(image_2d* image) { return (int32_t)image->get_width(); }
@@ -1032,6 +1074,12 @@ namespace sge {
             REGISTER_FUNC(SetCircleRadius);
 
 #pragma endregion
+#pragma region ShapeColliderComponent
+
+            REGISTER_FUNC(GetShapeColliderPointer);
+            REGISTER_FUNC(SetShapeColliderPointer);
+
+#pragma endregion
 #pragma region ScriptComponent
 
             REGISTER_FUNC(IsScriptEnabled);
@@ -1145,6 +1193,15 @@ namespace sge {
             REGISTER_FUNC(PlaySound);
             REGISTER_FUNC(StopSound);
             REGISTER_FUNC(DeleteSoundControllerPointer);
+
+#pragma endregion
+#pragma region Shape
+
+            REGISTER_REF_COUNTER(shape);
+            REGISTER_FUNC(LoadShape);
+            REGISTER_FUNC(GetShapeVertexCount);
+            REGISTER_FUNC(GetShapeSegmentCount);
+            REGISTER_FUNC(GetTotalShapeIndexCount);
 
 #pragma endregion
 #pragma region Image2D

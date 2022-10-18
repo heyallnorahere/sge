@@ -297,6 +297,14 @@ namespace SGE
         public static extern void SetCircleRadius(IntPtr component, Entity entity, float size);
 
         #endregion
+        #region ShapeColliderComponent
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void GetShapeColliderPointer(IntPtr component, out IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetShapeColliderPointer(IntPtr component, Entity entity, IntPtr address);
+
+        #endregion
         #region ScriptComponent
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -465,6 +473,22 @@ namespace SGE
         public static extern bool StopSound(IntPtr controller);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void DeleteSoundControllerPointer(IntPtr controller);
+
+        #endregion
+        #region Shape
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void AddRef_shape(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveRef_shape(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void LoadShape(string path, out IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetShapeVertexCount(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetShapeSegmentCount(IntPtr address);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetTotalShapeIndexCount(IntPtr address);
 
         #endregion
         #region Image2D
