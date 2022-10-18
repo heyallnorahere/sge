@@ -1109,7 +1109,10 @@ namespace sge {
                 } break;
                 case collider_type::circle: {
                     auto& cc = e.get_component<circle_collider_component>();
-                    // todo: render circles
+                    glm::vec2 size = glm::vec2(cc.radius * 2.f);
+
+                    renderer::draw_rotated_ellipse(transform.translation, transform.rotation, size,
+                                                   color);
                 } break;
                 case collider_type::shape: {
                     std::vector<shape_vertex> shape_vertices;

@@ -104,6 +104,15 @@ namespace sge {
         static void draw_rotated_quad(glm::vec2 position, float rotation, glm::vec2 size,
                                       const glm::vec4& color, ref<texture_2d> texture);
 
+        static void draw_ellipse(glm::vec2 position, glm::vec2 size, const glm::vec4& color);
+        static void draw_ellipse(glm::vec2 position, glm::vec2 size, const glm::vec4& color,
+                                 ref<texture_2d> texture);
+
+        static void draw_rotated_ellipse(glm::vec2 position, float rotation, glm::vec2 size,
+                                         const glm::vec4& color);
+        static void draw_rotated_ellipse(glm::vec2 position, float rotation, glm::vec2 size,
+                                         const glm::vec4& color, ref<texture_2d> texture);
+
         static void draw_shape(const std::vector<glm::vec2>& vertices,
                                const std::vector<uint32_t>& indices, const glm::vec4& color);
         static void draw_shape(const std::vector<mapped_vertex>& vertices,
@@ -125,8 +134,8 @@ namespace sge {
                 index_count = 0;
             }
         };
-        static stats get_stats();
 
+        static stats get_stats();
         static device_info query_device_info();
     };
 } // namespace sge

@@ -20,6 +20,7 @@ struct vs_input {
     [[vk::location(1)]] float4 color : COLOR0;
     [[vk::location(2)]] float2 uv : TEXCOORD0;
     [[vk::location(3)]] int texture_index : TEXTUREINDEX0;
+    [[vk::location(4)]] int flags; // todo: add semantic
 };
 
 struct vs_output {
@@ -44,8 +45,8 @@ struct grid_data_t {
     float2 camera_position;
     uint2 viewport_size;
 };
-ConstantBuffer<grid_data_t> grid_data : register(b0);
 
+ConstantBuffer<grid_data_t> grid_data : register(b0);
 Texture2D textures[16] : register(t1);
 SamplerState tex_samplers[16] : register(s1);
 

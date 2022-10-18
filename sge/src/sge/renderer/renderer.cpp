@@ -22,16 +22,21 @@
 #include "sge/platform/vulkan/vulkan_renderer.h"
 #endif
 namespace sge {
+    enum vertex_flags : int32_t { vertex_flags_none = 0, vertex_flags_ellipse = 1 << 0 };
+
     struct vertex {
         glm::vec2 position;
         glm::vec4 color;
         glm::vec2 uv;
+
         int32_t texture_index;
+        int32_t flags;
     };
 
     enum class shape_type { quad, vertices };
     struct shape_t {
         shape_type type;
+        int32_t flags;
 
         glm::vec4 color;
         size_t texture_index;
@@ -378,7 +383,8 @@ namespace sge {
                     { vertex_attribute_type::float2, offsetof(vertex, position) },
                     { vertex_attribute_type::float4, offsetof(vertex, color) },
                     { vertex_attribute_type::float2, offsetof(vertex, uv) },
-                    { vertex_attribute_type::int1, offsetof(vertex, texture_index) }
+                    { vertex_attribute_type::int1, offsetof(vertex, texture_index) },
+                    { vertex_attribute_type::int1, offsetof(vertex, flags) }
                 };
 
                 _pipeline = pipeline::create(spec);
@@ -412,6 +418,7 @@ namespace sge {
                 vertex v;
                 v.color = glm::vec4(1.f);
                 v.texture_index = -1;
+                v.flags = vertex_flags_none;
 
                 // top right
                 v.position = glm::vec2(1.f, 1.f);
@@ -453,6 +460,7 @@ namespace sge {
                     v->color = shape.color;
                     v->uv = glm::vec2(1.f, 0.f);
                     v->texture_index = (int32_t)shape.texture_index;
+                    v->flags = shape.flags;
 
                     // bottom right
                     v = &vertices.emplace_back();
@@ -462,6 +470,7 @@ namespace sge {
                     v->color = shape.color;
                     v->uv = glm::vec2(1.f, 1.f);
                     v->texture_index = (int32_t)shape.texture_index;
+                    v->flags = shape.flags;
 
                     // bottom left
                     v = &vertices.emplace_back();
@@ -471,6 +480,7 @@ namespace sge {
                     v->color = shape.color;
                     v->uv = glm::vec2(0.f, 1.f);
                     v->texture_index = (int32_t)shape.texture_index;
+                    v->flags = shape.flags;
 
                     // top left
                     v = &vertices.emplace_back();
@@ -480,6 +490,7 @@ namespace sge {
                     v->color = shape.color;
                     v->uv = glm::vec2(0.f, 0.f);
                     v->texture_index = (int32_t)shape.texture_index;
+                    v->flags = shape.flags;
                 } break;
                 case shape_type::vertices: {
                     for (uint32_t index : shape.indices) {
@@ -492,6 +503,7 @@ namespace sge {
                         v.color = shape.color;
                         v.uv = passed_vertex.uv;
                         v.texture_index = shape.texture_index;
+                        v.flags = shape.flags;
                     }
                 } break;
                 default:
@@ -605,6 +617,7 @@ namespace sge {
         quad.rotation = 0.f;
         quad.color = color;
         quad.texture_index = push_texture(renderer_data.white_texture);
+        quad.flags = vertex_flags_none;
 
         batch.shapes.push_back(quad);
     }
@@ -620,6 +633,7 @@ namespace sge {
         quad.rotation = 0.f;
         quad.color = color;
         quad.texture_index = push_texture(texture);
+        quad.flags = vertex_flags_none;
 
         batch.shapes.push_back(quad);
     }
@@ -635,6 +649,7 @@ namespace sge {
         quad.rotation = rotation;
         quad.color = color;
         quad.texture_index = push_texture(renderer_data.white_texture);
+        quad.flags = vertex_flags_none;
 
         batch.shapes.push_back(quad);
     }
@@ -650,8 +665,72 @@ namespace sge {
         quad.rotation = rotation;
         quad.color = color;
         quad.texture_index = push_texture(texture);
+        quad.flags = vertex_flags_none;
 
         batch.shapes.push_back(quad);
+    }
+
+    void renderer::draw_ellipse(glm::vec2 position, glm::vec2 size, const glm::vec4& color) {
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        shape_t ellipse;
+        ellipse.type = shape_type::quad;
+        ellipse.position = position;
+        ellipse.size = size;
+        ellipse.rotation = 0.f;
+        ellipse.color = color;
+        ellipse.texture_index = push_texture(renderer_data.white_texture);
+        ellipse.flags = vertex_flags_ellipse;
+
+        batch.shapes.push_back(ellipse);
+    }
+
+    void renderer::draw_ellipse(glm::vec2 position, glm::vec2 size, const glm::vec4& color,
+                                ref<texture_2d> texture) {
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        shape_t ellipse;
+        ellipse.type = shape_type::quad;
+        ellipse.position = position;
+        ellipse.size = size;
+        ellipse.rotation = 0.f;
+        ellipse.color = color;
+        ellipse.texture_index = push_texture(texture);
+        ellipse.flags = vertex_flags_ellipse;
+
+        batch.shapes.push_back(ellipse);
+    }
+
+    void renderer::draw_rotated_ellipse(glm::vec2 position, float rotation, glm::vec2 size,
+                                        const glm::vec4& color) {
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        shape_t ellipse;
+        ellipse.type = shape_type::quad;
+        ellipse.position = position;
+        ellipse.size = size;
+        ellipse.rotation = rotation;
+        ellipse.color = color;
+        ellipse.texture_index = push_texture(renderer_data.white_texture);
+        ellipse.flags = vertex_flags_ellipse;
+
+        batch.shapes.push_back(ellipse);
+    }
+
+    void renderer::draw_rotated_ellipse(glm::vec2 position, float rotation, glm::vec2 size,
+                                        const glm::vec4& color, ref<texture_2d> texture) {
+        auto& batch = *renderer_data.current_scene->current_batch;
+
+        shape_t ellipse;
+        ellipse.type = shape_type::quad;
+        ellipse.position = position;
+        ellipse.size = size;
+        ellipse.rotation = rotation;
+        ellipse.color = color;
+        ellipse.texture_index = push_texture(texture);
+        ellipse.flags = vertex_flags_ellipse;
+
+        batch.shapes.push_back(ellipse);
     }
 
     void renderer::draw_shape(const std::vector<glm::vec2>& vertices,
@@ -663,6 +742,7 @@ namespace sge {
         shape.indices = indices;
         shape.color = color;
         shape.texture_index = push_texture(renderer_data.white_texture);
+        shape.flags = vertex_flags_none;
 
         for (const auto& vertex : vertices) {
             mapped_vertex v;
@@ -691,6 +771,7 @@ namespace sge {
         shape.indices = indices;
         shape.color = color;
         shape.texture_index = push_texture(texture);
+        shape.flags = vertex_flags_none;
 
         batch.shapes.push_back(shape);
     }

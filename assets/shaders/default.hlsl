@@ -20,6 +20,7 @@ struct vs_input {
     [[vk::location(1)]] float4 color : COLOR0;
     [[vk::location(2)]] float2 uv : TEXCOORD0;
     [[vk::location(3)]] int texture_index : TEXTUREINDEX0;
+    [[vk::location(4)]] int flags; // todo: add semantic
 };
 
 struct vs_output {
@@ -28,13 +29,14 @@ struct vs_output {
     [[vk::location(0)]] float4 color : COLOR0;
     [[vk::location(1)]] float2 uv : TEXCOORD0;
     [[vk::location(2)]] int texture_index : TEXTUREINDEX0; 
+    [[vk::location(3)]] int flags; // todo: add semantic
 };
 
 struct camera_data_t {
     float4x4 view_projection;
 };
-ConstantBuffer<camera_data_t> camera_data : register(b0);
 
+ConstantBuffer<camera_data_t> camera_data : register(b0);
 
 vs_output main(vs_input input) {
     vs_output output;
@@ -43,6 +45,7 @@ vs_output main(vs_input input) {
     output.color = input.color;
     output.uv = input.uv;
     output.texture_index = input.texture_index;
+    output.flags = input.flags;
 
     return output;
 }
@@ -51,14 +54,25 @@ vs_output main(vs_input input) {
 struct ps_input {
     [[vk::location(0)]] float4 color : COLOR0;
     [[vk::location(1)]] float2 uv : TEXCOORD0;
-    [[vk::location(2)]] int texture_index : TEXTUREINDEX0; 
+    [[vk::location(2)]] int texture_index : TEXTUREINDEX0;
+    [[vk::location(3)]] int flags; // todo: add semantic
 };
 
 Texture2D textures[16] : register(t1);
 SamplerState tex_samplers[16] : register(s1);
 
 float4 main(ps_input input) : SV_TARGET {
+    if ((input.flags & (1 << 0)) != 0) {
+        float2 center = float2(0.5f, 0.5f);
+        float dist = length(input.uv - center);
+
+        if (dist > 0.5f) {
+            return float4(0.f, 0.f, 0.f, 0.f);
+        }
+    }
+
     float4 tex_color = textures[input.texture_index].Sample(tex_samplers[input.texture_index],
         input.uv);
+
     return tex_color * input.color;
 }
