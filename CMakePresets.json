@@ -24,9 +24,11 @@
                 "SPIRV_SKIP_EXECUTABLES": "ON",
                 "SPIRV_SKIP_TESTS": "ON",
                 "SPIRV_CROSS_ENABLE_TESTS": "OFF",
+                "TRACY_ON_DEMAND": "ON",
                 "BOX2D_BUILD_DOCS": "OFF",
                 "BOX2D_BUILD_UNIT_TESTS": "OFF",
                 "BOX2D_BUILD_TESTBED": "OFF",
+                "BUILD_SHARED_LIBS": "OFF",
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_OSX_ARCHITECTURES": "x86_64"
             },
@@ -39,7 +41,8 @@
             "displayName": "Debug configuration",
             "inherits": "default",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "TRACY_ON_DEMAND": "OFF"
             }
         }
     ],

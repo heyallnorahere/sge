@@ -55,6 +55,7 @@ namespace fs = std::experimental::filesystem;
 #define SGE_EXPERIMENTAL_FILESYSTEM
 #endif
 
+#include <tracy/Tracy.hpp>
 #include <spdlog/spdlog.h>
 
 #define GLM_FORCE_RADIANS

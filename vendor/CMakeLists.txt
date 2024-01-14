@@ -6,6 +6,7 @@ add_subdirectory("stb")
 add_subdirectory("entt")
 add_subdirectory("box2d")
 add_subdirectory("json")
+add_subdirectory("tracy")
 
 add_library(miniaudio INTERFACE)
 target_include_directories(miniaudio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/miniaudio")

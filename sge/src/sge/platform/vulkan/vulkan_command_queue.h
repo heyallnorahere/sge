@@ -26,6 +26,7 @@ namespace sge {
         virtual void submit(command_list& cmdlist, bool wait) override;
 
         virtual command_list_type get_type() override { return m_type; }
+        VkQueue get_queue() { return m_queue; }
 
     private:
         struct stored_command_list {

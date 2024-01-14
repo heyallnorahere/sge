@@ -15,10 +15,13 @@
 */
 
 #include "sgepch.h"
-#include "sge/platform/vulkan/vulkan_base.h"
-#include "sge/platform/vulkan/vulkan_context.h"
 #include "sge/core/application.h"
+#include "sge/renderer/renderer.h"
+#include "sge/platform/vulkan/vulkan_base.h"
 #include "sge/platform/vulkan/vulkan_allocator.h"
+#include "sge/platform/vulkan/vulkan_context.h"
+#include "sge/platform/vulkan/vulkan_command_queue.h"
+#include "sge/platform/vulkan/vulkan_command_list.h"
 namespace sge {
     static std::unique_ptr<vulkan_context> vk_context_instance;
 
@@ -44,12 +47,15 @@ namespace sge {
     vulkan_context& vulkan_context::get() { return *vk_context_instance; }
 
     struct vk_data {
-        uint32_t vulkan_version;
+        uint32_t vulkan_version = 0;
         std::set<std::string> instance_extensions, instance_layers, device_extensions,
             device_layers;
+
         VkInstance instance = nullptr;
         VkDebugUtilsMessengerEXT debug_messenger = nullptr;
+
         std::unique_ptr<vulkan_device> device;
+        tracy::VkCtx* tracy_context = nullptr;
     };
 
     static void choose_extensions(vk_data* data) {
@@ -277,12 +283,20 @@ namespace sge {
             volkLoadDevice(m_data->device->get());
         }
 
+        auto queue = renderer::get_queue(command_list_type::graphics).as<vulkan_command_queue>();
+        auto& command_list = (vulkan_command_list&)queue->get();
+
+        m_data->tracy_context = TracyVkContext(
+            m_data->instance, m_data->device->get_physical_device().get(), m_data->device->get(),
+            queue->get_queue(), command_list.get(), vkGetInstanceProcAddr, vkGetDeviceProcAddr);
+
         vulkan_allocator::init();
     }
 
     void vulkan_context::shutdown() {
         vulkan_allocator::shutdown();
 
+        TracyVkDestroy(m_data->tracy_context);
         m_data->device.reset();
 
         if (m_data->debug_messenger != nullptr) {
@@ -308,6 +322,7 @@ namespace sge {
     uint32_t vulkan_context::get_vulkan_version() { return m_data->vulkan_version; }
     VkInstance vulkan_context::get_instance() { return m_data->instance; }
     vulkan_device& vulkan_context::get_device() { return *m_data->device; }
+    tracy::VkCtx* vulkan_context::get_profiler_context() { return m_data->tracy_context; }
 
     const std::set<std::string>& vulkan_context::get_device_extensions() {
         return m_data->device_extensions;

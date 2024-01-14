@@ -36,6 +36,9 @@ namespace sge {
         auto vk_cmdlist = (vulkan_command_list*)data.cmdlist;
         VkCommandBuffer cmdbuffer = vk_cmdlist->get();
 
+        auto context = vulkan_context::get().get_profiler_context();
+        TracyVkZone(context, cmdbuffer, "Submit");
+
         // see vulkan_pipeline.cpp:406
         vkCmdSetLineWidth(cmdbuffer, 1.f);
 

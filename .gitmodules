@@ -47,3 +47,6 @@
 [submodule "vendor/miniaudio"]
 	path = vendor/miniaudio
 	url = https://github.com/mackron/miniaudio.git
+[submodule "vendor/tracy"]
+	path = vendor/tracy
+	url = https://github.com/wolfpld/tracy.git

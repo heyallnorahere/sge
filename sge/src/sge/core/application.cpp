@@ -227,6 +227,7 @@ namespace sge {
     }
 
     void application::run() {
+        ZoneScoped;
         if (m_running) {
             throw std::runtime_error("cannot recursively call run()");
         }
@@ -279,6 +280,7 @@ namespace sge {
                 cmdlist.end();
 
                 m_swapchain->present();
+                FrameMark;
             }
 
             m_window->on_update();

@@ -30,6 +30,7 @@ namespace sge {
         uint32_t get_vulkan_version();
         VkInstance get_instance();
         vulkan_device& get_device();
+        tracy::VkCtx* get_profiler_context();
 
         const std::set<std::string>& get_device_extensions();
         const std::set<std::string>& get_device_layers();

@@ -94,7 +94,7 @@ namespace sge {
     void vulkan_swapchain::new_frame() {
         VkDevice device = vulkan_context::get().get_device().get();
         VkFence fence = m_sync_objects[m_current_frame].fence;
-        
+
         static constexpr size_t uint64_max = std::numeric_limits<uint64_t>::max();
         vkWaitForFences(device, 1, &fence, true, uint64_max);
 
@@ -127,6 +127,9 @@ namespace sge {
         {
             auto& cmdlist = *m_command_buffers[m_current_image_index];
             VkCommandBuffer cmdbuffer = cmdlist.get();
+
+            auto context = vulkan_context::get().get_profiler_context();
+            TracyVkCollect(context, cmdbuffer);
 
             static VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             auto submit_info = vk_init<VkSubmitInfo>(VK_STRUCTURE_TYPE_SUBMIT_INFO);

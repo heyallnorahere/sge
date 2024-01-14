@@ -37,7 +37,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/sge_config.h.in" ${SGE_CONFIG} @ONLY
 
 # base lists
 set(SGE_INCLUDES ${SGE_DIR} "${VENDOR_DIR}/mono/include" "${VENDOR_DIR}/glm" ${CMAKE_CURRENT_BINARY_DIR})
-set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb miniaudio EnTT box2d sge-imgui nlohmann_json ${MONO_LIBS})
+set(SGE_LIBS spdlog shaderc spirv-cross-glsl stb miniaudio EnTT box2d sge-imgui nlohmann_json TracyClient ${MONO_LIBS})
 
 # nvidia nsight aftermath
 if(SGE_USE_AFTERMATH)

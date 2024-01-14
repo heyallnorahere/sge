@@ -18,6 +18,9 @@
 #include <volk.h>
 #include <vk_mem_alloc.h>
 
+#define TRACY_VK_USE_SYMBOL_TABLE // we are using volk
+#include <tracy/TracyVulkan.hpp>
+
 namespace sge {
     inline std::string vk_result_name(VkResult result) {
         switch (result) {
